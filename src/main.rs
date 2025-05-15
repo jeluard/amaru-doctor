@@ -20,11 +20,14 @@ mod tui;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let db = RocksDB::new(Path::new(&env::var("AMARU_LEDGER_DB")?), NetworkName::Preprod.into())?;
+    let db = RocksDB::new(
+        Path::new(&env::var("AMARU_LEDGER_DB")?),
+        NetworkName::Preprod.into(),
+    )?;
 
     let pots = db.pots()?;
     println!("pots: {:?}", pots);
-    
+
     crate::errors::init()?;
     crate::logging::init()?;
 
