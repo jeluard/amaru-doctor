@@ -8,8 +8,15 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{action::Action, config::Config, tui::Event};
 
+pub mod empty;
 pub mod fps;
+pub mod group;
 pub mod home;
+pub mod layout;
+pub mod message;
+pub mod resources;
+pub mod split;
+pub mod utxos;
 
 /// `Component` is a trait that represents a visual and interactive element of the user interface.
 ///
@@ -63,14 +70,13 @@ pub trait Component {
     ///
     /// # Returns
     ///
-    /// * `Result<Option<Action>>` - An action to be processed or none.
-    fn handle_events(&mut self, event: Option<Event>) -> Result<Option<Action>> {
-        let action = match event {
-            Some(Event::Key(key_event)) => self.handle_key_event(key_event)?,
-            Some(Event::Mouse(mouse_event)) => self.handle_mouse_event(mouse_event)?,
-            _ => None,
-        };
-        Ok(action)
+    /// * `Result<Vec<Action>>` - Actions to be processed.
+    fn handle_events(&mut self, event: Option<Event>) -> Result<Vec<Action>> {
+        match event {
+            Some(Event::Key(key_event)) => self.handle_key_event(key_event),
+            Some(Event::Mouse(mouse_event)) => self.handle_mouse_event(mouse_event),
+            _ => Ok(vec![]),
+        }
     }
     /// Handle key events and produce actions if necessary.
     ///
@@ -80,10 +86,10 @@ pub trait Component {
     ///
     /// # Returns
     ///
-    /// * `Result<Option<Action>>` - An action to be processed or none.
-    fn handle_key_event(&mut self, key: KeyEvent) -> Result<Option<Action>> {
+    /// * `Result<Vec<Action>>` - Actions to be processed.
+    fn handle_key_event(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
         let _ = key; // to appease clippy
-        Ok(None)
+        Ok(vec![])
     }
     /// Handle mouse events and produce actions if necessary.
     ///
@@ -93,10 +99,10 @@ pub trait Component {
     ///
     /// # Returns
     ///
-    /// * `Result<Option<Action>>` - An action to be processed or none.
-    fn handle_mouse_event(&mut self, mouse: MouseEvent) -> Result<Option<Action>> {
+    /// * `Result<Vec<Action>>` - Actions to be processed.
+    fn handle_mouse_event(&mut self, mouse: MouseEvent) -> Result<Vec<Action>> {
         let _ = mouse; // to appease clippy
-        Ok(None)
+        Ok(vec![])
     }
     /// Update the state of the component based on a received action. (REQUIRED)
     ///
@@ -106,10 +112,10 @@ pub trait Component {
     ///
     /// # Returns
     ///
-    /// * `Result<Option<Action>>` - An action to be processed or none.
-    fn update(&mut self, action: Action) -> Result<Option<Action>> {
+    /// * `Result<Vec<Action>>` - Actions to be processed.
+    fn update(&mut self, action: Action) -> Result<Vec<Action>> {
         let _ = action; // to appease clippy
-        Ok(None)
+        Ok(vec![])
     }
     /// Render the component on the screen. (REQUIRED)
     ///
