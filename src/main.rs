@@ -21,6 +21,7 @@ mod config;
 mod errors;
 mod logging;
 mod tui;
+mod window;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -32,7 +33,7 @@ async fn main() -> Result<()> {
     crate::logging::init()?;
 
     let args = Cli::parse();
-    let mut app = App::new(ledger_path_str, args.tick_rate, args.frame_rate, db_arc)?;
+    let mut app = App::new(ledger_path_str, args.tick_rate, args.frame_rate, &db_arc)?;
     app.run().await?;
     Ok(())
 }

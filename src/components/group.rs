@@ -9,26 +9,25 @@ use ratatui::{
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::trace;
 
-#[derive(Default)]
-pub struct ComponentGroup {
-    components: Vec<Box<dyn Component>>,
+pub struct ComponentGroup<'a> {
+    components: Vec<Box<dyn Component + 'a>>,
 }
 
-impl ComponentGroup {
-    pub fn new(components: Vec<Box<dyn Component>>) -> Self {
+impl<'a> ComponentGroup<'a> {
+    pub fn new(components: Vec<Box<dyn Component + 'a>>) -> Self {
         Self { components }
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Box<dyn Component>> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Box<dyn Component + 'a>> {
         self.components.iter_mut()
     }
 
-    pub fn components_mut(&mut self) -> &mut Vec<Box<dyn Component>> {
+    pub fn components_mut(&mut self) -> &mut Vec<Box<dyn Component + 'a>> {
         &mut self.components
     }
 }
 
-impl Component for ComponentGroup {
+impl<'a> Component for ComponentGroup<'a> {
     fn update(&mut self, action: Action) -> Result<Vec<Action>> {
         let mut results = Vec::new();
         for component in self.components.iter_mut() {

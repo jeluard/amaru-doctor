@@ -1,10 +1,10 @@
-use std::sync::Arc;
-
+use amaru_ledger::store::ReadOnlyStore;
 use amaru_stores::rocksdb::RocksDB;
 use color_eyre::Result;
 use crossterm::event::KeyEvent;
-use ratatui::prelude::Rect;
+use ratatui::{prelude::Rect, widgets::ListItem};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::{debug, info, trace};
 
@@ -18,6 +18,7 @@ use crate::{
         layout::AppLayout,
         message::Message,
         resources::ResourceList,
+        scroll::ScrollableListComponent,
         split::{Axis, SplitComponent},
         utxos::UtxoList,
     },
@@ -25,11 +26,11 @@ use crate::{
     tui::{Event, Tui},
 };
 
-pub struct App {
+pub struct App<'a> {
     config: Config,
     tick_rate: f64,
     frame_rate: f64,
-    components: AppLayout,
+    components: AppLayout<'a>,
     should_quit: bool,
     should_suspend: bool,
     mode: Mode,
@@ -44,18 +45,18 @@ pub enum Mode {
     Home,
 }
 
-impl App {
+impl<'a> App<'a> {
     pub fn new(
         ledger_path_str: &String,
         tick_rate: f64,
         frame_rate: f64,
-        db: Arc<RocksDB>,
+        db: &'a Arc<RocksDB>,
     ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
         Ok(Self {
             tick_rate,
             frame_rate,
-            components: Self::init_layout(ledger_path_str, db),
+            components: Self::init_layout(ledger_path_str, db)?,
             should_quit: false,
             should_suspend: false,
             config: Config::new()?,
@@ -66,8 +67,15 @@ impl App {
         })
     }
 
-    fn init_layout(ledger_path_str: &String, db: Arc<RocksDB>) -> AppLayout {
-        AppLayout::new(
+    fn init_layout(ledger_path_str: &String, db: &'a Arc<RocksDB>) -> Result<AppLayout<'a>> {
+        let utxo_component: Box<dyn Component + 'a> = Box::new(ScrollableListComponent::new(
+            "UTXOs".to_string(),
+            db.iter_utxos()?,
+            10,
+            |(input, _)| ListItem::new(format!("{:?}", input.transaction_id)),
+        ));
+
+        Ok(AppLayout::new(
             Box::new(ComponentGroup::new(vec![
                 Box::new(Message::new(format!(
                     "Reading amaru ledger at {:?}",
@@ -81,7 +89,7 @@ impl App {
                 Box::new(SplitComponent::new_2_evenly(
                     Axis::Horizontal,
                     Box::new(ResourceList::default()),
-                    Box::new(UtxoList::new(db)),
+                    utxo_component,
                 )),
                 70,
                 Box::new(EmptyComponent::default()),
@@ -89,7 +97,7 @@ impl App {
             Box::new(ComponentGroup::new(vec![Box::new(Message::new(
                 "Use arrow keys ←↑→↓ to navigate.".to_string(),
             ))])),
-        )
+        ))
     }
 
     pub async fn run(&mut self) -> Result<()> {

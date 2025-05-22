@@ -15,15 +15,15 @@ use tracing::trace;
 
 use super::group::ComponentGroup;
 
-pub struct AppLayout {
-    group: ComponentGroup, // holds header, body, footer
+pub struct AppLayout<'a> {
+    group: ComponentGroup<'a>, // holds header, body, footer
 }
 
-impl AppLayout {
+impl<'a> AppLayout<'a> {
     pub fn new(
-        header: Box<dyn Component>,
-        body: Box<dyn Component>,
-        footer: Box<dyn Component>,
+        header: Box<dyn Component + 'a>,
+        body: Box<dyn Component + 'a>,
+        footer: Box<dyn Component + 'a>,
     ) -> Self {
         Self {
             group: ComponentGroup::new(vec![header, body, footer]),
@@ -31,7 +31,7 @@ impl AppLayout {
     }
 }
 
-impl Component for AppLayout {
+impl<'a> Component for AppLayout<'a> {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         let [header_area, body_area, footer_area] = Layout::vertical([
             Constraint::Length(1),

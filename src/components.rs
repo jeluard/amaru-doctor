@@ -15,6 +15,7 @@ pub mod home;
 pub mod layout;
 pub mod message;
 pub mod resources;
+pub mod scroll;
 pub mod split;
 pub mod utxos;
 
