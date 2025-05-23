@@ -1,6 +1,7 @@
 use crate::action::Action;
 use crate::components::{Component, group::ComponentGroup};
 use crate::config::Config;
+use crate::shared::Shared;
 use crate::tui::Event;
 use color_eyre::Result;
 use crossterm::event::{KeyEvent, MouseEvent};
@@ -25,7 +26,11 @@ pub struct SplitComponent<'a> {
 }
 
 impl<'a> SplitComponent<'a> {
-    pub fn new_n(axis: Axis, ratios: Vec<u16>, components: Vec<Box<dyn Component + 'a>>) -> Self {
+    pub fn new_n(
+        axis: Axis,
+        ratios: Vec<u16>,
+        components: Vec<Shared<dyn Component + 'a>>,
+    ) -> Self {
         assert_eq!(ratios.len(), components.len());
         assert_eq!(ratios.iter().sum::<u16>(), 100);
         Self {
@@ -38,14 +43,14 @@ impl<'a> SplitComponent<'a> {
     pub fn new_2(
         axis: Axis,
         ratio_a: u16,
-        comp_a: Box<dyn Component + 'a>,
+        comp_a: Shared<dyn Component + 'a>,
         ratio_b: u16,
-        comp_b: Box<dyn Component + 'a>,
+        comp_b: Shared<dyn Component + 'a>,
     ) -> Self {
         Self::new_n(axis, vec![ratio_a, ratio_b], vec![comp_a, comp_b])
     }
 
-    pub fn new_n_evenly(axis: Axis, components: Vec<Box<dyn Component + 'a>>) -> Self {
+    pub fn new_n_evenly(axis: Axis, components: Vec<Shared<dyn Component + 'a>>) -> Self {
         let n = components.len();
         assert!(n > 0);
         let base = 100 / n as u16;
@@ -64,8 +69,8 @@ impl<'a> SplitComponent<'a> {
 
     pub fn new_2_evenly(
         axis: Axis,
-        comp_a: Box<dyn Component + 'a>,
-        comp_b: Box<dyn Component + 'a>,
+        comp_a: Shared<dyn Component + 'a>,
+        comp_b: Shared<dyn Component + 'a>,
     ) -> Self {
         Self::new_2(axis, 50, comp_a, 50, comp_b)
     }
@@ -85,7 +90,7 @@ impl<'a> Component for SplitComponent<'a> {
         };
 
         for (component, region) in self.group.iter_mut().zip(chunks.iter()) {
-            component.draw(frame, *region)?;
+            component.borrow_mut().draw(frame, *region)?;
         }
 
         Ok(())

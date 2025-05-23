@@ -1,8 +1,7 @@
-use amaru_ledger::store::ReadOnlyStore;
 use amaru_stores::rocksdb::RocksDB;
 use color_eyre::Result;
 use crossterm::event::KeyEvent;
-use ratatui::{prelude::Rect, widgets::ListItem};
+use ratatui::prelude::Rect;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::mpsc;
@@ -10,19 +9,10 @@ use tracing::{debug, info, trace};
 
 use crate::{
     action::Action,
-    components::{
-        Component,
-        empty::EmptyComponent,
-        fps::FpsCounter,
-        group::ComponentGroup,
-        layout::AppLayout,
-        message::Message,
-        resources::ResourceList,
-        scroll::ScrollableListComponent,
-        split::{Axis, SplitComponent},
-        utxos::UtxoList,
-    },
+    build,
+    components::{Component, layout::RootLayout},
     config::Config,
+    focus::FocusManager,
     tui::{Event, Tui},
 };
 
@@ -30,7 +20,8 @@ pub struct App<'a> {
     config: Config,
     tick_rate: f64,
     frame_rate: f64,
-    components: AppLayout<'a>,
+    components: RootLayout<'a>,
+    focus: FocusManager<'a>,
     should_quit: bool,
     should_suspend: bool,
     mode: Mode,
@@ -53,10 +44,12 @@ impl<'a> App<'a> {
         db: &'a Arc<RocksDB>,
     ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
+        let (layout, focus) = build::build_layout(ledger_path_str, db)?;
         Ok(Self {
             tick_rate,
             frame_rate,
-            components: Self::init_layout(ledger_path_str, db)?,
+            components: layout,
+            focus: focus,
             should_quit: false,
             should_suspend: false,
             config: Config::new()?,
@@ -65,39 +58,6 @@ impl<'a> App<'a> {
             action_tx,
             action_rx,
         })
-    }
-
-    fn init_layout(ledger_path_str: &String, db: &'a Arc<RocksDB>) -> Result<AppLayout<'a>> {
-        let utxo_component: Box<dyn Component + 'a> = Box::new(ScrollableListComponent::new(
-            "UTXOs".to_string(),
-            db.iter_utxos()?,
-            10,
-            |(input, _)| ListItem::new(format!("{:?}", input.transaction_id)),
-        ));
-
-        Ok(AppLayout::new(
-            Box::new(ComponentGroup::new(vec![
-                Box::new(Message::new(format!(
-                    "Reading amaru ledger at {:?}",
-                    ledger_path_str
-                ))),
-                Box::new(FpsCounter::default()),
-            ])),
-            Box::new(SplitComponent::new_2(
-                Axis::Vertical,
-                30,
-                Box::new(SplitComponent::new_2_evenly(
-                    Axis::Horizontal,
-                    Box::new(ResourceList::default()),
-                    utxo_component,
-                )),
-                70,
-                Box::new(EmptyComponent::default()),
-            )),
-            Box::new(ComponentGroup::new(vec![Box::new(Message::new(
-                "Use arrow keys ←↑→↓ to navigate.".to_string(),
-            ))])),
-        ))
     }
 
     pub async fn run(&mut self) -> Result<()> {

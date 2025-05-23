@@ -1,7 +1,7 @@
-use crate::action::Action;
 use crate::components::Component;
 use crate::config::Config;
 use crate::tui::Event;
+use crate::{action::Action, shared::Shared};
 
 use color_eyre::Result;
 use crossterm::event::{KeyEvent, MouseEvent};
@@ -15,15 +15,15 @@ use tracing::trace;
 
 use super::group::ComponentGroup;
 
-pub struct AppLayout<'a> {
+pub struct RootLayout<'a> {
     group: ComponentGroup<'a>, // holds header, body, footer
 }
 
-impl<'a> AppLayout<'a> {
+impl<'a> RootLayout<'a> {
     pub fn new(
-        header: Box<dyn Component + 'a>,
-        body: Box<dyn Component + 'a>,
-        footer: Box<dyn Component + 'a>,
+        header: Shared<dyn Component + 'a>,
+        body: Shared<dyn Component + 'a>,
+        footer: Shared<dyn Component + 'a>,
     ) -> Self {
         Self {
             group: ComponentGroup::new(vec![header, body, footer]),
@@ -31,7 +31,7 @@ impl<'a> AppLayout<'a> {
     }
 }
 
-impl<'a> Component for AppLayout<'a> {
+impl<'a> Component for RootLayout<'a> {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         let [header_area, body_area, footer_area] = Layout::vertical([
             Constraint::Length(1),
@@ -41,9 +41,9 @@ impl<'a> Component for AppLayout<'a> {
         .areas(area);
 
         let components = &mut self.group.components_mut();
-        components[0].draw(frame, header_area)?;
-        components[1].draw(frame, body_area)?;
-        components[2].draw(frame, footer_area)?;
+        components[0].borrow_mut().draw(frame, header_area)?;
+        components[1].borrow_mut().draw(frame, body_area)?;
+        components[2].borrow_mut().draw(frame, footer_area)?;
         Ok(())
     }
 
@@ -52,9 +52,9 @@ impl<'a> Component for AppLayout<'a> {
         let components = &mut self.group.components_mut();
 
         let mut results = Vec::new();
-        results.extend(components[0].handle_key_event(key)?);
-        results.extend(components[1].handle_key_event(key)?);
-        results.extend(components[2].handle_key_event(key)?);
+        results.extend(components[0].borrow_mut().handle_key_event(key)?);
+        results.extend(components[1].borrow_mut().handle_key_event(key)?);
+        results.extend(components[2].borrow_mut().handle_key_event(key)?);
         Ok(results)
     }
 

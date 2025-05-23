@@ -15,11 +15,14 @@ use crate::app::App;
 
 mod action;
 mod app;
+mod build;
 mod cli;
 mod components;
 mod config;
 mod errors;
+mod focus;
 mod logging;
+mod shared;
 mod tui;
 mod window;
 

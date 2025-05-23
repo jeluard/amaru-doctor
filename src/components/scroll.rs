@@ -1,5 +1,6 @@
 use crate::{action::Action, window::WindowedIter};
 use color_eyre::Result;
+use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use ratatui::{prelude::*, widgets::*};
 
@@ -39,10 +40,9 @@ where
     F: Fn(&T) -> ListItem,
 {
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
-        use crossterm::event::KeyCode::*;
         match key.code {
-            Up => self.window.scroll_up(),
-            Down => self.window.scroll_down(),
+            KeyCode::Up => self.window.scroll_up(),
+            KeyCode::Down => self.window.scroll_down(),
             _ => {}
         }
         Ok(vec![])
