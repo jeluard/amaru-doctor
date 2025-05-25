@@ -19,17 +19,14 @@ pub mod message;
 pub mod resources;
 pub mod scroll;
 pub mod split;
-pub mod utxos;
 
 type ComponentRef<'a> = Shared<'a, dyn Component + 'a>;
-
-impl<T: Component> Focusable for T {}
 
 /// `Component` is a trait that represents a visual and interactive element of the user interface.
 ///
 /// Implementors of this trait can be registered with the main application loop and will be able to
 /// receive events, update state, and be rendered on the screen.
-pub trait Component: Focusable {
+pub trait Component {
     /// Register an action handler that can send actions for processing if necessary.
     ///
     /// # Arguments

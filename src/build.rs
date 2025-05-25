@@ -33,9 +33,9 @@ pub fn build_layout<'a>(
     let resource_list = shared(ResourceList::default());
     let utxos = shared(ScrollableListComponent::new(
         "UTXOs".to_string(),
-        db.iter_utxos()?,
+        db.iter_utxos()?.enumerate(),
         10,
-        |(input, _)| ListItem::new(format!("{:?}", input.transaction_id)),
+        |(i, (input, _))| ListItem::new(format!("{}: {}", i, input.transaction_id.to_string())),
     ));
     let details = shared(EmptyComponent::default());
 

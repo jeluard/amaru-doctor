@@ -12,4 +12,6 @@ pub enum Action {
     ClearScreen,
     Error(String),
     Help,
+    FocusPrev,
+    FocusNext,
 }

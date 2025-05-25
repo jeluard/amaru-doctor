@@ -1,5 +1,5 @@
 use super::Component;
-use crate::action::Action;
+use crate::{action::Action, focus::Focusable};
 use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
@@ -7,13 +7,17 @@ use tracing::trace;
 
 pub struct ResourceList {
     state: ListState,
+    has_focus: bool,
 }
 
 impl Default for ResourceList {
     fn default() -> Self {
         let mut state = ListState::default();
         state.select(Some(0));
-        Self { state }
+        Self {
+            state,
+            has_focus: false,
+        }
     }
 }
 
@@ -35,10 +39,23 @@ impl ResourceList {
     }
 }
 
+impl Focusable for ResourceList {
+    fn set_focus(&mut self, focus: bool) {
+        self.has_focus = focus;
+    }
+
+    fn has_focus(&self) -> bool {
+        self.has_focus
+    }
+}
+
 impl Component for ResourceList {
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
         trace!("ResourceList::handle_key_event - {:?}", key);
         let items_len = 3;
+        if !self.has_focus() {
+            return Ok(vec![]);
+        }
         match key.code {
             KeyCode::Down => {
                 trace!("Moving down");
@@ -63,10 +80,17 @@ impl Component for ResourceList {
         .map(|r| ListItem::new(format!("{:?}", r)))
         .collect();
 
+        let mut block = Block::default()
+            .title("Resources")
+            .title_style(Style::default().fg(Color::White))
+            .borders(Borders::ALL);
+        if self.has_focus() {
+            block = block.border_style(Style::default().fg(Color::Blue));
+        }
         let list = List::new(resources)
             .highlight_symbol(">> ")
             .highlight_style(Style::default().bg(Color::Blue).fg(Color::White))
-            .block(Block::default().title("Resources").borders(Borders::ALL));
+            .block(block);
 
         StatefulWidget::render(list, area, frame.buffer_mut(), &mut self.state);
 

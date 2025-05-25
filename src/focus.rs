@@ -28,15 +28,15 @@ impl<'a> FocusManager<'a> {
         }
     }
 
-    fn focus_next(&mut self) {
+    pub fn shift_prev(&mut self) {
         self.components[self.index].borrow_mut().set_focus(false);
-        self.index = (self.index + 1) % self.components.len();
+        self.index = (self.index + self.components.len() - 1) % self.components.len();
         self.components[self.index].borrow_mut().set_focus(true);
     }
 
-    fn focus_prev(&mut self) {
+    pub fn shift_next(&mut self) {
         self.components[self.index].borrow_mut().set_focus(false);
-        self.index = (self.index + self.components.len() - 1) % self.components.len();
+        self.index = (self.index + 1) % self.components.len();
         self.components[self.index].borrow_mut().set_focus(true);
     }
 }

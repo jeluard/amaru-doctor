@@ -512,6 +512,20 @@ mod tests {
     }
 
     #[test]
+    fn test_config_focus() -> Result<()> {
+        let c = Config::new()?;
+        assert_eq!(
+            c.keybindings
+                .get(&Mode::Home)
+                .unwrap()
+                .get(&parse_key_sequence("<Shift-Left>").unwrap_or_default())
+                .unwrap(),
+            &Action::FocusPrev
+        );
+        Ok(())
+    }
+
+    #[test]
     fn test_simple_keys() {
         assert_eq!(
             parse_key_event("a").unwrap(),

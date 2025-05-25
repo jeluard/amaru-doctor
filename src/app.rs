@@ -153,6 +153,8 @@ impl<'a> App<'a> {
                 Action::ClearScreen => tui.terminal.clear()?,
                 Action::Resize(w, h) => self.handle_resize(tui, w, h)?,
                 Action::Render => self.render(tui)?,
+                Action::FocusPrev => self.focus.shift_prev(),
+                Action::FocusNext => self.focus.shift_next(),
                 _ => {}
             }
             for action in self.components.update(action.clone())? {
