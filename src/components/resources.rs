@@ -71,14 +71,10 @@ impl Component for ResourceList {
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        let resources: Vec<ListItem> = vec![
-            String::from("utxos"),
-            String::from("pools"),
-            String::from("bleb"),
-        ]
-        .iter()
-        .map(|r| ListItem::new(format!("{:?}", r)))
-        .collect();
+        let resources: Vec<ListItem> = vec![String::from("utxos"), String::from("WIP")]
+            .iter()
+            .map(|r| ListItem::new(format!("{:}", r)))
+            .collect();
 
         let mut block = Block::default()
             .title("Resources")

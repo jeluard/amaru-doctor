@@ -1,5 +1,11 @@
+use amaru_ledger::store::columns::utxo;
 use serde::{Deserialize, Serialize};
 use strum::Display;
+
+#[derive(Debug, Clone, PartialEq, Eq, Display, Serialize, Deserialize)]
+pub enum SelectedItem {
+    Utxo(utxo::Key),
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Display, Serialize, Deserialize)]
 pub enum Action {
@@ -14,4 +20,5 @@ pub enum Action {
     Help,
     FocusPrev,
     FocusNext,
+    SelectItem(SelectedItem),
 }

@@ -44,7 +44,7 @@ impl<'a> App<'a> {
         db: &'a Arc<RocksDB>,
     ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
-        let (layout, focus) = build::build_layout(ledger_path_str, db)?;
+        let (layout, focus) = build::build_layout(ledger_path_str, &db)?;
         Ok(Self {
             tick_rate,
             frame_rate,

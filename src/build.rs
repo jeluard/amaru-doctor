@@ -1,14 +1,6 @@
-use std::sync::Arc;
-
-use amaru_ledger::store::ReadOnlyStore;
-use amaru_stores::rocksdb::RocksDB;
-use color_eyre::Result;
-use ratatui::widgets::ListItem;
-
 use crate::{
+    action::SelectedItem,
     components::{
-        Component,
-        empty::EmptyComponent,
         fps::FpsCounter,
         group::ComponentGroup,
         layout::RootLayout,
@@ -16,15 +8,16 @@ use crate::{
         resources::ResourceList,
         scroll::ScrollableListComponent,
         split::{Axis, SplitComponent},
+        utxo::UtxoDetailsComponent,
     },
-    focus::{FocusManager, Focusable},
-    shared::{Shared, shared},
+    focus::FocusManager,
+    shared::shared,
 };
-
-pub struct LayoutAndFocus<'a> {
-    pub layout: RootLayout<'a>,
-    pub focus: FocusManager<'a>,
-}
+use amaru_ledger::store::ReadOnlyStore;
+use amaru_stores::rocksdb::RocksDB;
+use color_eyre::Result;
+use ratatui::widgets::ListItem;
+use std::sync::Arc;
 
 pub fn build_layout<'a>(
     ledger_path_str: &String,
@@ -36,8 +29,9 @@ pub fn build_layout<'a>(
         db.iter_utxos()?.enumerate(),
         10,
         |(i, (input, _))| ListItem::new(format!("{}: {}", i, input.transaction_id.to_string())),
+        |(_, (input, _))| Some(SelectedItem::Utxo(input.clone())),
     ));
-    let details = shared(EmptyComponent::default());
+    let utxo_details = shared(UtxoDetailsComponent::new(db.clone()));
 
     let body = shared(SplitComponent::new_2(
         Axis::Vertical,
@@ -48,7 +42,7 @@ pub fn build_layout<'a>(
             utxos.clone(),
         )),
         70,
-        details.clone(),
+        utxo_details.clone(),
     ));
 
     let layout = RootLayout::new(
@@ -67,6 +61,10 @@ pub fn build_layout<'a>(
 
     Ok((
         layout,
-        FocusManager::new(vec![resource_list.clone(), utxos.clone(), details.clone()]),
+        FocusManager::new(vec![
+            utxos.clone(),
+            utxo_details.clone(),
+            resource_list.clone(),
+        ]),
     ))
 }

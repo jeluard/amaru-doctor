@@ -1,5 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
-
 use color_eyre::Result;
 use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{
@@ -8,7 +6,7 @@ use ratatui::{
 };
 use tokio::sync::mpsc::UnboundedSender;
 
-use crate::{action::Action, config::Config, focus::Focusable, shared::Shared, tui::Event};
+use crate::{action::Action, config::Config, tui::Event};
 
 pub mod empty;
 pub mod fps;
@@ -19,8 +17,7 @@ pub mod message;
 pub mod resources;
 pub mod scroll;
 pub mod split;
-
-type ComponentRef<'a> = Shared<'a, dyn Component + 'a>;
+pub mod utxo;
 
 /// `Component` is a trait that represents a visual and interactive element of the user interface.
 ///

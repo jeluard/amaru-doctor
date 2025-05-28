@@ -5,11 +5,6 @@ use amaru_stores::rocksdb::RocksDB;
 use clap::Parser;
 use cli::Cli;
 use color_eyre::Result;
-use tracing_subscriber::{EnvFilter, FmtSubscriber};
-
-use std::fs::File;
-use std::io::BufWriter;
-use tracing_subscriber::fmt::writer::BoxMakeWriter;
 
 use crate::app::App;
 
@@ -23,6 +18,7 @@ mod errors;
 mod focus;
 mod logging;
 mod shared;
+mod to_rich;
 mod tui;
 mod window;
 
