@@ -1,7 +1,7 @@
 use super::Component;
 use crate::{
     action::{Action, SelectedItem, SelectedState},
-    focus::Focusable,
+    focus::{FocusState, Focusable},
     to_rich::ToRichText,
 };
 use amaru_ledger::store::{ReadOnlyStore, columns::utxo::Key};
@@ -14,8 +14,8 @@ use std::sync::Arc;
 pub struct UtxoDetailsComponent {
     db: Arc<RocksDB>,
     selected: SelectedState<Key>,
-    has_focus: bool,
     scroll_offset: u16,
+    focus: FocusState,
 }
 
 impl UtxoDetailsComponent {
@@ -26,19 +26,19 @@ impl UtxoDetailsComponent {
                 SelectedItem::Utxo(k) => Some(k.clone()),
                 _ => None,
             }),
-            has_focus: false,
             scroll_offset: 0,
+            focus: FocusState::default(),
         }
     }
 }
 
 impl Focusable for UtxoDetailsComponent {
-    fn set_focus(&mut self, focus: bool) {
-        self.has_focus = focus;
+    fn focus_state(&self) -> &FocusState {
+        &self.focus
     }
 
-    fn has_focus(&self) -> bool {
-        self.has_focus
+    fn focus_state_mut(&mut self) -> &mut FocusState {
+        &mut self.focus
     }
 }
 

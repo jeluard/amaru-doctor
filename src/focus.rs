@@ -1,9 +1,30 @@
 use crate::shared::Shared;
 
+#[derive(Default)]
+pub struct FocusState {
+    has_focus: bool,
+}
+
+impl FocusState {
+    pub fn set(&mut self, b: bool) {
+        self.has_focus = b;
+    }
+
+    pub fn get(&self) -> bool {
+        self.has_focus
+    }
+}
+
 pub trait Focusable {
-    fn set_focus(&mut self, _: bool) {}
+    fn focus_state(&self) -> &FocusState;
+    fn focus_state_mut(&mut self) -> &mut FocusState;
+
+    fn set_focus(&mut self, b: bool) {
+        self.focus_state_mut().set(b);
+    }
+
     fn has_focus(&self) -> bool {
-        false
+        self.focus_state().get()
     }
 }
 

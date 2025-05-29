@@ -1,20 +1,20 @@
 use super::Component;
-use crate::focus::Focusable;
+use crate::focus::{FocusState, Focusable};
 use color_eyre::Result;
 use ratatui::{prelude::*, widgets::*};
 
 #[derive(Default)]
 pub struct EmptyComponent {
-    has_focus: bool,
+    focus: FocusState,
 }
 
 impl Focusable for EmptyComponent {
-    fn set_focus(&mut self, focus: bool) {
-        self.has_focus = focus;
+    fn focus_state(&self) -> &FocusState {
+        &self.focus
     }
 
-    fn has_focus(&self) -> bool {
-        self.has_focus
+    fn focus_state_mut(&mut self) -> &mut FocusState {
+        &mut self.focus
     }
 }
 

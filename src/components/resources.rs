@@ -1,5 +1,8 @@
 use super::Component;
-use crate::{action::Action, focus::Focusable};
+use crate::{
+    action::Action,
+    focus::{FocusState, Focusable},
+};
 use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
@@ -7,7 +10,7 @@ use tracing::trace;
 
 pub struct ResourceList {
     state: ListState,
-    has_focus: bool,
+    focus: FocusState,
 }
 
 impl Default for ResourceList {
@@ -16,7 +19,7 @@ impl Default for ResourceList {
         state.select(Some(0));
         Self {
             state,
-            has_focus: false,
+            focus: FocusState::default(),
         }
     }
 }
@@ -40,12 +43,12 @@ impl ResourceList {
 }
 
 impl Focusable for ResourceList {
-    fn set_focus(&mut self, focus: bool) {
-        self.has_focus = focus;
+    fn focus_state(&self) -> &FocusState {
+        &self.focus
     }
 
-    fn has_focus(&self) -> bool {
-        self.has_focus
+    fn focus_state_mut(&mut self) -> &mut FocusState {
+        &mut self.focus
     }
 }
 

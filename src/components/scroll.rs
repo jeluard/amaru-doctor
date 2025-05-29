@@ -1,6 +1,6 @@
 use super::Component;
 use crate::action::{Action, SelectedItem};
-use crate::focus::Focusable;
+use crate::focus::{FocusState, Focusable};
 use crate::window::state::WindowState;
 use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent};
@@ -17,7 +17,7 @@ where
     state: WindowState<T, I>,
     render_item: F,
     select_mapper: S,
-    has_focus: bool,
+    focus: FocusState,
 }
 
 impl<T, I, F, S> ScrollableListComponent<T, I, F, S>
@@ -40,7 +40,7 @@ where
             state,
             render_item,
             select_mapper,
-            has_focus: false,
+            focus: FocusState::default(),
         }
     }
 }
@@ -52,12 +52,12 @@ where
     F: Fn(&T) -> ListItem + Copy,
     S: Fn(&T) -> Option<SelectedItem> + Copy,
 {
-    fn set_focus(&mut self, focus: bool) {
-        self.has_focus = focus;
+    fn focus_state(&self) -> &FocusState {
+        &self.focus
     }
 
-    fn has_focus(&self) -> bool {
-        self.has_focus
+    fn focus_state_mut(&mut self) -> &mut FocusState {
+        &mut self.focus
     }
 }
 
@@ -88,6 +88,7 @@ where
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
+        let is_focused = self.has_focus();
         self.state.set_window_size(area.rows().count());
         let (view, selected) = self.state.window_with_selected_index();
         let items: Vec<ListItem> = view.iter().map(self.render_item).collect();
@@ -97,7 +98,7 @@ where
             .title_style(Style::default().fg(Color::White))
             .borders(Borders::ALL);
 
-        if self.has_focus {
+        if is_focused {
             block = block.border_style(Style::default().fg(Color::Blue));
         }
 
