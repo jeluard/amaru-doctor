@@ -1,3 +1,4 @@
+use amaru_kernel::Address;
 use amaru_kernel::{
     PostAlonzoTransactionOutput, PseudoTransactionOutput, TransactionInput, Value,
     alonzo::PlutusData, alonzo::TransactionOutput,
@@ -60,18 +61,22 @@ impl<'a> ToRichText<'a> for PostAlonzoTransactionOutput {
     fn into_rich_text(self) -> RichText<'a> {
         let mut lines = Vec::new();
         lines.extend(labeled(
-            "Output Type",
+            "Type",
             RichText::Single(Span::raw("Post-Alonzo")),
             POST_ALONZO_STYLE,
         ));
+        let bech32 = Address::from_bytes(&self.address)
+            .ok()
+            .and_then(|a| a.to_bech32().ok())
+            .unwrap_or_else(|| self.address.to_string());
         lines.extend(labeled(
             "Address",
-            RichText::Single(Span::raw(self.address.to_string())),
+            RichText::Single(Span::raw(bech32)),
             Style::default(),
         ));
         lines.extend(labeled(
             "Value",
-            GenericValueWrap(self.value).into_rich_text(),
+            GenericValueRichText(self.value).into_rich_text(),
             Style::default(),
         ));
 
@@ -86,7 +91,7 @@ impl<'a> ToRichText<'a> for PostAlonzoTransactionOutput {
         lines.extend(labeled(
             "Script",
             self.script_ref
-                .map(|s| CborWrapWrap(s).into_rich_text())
+                .map(|s| CborWrapRichText(s).into_rich_text())
                 .unwrap_or_else(|| RichText::Single(Span::raw("None"))),
             Style::default(),
         ));
@@ -103,9 +108,13 @@ impl<'a> ToRichText<'a> for TransactionOutput {
             RichText::Single(Span::raw("Legacy")),
             LEGACY_STYLE,
         ));
+        let bech32 = Address::from_bytes(&self.address)
+            .ok()
+            .and_then(|a| a.to_bech32().ok())
+            .unwrap_or_else(|| self.address.to_string());
         lines.extend(labeled(
             "Address",
-            RichText::Single(Span::raw(self.address.to_string())),
+            RichText::Single(Span::raw(bech32)),
             Style::default(),
         ));
         lines.extend(labeled(
@@ -119,16 +128,16 @@ impl<'a> ToRichText<'a> for TransactionOutput {
         ));
         lines.extend(labeled(
             "Value",
-            AlonzoValueWrap(self.amount).into_rich_text(),
+            AlonzoValueRichText(self.amount).into_rich_text(),
             Style::default(),
         ));
         RichText::Lines(lines)
     }
 }
 
-pub struct GenericValueWrap(pub Value);
+pub struct GenericValueRichText(pub Value);
 
-impl<'a> ToRichText<'a> for GenericValueWrap {
+impl<'a> ToRichText<'a> for GenericValueRichText {
     fn into_rich_text(self) -> RichText<'a> {
         match self.0 {
             Value::Coin(c) => RichText::Single(Span::raw(format!("{} lovelace", c))),
@@ -152,9 +161,9 @@ impl<'a> ToRichText<'a> for GenericValueWrap {
     }
 }
 
-pub struct AlonzoValueWrap(pub amaru_kernel::alonzo::Value);
+pub struct AlonzoValueRichText(pub amaru_kernel::alonzo::Value);
 
-impl<'a> ToRichText<'a> for AlonzoValueWrap {
+impl<'a> ToRichText<'a> for AlonzoValueRichText {
     fn into_rich_text(self) -> RichText<'a> {
         match self.0 {
             amaru_kernel::alonzo::Value::Coin(c) => {
@@ -182,14 +191,14 @@ impl<'a> ToRichText<'a> for PseudoDatumOption<PlutusData> {
     fn into_rich_text(self) -> RichText<'a> {
         match self {
             PseudoDatumOption::Hash(h) => RichText::Single(Span::raw(format!("DatumHash({})", h))),
-            PseudoDatumOption::Data(cbor) => CborWrapWrap(cbor).into_rich_text(),
+            PseudoDatumOption::Data(cbor) => CborWrapRichText(cbor).into_rich_text(),
         }
     }
 }
 
-pub struct CborWrapWrap<T>(pub CborWrap<T>);
+pub struct CborWrapRichText<T>(pub CborWrap<T>);
 
-impl<'a, T: minicbor::Encode<()>> ToRichText<'a> for CborWrapWrap<T> {
+impl<'a, T: minicbor::Encode<()>> ToRichText<'a> for CborWrapRichText<T> {
     fn into_rich_text(self) -> RichText<'a> {
         match minicbor::to_vec(&self.0) {
             Ok(inner_bytes) => match cbor_diag::parse_bytes(&inner_bytes) {
