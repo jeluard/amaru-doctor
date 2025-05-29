@@ -1,21 +1,16 @@
 use crate::{
-    action::SelectedItem,
     components::{
-        details::DetailsComponent,
         fps::FpsCounter,
         group::ComponentGroup,
         layout::RootLayout,
         message::Message,
         resources::ResourceList,
-        scroll::ScrollableListComponent,
         split::{Axis, SplitComponent},
-        utxo::new_utxo_list_component,
+        utxo::{new_utxo_details_component, new_utxo_list_component},
     },
     focus::FocusManager,
     shared::shared,
-    to_rich::ToRichText,
 };
-use amaru_ledger::store::ReadOnlyStore;
 use amaru_stores::rocksdb::RocksDB;
 use color_eyre::Result;
 use std::sync::Arc;
@@ -26,17 +21,7 @@ pub fn build_layout<'a>(
 ) -> Result<(RootLayout<'a>, FocusManager<'a>)> {
     let resource_list = shared(ResourceList::default());
     let utxos = shared(new_utxo_list_component(db));
-    let utxo_details = shared(DetailsComponent::new(
-        "UTXO Details".to_string(),
-        |s| match s {
-            SelectedItem::Utxo(k) => Some(k.clone()),
-            _ => None,
-        },
-        move |key| {
-            let val = db.utxo(key)?;
-            Ok(val.map(|v| (key.clone(), v).into_rich_text().unwrap_lines()))
-        },
-    ));
+    let utxo_details = shared(new_utxo_details_component(db));
 
     let body = shared(SplitComponent::new_2(
         Axis::Vertical,

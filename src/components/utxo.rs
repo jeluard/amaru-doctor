@@ -1,8 +1,12 @@
-use super::scroll::ScrollableListComponent;
-use crate::action::SelectedItem;
+use super::{details::DetailsComponent, scroll::ScrollableListComponent};
+use crate::{
+    action::SelectedItem,
+    to_rich::{RichText, ToRichText},
+};
 use amaru_kernel::{PseudoTransactionOutput, TransactionInput, Value, alonzo::NativeScript};
 use amaru_ledger::store::ReadOnlyStore;
 use amaru_stores::rocksdb::RocksDB;
+use color_eyre::Result;
 use pallas_primitives::{
     PlutusData,
     babbage::PseudoPostAlonzoTransactionOutput,
@@ -49,4 +53,16 @@ pub fn new_utxo_list_component<'a>(
     let iter = db.iter_utxos().unwrap().enumerate();
 
     ScrollableListComponent::new("UTXOs".to_string(), iter, 10, select, render)
+}
+
+pub fn new_utxo_details_component<'a>(
+    db: &'a Arc<RocksDB>,
+) -> DetailsComponent<TransactionInput, impl Fn(&TransactionInput) -> Result<Option<RichText>> + 'a>
+{
+    let render = move |key: &TransactionInput| {
+        let val = db.utxo(key)?;
+        Ok(val.map(|v| (key.clone(), v).into_rich_text()))
+    };
+
+    DetailsComponent::new("UTXO Details".to_string(), render)
 }

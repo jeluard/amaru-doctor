@@ -1,10 +1,11 @@
+use amaru_kernel::TransactionInput;
 use amaru_ledger::store::columns::utxo;
 use serde::{Deserialize, Serialize};
 use strum::Display;
 
 #[derive(Debug, Clone, PartialEq, Eq, Display, Serialize, Deserialize)]
 pub enum SelectedItem {
-    Utxo(utxo::Key),
+    Utxo(TransactionInput),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Display, Serialize, Deserialize)]
@@ -23,22 +24,36 @@ pub enum Action {
     SelectItem(SelectedItem),
 }
 
-pub struct SelectedState<T> {
-    pub value: Option<T>,
-    matcher: fn(&SelectedItem) -> Option<T>,
+pub trait SelectsFrom {
+    fn from_selected(item: &SelectedItem) -> Option<Self>
+    where
+        Self: Sized;
 }
 
-impl<T: PartialEq + Clone> SelectedState<T> {
-    pub fn new(matcher: fn(&SelectedItem) -> Option<T>) -> Self {
-        Self {
-            value: None,
-            matcher,
+impl SelectsFrom for TransactionInput {
+    fn from_selected(item: &SelectedItem) -> Option<Self> {
+        match item {
+            SelectedItem::Utxo(k) => Some(k.clone()),
+            _ => None,
         }
+    }
+}
+
+pub struct SelectedState<T> {
+    pub value: Option<T>,
+}
+
+impl<T> SelectedState<T>
+where
+    T: SelectsFrom + PartialEq + Clone,
+{
+    pub fn new() -> Self {
+        Self { value: None }
     }
 
     pub fn update(&mut self, action: &Action) -> bool {
         if let Action::SelectItem(selected) = action {
-            if let Some(new_val) = (self.matcher)(selected) {
+            if let Some(new_val) = T::from_selected(selected) {
                 if self.value.as_ref() != Some(&new_val) {
                     self.value = Some(new_val);
                     return true;

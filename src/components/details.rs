@@ -1,6 +1,8 @@
+use super::Component;
 use crate::{
-    action::{Action, SelectedItem, SelectedState},
+    action::{Action, SelectedState, SelectsFrom},
     focus::{FocusState, Focusable},
+    to_rich::RichText,
 };
 use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent};
@@ -9,35 +11,35 @@ use ratatui::{prelude::*, widgets::*};
 pub struct DetailsComponent<K, F>
 where
     K: Clone + PartialEq,
-    F: Fn(&K) -> Result<Option<Vec<Line>>> + Copy,
+    F: Fn(&K) -> Result<Option<RichText>>,
 {
+    title: String,
     selected: SelectedState<K>,
     focus: FocusState,
     scroll_offset: u16,
     render: F,
-    title: String,
 }
 
 impl<K, F> DetailsComponent<K, F>
 where
-    K: Clone + PartialEq,
-    F: Fn(&K) -> Result<Option<Vec<Line>>> + Copy,
+    K: Clone + PartialEq + SelectsFrom,
+    F: Fn(&K) -> Result<Option<RichText>>,
 {
-    pub fn new(title: String, matcher: fn(&SelectedItem) -> Option<K>, render: F) -> Self {
+    pub fn new(title: String, render: F) -> Self {
         Self {
-            selected: SelectedState::new(matcher),
+            title,
+            selected: SelectedState::new(),
             focus: FocusState::default(),
             scroll_offset: 0,
             render,
-            title,
         }
     }
 }
 
 impl<K, F> Focusable for DetailsComponent<K, F>
 where
-    K: Clone + PartialEq,
-    F: Fn(&K) -> Result<Option<Vec<Line>>> + Copy,
+    K: Clone + PartialEq + SelectsFrom,
+    F: Fn(&K) -> Result<Option<RichText>>,
 {
     fn focus_state(&self) -> &FocusState {
         &self.focus
@@ -48,10 +50,10 @@ where
     }
 }
 
-impl<K, F> crate::components::Component for DetailsComponent<K, F>
+impl<K, F> Component for DetailsComponent<K, F>
 where
-    K: Clone + PartialEq,
-    F: Fn(&K) -> Result<Option<Vec<Line>>> + Copy,
+    K: Clone + PartialEq + SelectsFrom,
+    F: Fn(&K) -> Result<Option<RichText>>,
 {
     fn update(&mut self, action: Action) -> Result<Vec<Action>> {
         if self.selected.update(&action) {
@@ -85,7 +87,7 @@ where
 
         let lines = match self.selected.value.as_ref() {
             Some(key) => match (self.render)(key)? {
-                Some(lines) => lines,
+                Some(rich) => rich.unwrap_lines(),
                 None => vec![Line::from("Not found")],
             },
             None => vec![Line::from("None selected")],
