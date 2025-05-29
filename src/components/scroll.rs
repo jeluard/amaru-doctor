@@ -1,12 +1,10 @@
-use crate::action::SelectedItem;
-use crate::focus::Focusable;
-use crate::{action::Action, window::WindowedIter};
-use color_eyre::Result;
-use crossterm::event::KeyCode;
-use crossterm::event::KeyEvent;
-use ratatui::{prelude::*, widgets::*};
-
 use super::Component;
+use crate::action::{Action, SelectedItem};
+use crate::focus::Focusable;
+use crate::window::state::WindowState;
+use color_eyre::Result;
+use crossterm::event::{KeyCode, KeyEvent};
+use ratatui::{prelude::*, widgets::*};
 
 pub struct ScrollableListComponent<T, I, F, S>
 where
@@ -16,10 +14,9 @@ where
     S: Fn(&T) -> Option<SelectedItem> + Copy,
 {
     title: String,
-    window: WindowedIter<T, I>,
+    state: WindowState<T, I>,
     render_item: F,
     select_mapper: S,
-    list_state: ListState,
     has_focus: bool,
 }
 
@@ -37,14 +34,12 @@ where
         render_item: F,
         select_mapper: S,
     ) -> Self {
-        let window = WindowedIter::new(iter, window_size);
-        let list_state = ListState::default().with_selected(Some(0));
+        let state = WindowState::new(iter, window_size);
         Self {
             title,
-            window,
+            state,
             render_item,
             select_mapper,
-            list_state,
             has_focus: false,
         }
     }
@@ -77,54 +72,42 @@ where
         if !self.has_focus() {
             return Ok(vec![]);
         }
+
         match key.code {
-            KeyCode::Up => {
-                if let Some(i) = self.list_state.selected() {
-                    if i == 0 {
-                        self.window.scroll_up();
-                    } else {
-                        self.list_state.select(Some(i - 1));
-                    }
-                }
-            }
-            KeyCode::Down => {
-                let view_len = self.window.view().len();
-                if let Some(i) = self.list_state.selected() {
-                    if i + 1 >= view_len {
-                        self.window.scroll_down();
-                    } else {
-                        self.list_state.select(Some(i + 1));
-                    }
-                }
-            }
+            KeyCode::Up => self.state.scroll_up(),
+            KeyCode::Down => self.state.scroll_down(),
             _ => {}
         }
-        self.list_state
-            .selected()
-            .and_then(|i| self.window.view().get(i))
-            .and_then(|item| (self.select_mapper)(item))
-            .map(|selected| vec![Action::SelectItem(selected)])
-            .map_or_else(|| Ok(vec![]), Ok)
+
+        if let Some(item) = self.state.selected_item() {
+            if let Some(selected) = (self.select_mapper)(item) {
+                return Ok(vec![Action::SelectItem(selected)]);
+            }
+        }
+        Ok(vec![])
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        self.window.set_window_size(area.rows().count());
-        let view: Vec<T> = self.window.view().to_vec();
+        self.state.set_window_size(area.rows().count());
+        let (view, selected) = self.state.window_with_selected_index();
         let items: Vec<ListItem> = view.iter().map(self.render_item).collect();
 
         let mut block = Block::default()
-            .title(self.title.to_string())
+            .title(self.title.clone())
             .title_style(Style::default().fg(Color::White))
             .borders(Borders::ALL);
-        if self.has_focus() {
+
+        if self.has_focus {
             block = block.border_style(Style::default().fg(Color::Blue));
         }
+
         let list = List::new(items)
             .highlight_symbol(">> ")
             .highlight_style(Style::default().bg(Color::Blue).fg(Color::White))
             .block(block);
 
-        StatefulWidget::render(list, area, frame.buffer_mut(), &mut self.list_state);
+        let mut list_state = ListState::default().with_selected(Some(selected));
+        frame.render_stateful_widget(list, area, &mut list_state);
         Ok(())
     }
 }

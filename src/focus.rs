@@ -1,15 +1,11 @@
 use crate::shared::Shared;
 
 pub trait Focusable {
-    /// Set the component's focus.
     fn set_focus(&mut self, _: bool) {}
-    /// Query the component's focus.
     fn has_focus(&self) -> bool {
         false
     }
 }
-
-pub type FocusableRef<'a> = Shared<'a, dyn Focusable + 'a>;
 
 #[derive(Default)]
 pub struct FocusManager<'a> {
