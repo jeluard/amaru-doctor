@@ -18,6 +18,7 @@ pub mod message;
 pub mod resources;
 pub mod scroll;
 pub mod split;
+pub mod utxo;
 
 /// `Component` is a trait that represents a visual and interactive element of the user interface.
 ///

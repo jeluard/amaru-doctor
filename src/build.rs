@@ -9,6 +9,7 @@ use crate::{
         resources::ResourceList,
         scroll::ScrollableListComponent,
         split::{Axis, SplitComponent},
+        utxo::new_utxo_list_component,
     },
     focus::FocusManager,
     shared::shared,
@@ -17,7 +18,6 @@ use crate::{
 use amaru_ledger::store::ReadOnlyStore;
 use amaru_stores::rocksdb::RocksDB;
 use color_eyre::Result;
-use ratatui::widgets::ListItem;
 use std::sync::Arc;
 
 pub fn build_layout<'a>(
@@ -25,13 +25,7 @@ pub fn build_layout<'a>(
     db: &'a Arc<RocksDB>,
 ) -> Result<(RootLayout<'a>, FocusManager<'a>)> {
     let resource_list = shared(ResourceList::default());
-    let utxos = shared(ScrollableListComponent::new(
-        "UTXOs".to_string(),
-        db.iter_utxos()?.enumerate(),
-        10,
-        |(i, (input, _))| ListItem::new(format!("{}: {}", i, input.transaction_id.to_string())),
-        |(_, (input, _))| Some(SelectedItem::Utxo(input.clone())),
-    ));
+    let utxos = shared(new_utxo_list_component(db));
     let utxo_details = shared(DetailsComponent::new(
         "UTXO Details".to_string(),
         |s| match s {
