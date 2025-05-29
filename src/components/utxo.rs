@@ -1,16 +1,17 @@
-use std::sync::Arc;
-
 use super::Component;
 use crate::{action::Action, focus::Focusable, to_rich::ToRichText};
 use amaru_ledger::store::{ReadOnlyStore, columns::utxo::Key};
 use amaru_stores::rocksdb::RocksDB;
 use color_eyre::Result;
+use crossterm::event::{KeyCode, MouseEvent};
 use ratatui::{prelude::*, widgets::*};
+use std::sync::Arc;
 
 pub struct UtxoDetailsComponent {
     db: Arc<RocksDB>,
     cur_key: Option<Key>,
     has_focus: bool,
+    scroll_offset: u16,
 }
 
 impl UtxoDetailsComponent {
@@ -19,6 +20,7 @@ impl UtxoDetailsComponent {
             db,
             cur_key: None,
             has_focus: false,
+            scroll_offset: 0,
         }
     }
 }
@@ -37,8 +39,22 @@ impl Component for UtxoDetailsComponent {
     fn update(&mut self, action: Action) -> Result<Vec<Action>> {
         if let Action::SelectItem(crate::action::SelectedItem::Utxo(key)) = action {
             self.cur_key = Some(key);
+            self.scroll_offset = 0;
         }
         Ok(vec![])
+    }
+
+    fn handle_key_event(&mut self, key: crossterm::event::KeyEvent) -> Result<Vec<Action>> {
+        if !self.has_focus() {
+            return Ok(vec![]);
+        }
+
+        match key.code {
+            KeyCode::Up => self.scroll_offset = self.scroll_offset.saturating_sub(1),
+            KeyCode::Down => self.scroll_offset = self.scroll_offset.saturating_add(1),
+            _ => {}
+        }
+        return Ok(vec![]);
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
@@ -58,7 +74,10 @@ impl Component for UtxoDetailsComponent {
             None => vec![Line::from("None selected")],
         };
 
-        let paragraph = Paragraph::new(lines).block(block).wrap(Wrap { trim: true });
+        let paragraph = Paragraph::new(lines)
+            .block(block)
+            .wrap(Wrap { trim: true })
+            .scroll((self.scroll_offset, 0));
         frame.render_widget(paragraph, area);
         Ok(())
     }
