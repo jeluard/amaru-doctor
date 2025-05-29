@@ -1,5 +1,9 @@
 use super::Component;
-use crate::{action::Action, focus::Focusable, to_rich::ToRichText};
+use crate::{
+    action::{Action, SelectedItem, SelectedState},
+    focus::Focusable,
+    to_rich::ToRichText,
+};
 use amaru_ledger::store::{ReadOnlyStore, columns::utxo::Key};
 use amaru_stores::rocksdb::RocksDB;
 use color_eyre::Result;
@@ -9,7 +13,7 @@ use std::sync::Arc;
 
 pub struct UtxoDetailsComponent {
     db: Arc<RocksDB>,
-    cur_key: Option<Key>,
+    selected: SelectedState<Key>,
     has_focus: bool,
     scroll_offset: u16,
 }
@@ -18,7 +22,10 @@ impl UtxoDetailsComponent {
     pub fn new(db: Arc<RocksDB>) -> Self {
         Self {
             db,
-            cur_key: None,
+            selected: SelectedState::new(|s| match s {
+                SelectedItem::Utxo(k) => Some(k.clone()),
+                _ => None,
+            }),
             has_focus: false,
             scroll_offset: 0,
         }
@@ -37,8 +44,7 @@ impl Focusable for UtxoDetailsComponent {
 
 impl Component for UtxoDetailsComponent {
     fn update(&mut self, action: Action) -> Result<Vec<Action>> {
-        if let Action::SelectItem(crate::action::SelectedItem::Utxo(key)) = action {
-            self.cur_key = Some(key);
+        if self.selected.update(&action) {
             self.scroll_offset = 0;
         }
         Ok(vec![])
@@ -66,7 +72,7 @@ impl Component for UtxoDetailsComponent {
             block = block.border_style(Style::default().fg(Color::Blue));
         }
 
-        let lines = match &self.cur_key {
+        let lines = match self.selected.value.as_ref() {
             Some(key) => match self.db.utxo(key)? {
                 Some(val) => (key.clone(), val).into_rich_text().unwrap_lines(),
                 None => vec![Line::from("Not found")],

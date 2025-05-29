@@ -22,3 +22,29 @@ pub enum Action {
     FocusNext,
     SelectItem(SelectedItem),
 }
+
+pub struct SelectedState<T> {
+    pub value: Option<T>,
+    matcher: fn(&SelectedItem) -> Option<T>,
+}
+
+impl<T: PartialEq + Clone> SelectedState<T> {
+    pub fn new(matcher: fn(&SelectedItem) -> Option<T>) -> Self {
+        Self {
+            value: None,
+            matcher,
+        }
+    }
+
+    pub fn update(&mut self, action: &Action) -> bool {
+        if let Action::SelectItem(selected) = action {
+            if let Some(new_val) = (self.matcher)(selected) {
+                if self.value.as_ref() != Some(&new_val) {
+                    self.value = Some(new_val);
+                    return true;
+                }
+            }
+        }
+        false
+    }
+}
