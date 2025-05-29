@@ -9,8 +9,6 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 
 const LABEL_STYLE: Style = Style::new().fg(Color::Gray).add_modifier(Modifier::BOLD);
-const LEGACY_STYLE: Style = Style::new().fg(Color::Yellow);
-const POST_ALONZO_STYLE: Style = Style::new().fg(Color::Cyan);
 
 pub enum RichText<'a> {
     Lines(Vec<Line<'a>>),
@@ -63,7 +61,7 @@ impl<'a> ToRichText<'a> for PostAlonzoTransactionOutput {
         lines.extend(labeled(
             "Type",
             RichText::Single(Span::raw("Post-Alonzo")),
-            POST_ALONZO_STYLE,
+            Style::new().fg(Color::Cyan),
         ));
         let bech32 = Address::from_bytes(&self.address)
             .ok()
@@ -106,7 +104,7 @@ impl<'a> ToRichText<'a> for TransactionOutput {
         lines.extend(labeled(
             "Output Type",
             RichText::Single(Span::raw("Legacy")),
-            LEGACY_STYLE,
+            Style::new().fg(Color::Yellow),
         ));
         let bech32 = Address::from_bytes(&self.address)
             .ok()

@@ -3,7 +3,7 @@ use crate::{action::Action, focus::Focusable, to_rich::ToRichText};
 use amaru_ledger::store::{ReadOnlyStore, columns::utxo::Key};
 use amaru_stores::rocksdb::RocksDB;
 use color_eyre::Result;
-use crossterm::event::{KeyCode, MouseEvent};
+use crossterm::event::KeyCode;
 use ratatui::{prelude::*, widgets::*};
 use std::sync::Arc;
 

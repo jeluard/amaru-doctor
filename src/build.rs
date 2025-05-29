@@ -55,7 +55,7 @@ pub fn build_layout<'a>(
         ])),
         body,
         shared(ComponentGroup::new(vec![shared(Message::new(
-            "Use arrow keys ←↑→↓ to navigate.".to_string(),
+            "Use Shift + Left/Right/Up/Down (←↑→↓) to move focus. Use Left/Right/Up/Down to scroll within focus.".to_string(),
         ))])),
     );
 
