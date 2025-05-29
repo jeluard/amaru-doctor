@@ -1,6 +1,7 @@
 use crate::{
     action::SelectedItem,
     components::{
+        details::DetailsComponent,
         fps::FpsCounter,
         group::ComponentGroup,
         layout::RootLayout,
@@ -8,10 +9,10 @@ use crate::{
         resources::ResourceList,
         scroll::ScrollableListComponent,
         split::{Axis, SplitComponent},
-        utxo::UtxoDetailsComponent,
     },
     focus::FocusManager,
     shared::shared,
+    to_rich::ToRichText,
 };
 use amaru_ledger::store::ReadOnlyStore;
 use amaru_stores::rocksdb::RocksDB;
@@ -31,7 +32,17 @@ pub fn build_layout<'a>(
         |(i, (input, _))| ListItem::new(format!("{}: {}", i, input.transaction_id.to_string())),
         |(_, (input, _))| Some(SelectedItem::Utxo(input.clone())),
     ));
-    let utxo_details = shared(UtxoDetailsComponent::new(db.clone()));
+    let utxo_details = shared(DetailsComponent::new(
+        "UTXO Details".to_string(),
+        |s| match s {
+            SelectedItem::Utxo(k) => Some(k.clone()),
+            _ => None,
+        },
+        move |key| {
+            let val = db.utxo(key)?;
+            Ok(val.map(|v| (key.clone(), v).into_rich_text().unwrap_lines()))
+        },
+    ));
 
     let body = shared(SplitComponent::new_2(
         Axis::Vertical,
