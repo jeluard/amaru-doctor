@@ -3,7 +3,7 @@ use std::time::Instant;
 use color_eyre::Result;
 use ratatui::{
     Frame,
-    layout::{Constraint, Layout, Rect},
+    layout::Rect,
     style::{Style, Stylize},
     text::Span,
     widgets::Paragraph,
@@ -68,24 +68,23 @@ impl FpsCounter {
 }
 
 impl Component for FpsCounter {
-    fn update(&mut self, action: Action) -> Result<Option<Action>> {
+    fn update(&mut self, action: Action) -> Result<Vec<Action>> {
         match action {
             Action::Tick => self.app_tick()?,
             Action::Render => self.render_tick()?,
             _ => {}
         };
-        Ok(None)
+        Ok(vec![])
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        let [top, _] = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).areas(area);
         let message = format!(
             "{:.2} ticks/sec, {:.2} FPS",
             self.ticks_per_second, self.frames_per_second
         );
         let span = Span::styled(message, Style::new().dim());
         let paragraph = Paragraph::new(span).right_aligned();
-        frame.render_widget(paragraph, top);
+        frame.render_widget(paragraph, area);
         Ok(())
     }
 }

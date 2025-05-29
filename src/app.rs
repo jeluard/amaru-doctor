@@ -1,22 +1,27 @@
+use amaru_stores::rocksdb::RocksDB;
 use color_eyre::Result;
 use crossterm::event::KeyEvent;
 use ratatui::prelude::Rect;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use tokio::sync::mpsc;
-use tracing::{debug, info};
+use tracing::{debug, info, trace};
 
 use crate::{
     action::Action,
-    components::{Component, fps::FpsCounter, home::Home},
+    build,
+    components::{Component, layout::RootLayout},
     config::Config,
+    focus::FocusManager,
     tui::{Event, Tui},
 };
 
-pub struct App {
+pub struct App<'a> {
     config: Config,
     tick_rate: f64,
     frame_rate: f64,
-    components: Vec<Box<dyn Component>>,
+    components: RootLayout<'a>,
+    focus: FocusManager<'a>,
     should_quit: bool,
     should_suspend: bool,
     mode: Mode,
@@ -31,13 +36,20 @@ pub enum Mode {
     Home,
 }
 
-impl App {
-    pub fn new(tick_rate: f64, frame_rate: f64) -> Result<Self> {
+impl<'a> App<'a> {
+    pub fn new(
+        ledger_path_str: &String,
+        tick_rate: f64,
+        frame_rate: f64,
+        db: &'a Arc<RocksDB>,
+    ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
+        let (layout, focus) = build::build_layout(ledger_path_str, &db)?;
         Ok(Self {
             tick_rate,
             frame_rate,
-            components: vec![Box::new(Home::new()), Box::new(FpsCounter::default())],
+            components: layout,
+            focus: focus,
             should_quit: false,
             should_suspend: false,
             config: Config::new()?,
@@ -53,17 +65,14 @@ impl App {
             // .mouse(true) // uncomment this line to enable mouse support
             .tick_rate(self.tick_rate)
             .frame_rate(self.frame_rate);
+        tui.terminal.clear()?;
         tui.enter()?;
 
-        for component in self.components.iter_mut() {
-            component.register_action_handler(self.action_tx.clone())?;
-        }
-        for component in self.components.iter_mut() {
-            component.register_config_handler(self.config.clone())?;
-        }
-        for component in self.components.iter_mut() {
-            component.init(tui.size()?)?;
-        }
+        self.components
+            .register_action_handler(self.action_tx.clone())?;
+        self.components
+            .register_config_handler(self.config.clone())?;
+        self.components.init(tui.size()?)?;
 
         let action_tx = self.action_tx.clone();
         loop {
@@ -97,15 +106,14 @@ impl App {
             Event::Key(key) => self.handle_key_event(key)?,
             _ => {}
         }
-        for component in self.components.iter_mut() {
-            if let Some(action) = component.handle_events(Some(event.clone()))? {
-                action_tx.send(action)?;
-            }
+        for action in self.components.handle_events(Some(event.clone()))? {
+            action_tx.send(action)?;
         }
         Ok(())
     }
 
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<()> {
+        trace!("App::handle_key_event - received: {:?}", key);
         let action_tx = self.action_tx.clone();
         let Some(keymap) = self.config.keybindings.get(&self.mode) else {
             return Ok(());
@@ -145,12 +153,12 @@ impl App {
                 Action::ClearScreen => tui.terminal.clear()?,
                 Action::Resize(w, h) => self.handle_resize(tui, w, h)?,
                 Action::Render => self.render(tui)?,
+                Action::FocusPrev => self.focus.shift_prev(),
+                Action::FocusNext => self.focus.shift_next(),
                 _ => {}
             }
-            for component in self.components.iter_mut() {
-                if let Some(action) = component.update(action.clone())? {
-                    self.action_tx.send(action)?
-                };
+            for action in self.components.update(action.clone())? {
+                self.action_tx.send(action)?;
             }
         }
         Ok(())
@@ -164,12 +172,10 @@ impl App {
 
     fn render(&mut self, tui: &mut Tui) -> Result<()> {
         tui.draw(|frame| {
-            for component in self.components.iter_mut() {
-                if let Err(err) = component.draw(frame, frame.area()) {
-                    let _ = self
-                        .action_tx
-                        .send(Action::Error(format!("Failed to draw: {:?}", err)));
-                }
+            if let Err(err) = self.components.draw(frame, frame.area()) {
+                let _ = self
+                    .action_tx
+                    .send(Action::Error(format!("Failed to draw: {:?}", err)));
             }
         })?;
         Ok(())

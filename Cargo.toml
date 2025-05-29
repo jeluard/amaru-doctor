@@ -14,6 +14,7 @@ amaru-kernel = { git = "https://github.com/pragma-org/amaru.git" }
 amaru-ledger = { git = "https://github.com/pragma-org/amaru.git" }
 amaru-stores = { git = "https://github.com/pragma-org/amaru.git" }
 better-panic = "0.3.0"
+cbor-diag = "0.1.12"
 clap = { version = "4.5.20", features = [
     "derive",
     "cargo",
@@ -25,6 +26,7 @@ clap = { version = "4.5.20", features = [
 color-eyre = "0.6.3"
 config = "0.15.11"
 crossterm = { version = "0.29.0", features = ["serde", "event-stream"] }
+delegate = "0.10"
 derive_deref = "1.1.1"
 directories = "6.0.0"
 futures = "0.3.31"
@@ -32,6 +34,9 @@ human-panic = "2.0.2"
 json5 = "0.4.1"
 lazy_static = "1.5.0"
 libc = "0.2.161"
+minicbor = { version = "0.25.1", features = ["alloc"] }
+pallas-codec = "0.32.0"
+pallas-primitives = "0.32.0"
 pretty_assertions = "1.4.1"
 ratatui = { version = "0.29.0", features = ["serde", "macros"] }
 serde = { version = "1.0.211", features = ["derive"] }

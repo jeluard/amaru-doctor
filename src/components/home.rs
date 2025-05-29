@@ -28,7 +28,7 @@ impl Component for Home {
         Ok(())
     }
 
-    fn update(&mut self, action: Action) -> Result<Option<Action>> {
+    fn update(&mut self, action: Action) -> Result<Vec<Action>> {
         match action {
             Action::Tick => {
                 // add any logic here that should run on every tick
@@ -38,7 +38,7 @@ impl Component for Home {
             }
             _ => {}
         }
-        Ok(None)
+        Ok(vec![])
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
