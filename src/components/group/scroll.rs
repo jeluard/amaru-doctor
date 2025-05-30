@@ -1,7 +1,9 @@
-use super::Component;
-use crate::action::{Action, SelectedItem};
-use crate::focus::{FocusState, Focusable};
-use crate::window::state::WindowState;
+use crate::{
+    action::{Action, SelectedItem},
+    components::Component,
+    focus::{FocusState, Focusable},
+    window::state::WindowState,
+};
 use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};

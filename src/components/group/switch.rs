@@ -1,6 +1,6 @@
-use super::Component;
 use crate::{
     action::{Action, SelectedState, SelectsFrom},
+    components::Component,
     focus::{FocusState, Focusable, FocusableComponent},
     shared::Shared,
 };

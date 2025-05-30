@@ -1,3 +1,11 @@
+use crate::{
+    action::Action,
+    build,
+    components::{Component, group::layout::RootLayout},
+    config::Config,
+    focus::FocusManager,
+    tui::{Event, Tui},
+};
 use amaru_stores::rocksdb::RocksDB;
 use color_eyre::Result;
 use crossterm::event::KeyEvent;
@@ -6,15 +14,6 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::{debug, info, trace};
-
-use crate::{
-    action::Action,
-    build,
-    components::{Component, layout::RootLayout},
-    config::Config,
-    focus::FocusManager,
-    tui::{Event, Tui},
-};
 
 pub struct App<'a> {
     config: Config,

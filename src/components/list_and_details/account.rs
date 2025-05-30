@@ -1,7 +1,6 @@
-use super::{details::DetailsComponent, scroll::ScrollableListComponent};
 use crate::{
-    action::{SelectedItem, SelectedState},
-    shared::Shared,
+    action::SelectedItem,
+    components::{details::DetailsComponent, group::scroll::ScrollableListComponent},
     to_rich::{RichText, ToRichText, account::StakeCredentialDisplay},
 };
 use amaru_kernel::StakeCredential;

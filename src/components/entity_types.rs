@@ -1,8 +1,6 @@
-use ratatui::widgets::ListItem;
-
+use super::group::scroll::ScrollableListComponent;
 use crate::action::SelectedItem;
-
-use super::scroll::ScrollableListComponent;
+use ratatui::widgets::ListItem;
 
 pub fn new_entity_types_list() -> ScrollableListComponent<
     String,

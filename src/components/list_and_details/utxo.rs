@@ -1,6 +1,6 @@
-use super::{details::DetailsComponent, scroll::ScrollableListComponent};
 use crate::{
     action::SelectedItem,
+    components::{details::DetailsComponent, group::scroll::ScrollableListComponent},
     to_rich::{RichText, ToRichText},
 };
 use amaru_kernel::{TransactionInput, TransactionOutput};
