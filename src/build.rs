@@ -1,48 +1,63 @@
 use crate::{
-    action::SelectedItem,
+    action::Entity,
     components::{
+        entity_types::new_entity_types_list,
         fps::FpsCounter,
-        group::ComponentGroup,
-        layout::RootLayout,
+        group::{
+            group::ComponentGroup,
+            layout::RootLayout,
+            split::{Axis, SplitComponent},
+            switch::SwitchComponent,
+        },
+        list_and_details::{
+            account::{new_account_details_component, new_account_list_component},
+            pool::{self, new_pool_details_component, new_pool_list_component},
+            utxo::{new_utxo_details_component, new_utxo_list_component},
+        },
         message::Message,
-        resources::ResourceList,
-        scroll::ScrollableListComponent,
-        split::{Axis, SplitComponent},
-        utxo::UtxoDetailsComponent,
     },
-    focus::FocusManager,
-    shared::shared,
+    focus::{FocusManager, FocusableComponent},
+    shared::{Shared, shared},
 };
-use amaru_ledger::store::ReadOnlyStore;
 use amaru_stores::rocksdb::RocksDB;
 use color_eyre::Result;
-use ratatui::widgets::ListItem;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 pub fn build_layout<'a>(
     ledger_path_str: &String,
     db: &'a Arc<RocksDB>,
 ) -> Result<(RootLayout<'a>, FocusManager<'a>)> {
-    let resource_list = shared(ResourceList::default());
-    let utxos = shared(ScrollableListComponent::new(
-        "UTXOs".to_string(),
-        db.iter_utxos()?.enumerate(),
-        10,
-        |(i, (input, _))| ListItem::new(format!("{}: {}", i, input.transaction_id.to_string())),
-        |(_, (input, _))| Some(SelectedItem::Utxo(input.clone())),
-    ));
-    let utxo_details = shared(UtxoDetailsComponent::new(db.clone()));
+    let entity_types = shared(new_entity_types_list());
+
+    let accounts = shared(new_account_list_component(db));
+    let pools = shared(new_pool_list_component(db));
+    let utxos = shared(new_utxo_list_component(db));
+    let mut entity_id_components: HashMap<Entity, Shared<dyn FocusableComponent>> = HashMap::new();
+    entity_id_components.insert(Entity::Accounts, accounts);
+    entity_id_components.insert(Entity::Pools, pools);
+    entity_id_components.insert(Entity::Utxos, utxos);
+    let entity_ids_switcher = shared(SwitchComponent::new(entity_id_components));
+
+    let account_details = shared(new_account_details_component(db));
+    let pool_details = shared(new_pool_details_component(db));
+    let utxo_details = shared(new_utxo_details_component(db));
+    let mut entity_detail_components: HashMap<Entity, Shared<dyn FocusableComponent>> =
+        HashMap::new();
+    entity_detail_components.insert(Entity::Accounts, account_details);
+    entity_detail_components.insert(Entity::Pools, pool_details);
+    entity_detail_components.insert(Entity::Utxos, utxo_details);
+    let entity_details_switcher = shared(SwitchComponent::new(entity_detail_components));
 
     let body = shared(SplitComponent::new_2(
         Axis::Vertical,
         30,
         shared(SplitComponent::new_2_evenly(
             Axis::Horizontal,
-            resource_list.clone(),
-            utxos.clone(),
+            entity_types.clone(),
+            entity_ids_switcher.clone(),
         )),
         70,
-        utxo_details.clone(),
+        entity_details_switcher.clone(),
     ));
 
     let layout = RootLayout::new(
@@ -62,9 +77,9 @@ pub fn build_layout<'a>(
     Ok((
         layout,
         FocusManager::new(vec![
-            utxos.clone(),
-            utxo_details.clone(),
-            resource_list.clone(),
+            entity_types.clone(),
+            entity_ids_switcher.clone(),
+            entity_details_switcher.clone(),
         ]),
     ))
 }

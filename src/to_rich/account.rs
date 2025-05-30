@@ -1,0 +1,112 @@
+use super::{RichText, ToRichText, labeled};
+use amaru_kernel::{CertificatePointer, DRep, StakeCredential};
+use amaru_ledger::store::columns::accounts::Row;
+use ratatui::{
+    style::{Color, Style},
+    text::{Line, Span},
+};
+use std::fmt;
+
+pub struct StakeCredentialDisplay(pub StakeCredential);
+
+impl fmt::Display for StakeCredentialDisplay {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self.0 {
+            StakeCredential::ScriptHash(hash) => hash.to_string(),
+            StakeCredential::AddrKeyhash(hash) => hash.to_string(),
+        };
+        write!(f, "{}", s)
+    }
+}
+
+impl ToRichText for (StakeCredential, Row) {
+    fn into_rich_text(self) -> RichText {
+        let mut lines = Vec::new();
+        lines.extend(labeled(
+            "Account".to_string(),
+            RichText::Single(Span::raw(StakeCredentialDisplay(self.0).to_string())),
+            Style::default(),
+        ));
+        lines.extend(self.1.into_rich_text().unwrap_lines());
+        RichText::Lines(lines)
+    }
+}
+
+impl ToRichText for Row {
+    fn into_rich_text(self) -> RichText {
+        let mut lines = Vec::new();
+
+        lines.extend(labeled(
+            "Delegatee".to_string(),
+            self.delegatee
+                .map(|pool_id| RichText::Single(Span::raw(pool_id.to_string())))
+                .unwrap_or_else(|| RichText::Single(Span::raw("None"))),
+            Style::default().fg(Color::Yellow),
+        ));
+
+        lines.extend(labeled(
+            "Deposit".to_string(),
+            RichText::Single(Span::raw(format!("{} lovelace", self.deposit))),
+            Style::default(),
+        ));
+
+        lines.extend(labeled(
+            "DRep".to_string(),
+            self.drep
+                .map(|(drep, ptr)| {
+                    let mut drep_lines = drep.into_rich_text().unwrap_lines();
+                    drep_lines.extend(ptr.into_rich_text().unwrap_lines());
+                    RichText::Lines(drep_lines)
+                })
+                .unwrap_or_else(|| RichText::Single(Span::raw("None"))),
+            Style::default(),
+        ));
+
+        lines.extend(labeled(
+            "Rewards".to_string(),
+            RichText::Single(Span::raw(format!("{} lovelace", self.rewards))),
+            Style::default(),
+        ));
+
+        RichText::Lines(lines)
+    }
+}
+
+impl ToRichText for DRep {
+    fn into_rich_text(self) -> RichText {
+        let (label, value, color) = match self {
+            DRep::Key(h) => ("DRep", format!("Key({})", h), Color::Green),
+            DRep::Script(h) => ("DRep", format!("Script({})", h), Color::Magenta),
+            DRep::Abstain => ("DRep", "Abstain".to_string(), Color::Yellow),
+            DRep::NoConfidence => ("DRep", "NoConfidence".to_string(), Color::Red),
+        };
+
+        RichText::Lines(labeled(
+            label.to_string(),
+            RichText::Single(Span::raw(value)),
+            Style::default().fg(color),
+        ))
+    }
+}
+
+impl ToRichText for CertificatePointer {
+    fn into_rich_text(self) -> RichText {
+        let mut lines = Vec::new();
+        lines.extend(labeled(
+            "Slot".to_string(),
+            RichText::Single(Span::raw(self.transaction.slot.to_string())),
+            Style::default(),
+        ));
+        lines.extend(labeled(
+            "Transaction Index".to_string(),
+            RichText::Single(Span::raw(self.transaction.transaction_index.to_string())),
+            Style::default(),
+        ));
+        lines.extend(labeled(
+            "Certificate Index".to_string(),
+            RichText::Single(Span::raw(self.certificate_index.to_string())),
+            Style::default(),
+        ));
+        RichText::Lines(lines)
+    }
+}

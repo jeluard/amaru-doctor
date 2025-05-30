@@ -1,72 +1,74 @@
-use super::Component;
-use crate::action::{Action, SelectedItem};
-use crate::focus::Focusable;
-use crate::window::state::WindowState;
+use crate::{
+    action::{Action, SelectedItem},
+    components::Component,
+    focus::{FocusState, Focusable},
+    window::state::WindowState,
+};
 use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
 
-pub struct ScrollableListComponent<T, I, F, S>
+pub struct ScrollableListComponent<T, I, S, F>
 where
     T: Clone,
     I: Iterator<Item = T>,
-    F: Fn(&T) -> ListItem + Copy,
     S: Fn(&T) -> Option<SelectedItem> + Copy,
+    F: Fn(&T) -> ListItem + Copy,
 {
     title: String,
     state: WindowState<T, I>,
-    render_item: F,
+    focus: FocusState,
     select_mapper: S,
-    has_focus: bool,
+    render_item: F,
 }
 
-impl<T, I, F, S> ScrollableListComponent<T, I, F, S>
+impl<T, I, S, F> ScrollableListComponent<T, I, S, F>
 where
     T: Clone,
     I: Iterator<Item = T>,
-    F: Fn(&T) -> ListItem + Copy,
     S: Fn(&T) -> Option<SelectedItem> + Copy,
+    F: Fn(&T) -> ListItem + Copy,
 {
     pub fn new(
         title: String,
         iter: I,
         window_size: usize,
-        render_item: F,
         select_mapper: S,
+        render_item: F,
     ) -> Self {
         let state = WindowState::new(iter, window_size);
         Self {
             title,
             state,
-            render_item,
+            focus: FocusState::default(),
             select_mapper,
-            has_focus: false,
+            render_item,
         }
     }
 }
 
-impl<T, I, F, S> Focusable for ScrollableListComponent<T, I, F, S>
+impl<T, I, S, F> Focusable for ScrollableListComponent<T, I, S, F>
 where
     T: Clone,
     I: Iterator<Item = T>,
-    F: Fn(&T) -> ListItem + Copy,
     S: Fn(&T) -> Option<SelectedItem> + Copy,
+    F: Fn(&T) -> ListItem + Copy,
 {
-    fn set_focus(&mut self, focus: bool) {
-        self.has_focus = focus;
+    fn focus_state(&self) -> &FocusState {
+        &self.focus
     }
 
-    fn has_focus(&self) -> bool {
-        self.has_focus
+    fn focus_state_mut(&mut self) -> &mut FocusState {
+        &mut self.focus
     }
 }
 
-impl<T, I, F, S> Component for ScrollableListComponent<T, I, F, S>
+impl<T, I, S, F> Component for ScrollableListComponent<T, I, S, F>
 where
     T: Clone,
     I: Iterator<Item = T>,
-    F: Fn(&T) -> ListItem + Copy,
     S: Fn(&T) -> Option<SelectedItem> + Copy,
+    F: Fn(&T) -> ListItem + Copy,
 {
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
         if !self.has_focus() {
@@ -88,6 +90,7 @@ where
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
+        let is_focused = self.has_focus();
         self.state.set_window_size(area.rows().count());
         let (view, selected) = self.state.window_with_selected_index();
         let items: Vec<ListItem> = view.iter().map(self.render_item).collect();
@@ -97,7 +100,7 @@ where
             .title_style(Style::default().fg(Color::White))
             .borders(Borders::ALL);
 
-        if self.has_focus {
+        if is_focused {
             block = block.border_style(Style::default().fg(Color::Blue));
         }
 
