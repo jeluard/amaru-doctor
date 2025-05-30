@@ -3,49 +3,32 @@ use crate::{
     action::SelectedItem,
     to_rich::{RichText, ToRichText},
 };
-use amaru_kernel::{PseudoTransactionOutput, TransactionInput, Value, alonzo::NativeScript};
+use amaru_kernel::{TransactionInput, TransactionOutput};
 use amaru_ledger::store::ReadOnlyStore;
 use amaru_stores::rocksdb::RocksDB;
 use color_eyre::Result;
-use pallas_primitives::{
-    PlutusData,
-    babbage::PseudoPostAlonzoTransactionOutput,
-    conway::{PseudoDatumOption, PseudoScript},
-};
 use ratatui::widgets::ListItem;
 use std::sync::Arc;
 
-type UtxoListEntry = (
-    usize,
-    (
-        TransactionInput,
-        PseudoTransactionOutput<
-            PseudoPostAlonzoTransactionOutput<
-                Value,
-                PseudoDatumOption<PlutusData>,
-                PseudoScript<NativeScript>,
-            >,
-        >,
-    ),
-);
-
-type UtxoListRenderer = fn(&UtxoListEntry) -> ListItem;
-type UtxoListSelector = fn(&UtxoListEntry) -> Option<SelectedItem>;
+type UtxoListEntry = (TransactionInput, TransactionOutput);
+type UtxoEnumEntry = (usize, UtxoListEntry);
+type UtxoListSelector = fn(&UtxoEnumEntry) -> Option<SelectedItem>;
+type UtxoListRenderer = fn(&UtxoEnumEntry) -> ListItem;
 
 pub fn new_utxo_list_component<'a>(
     db: &'a Arc<RocksDB>,
 ) -> ScrollableListComponent<
-    UtxoListEntry,
-    impl Iterator<Item = UtxoListEntry>,
+    UtxoEnumEntry,
+    impl Iterator<Item = UtxoEnumEntry>,
     UtxoListSelector,
     UtxoListRenderer,
 > {
-    fn select(item: &UtxoListEntry) -> Option<SelectedItem> {
+    fn select(item: &UtxoEnumEntry) -> Option<SelectedItem> {
         let (_, (input, _)) = item;
         Some(SelectedItem::Utxo(input.clone()))
     }
 
-    fn render(item: &UtxoListEntry) -> ListItem {
+    fn render(item: &UtxoEnumEntry) -> ListItem {
         let (i, (input, _)) = item;
         ListItem::new(format!("{}: {}", i, input.transaction_id))
     }

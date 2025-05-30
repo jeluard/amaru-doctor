@@ -8,16 +8,18 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{action::Action, config::Config, tui::Event};
 
+pub mod account;
 pub mod details;
 pub mod empty;
+pub mod entity_types;
 pub mod fps;
 pub mod group;
 pub mod home;
 pub mod layout;
 pub mod message;
-pub mod resources;
 pub mod scroll;
 pub mod split;
+pub mod switch;
 pub mod utxo;
 
 /// `Component` is a trait that represents a visual and interactive element of the user interface.

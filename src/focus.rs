@@ -1,4 +1,4 @@
-use crate::shared::Shared;
+use crate::{components::Component, shared::Shared};
 
 #[derive(Default)]
 pub struct FocusState {
@@ -27,6 +27,9 @@ pub trait Focusable {
         self.focus_state().get()
     }
 }
+
+pub trait FocusableComponent: Component + Focusable {}
+impl<T: Component + Focusable> FocusableComponent for T {}
 
 #[derive(Default)]
 pub struct FocusManager<'a> {

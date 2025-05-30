@@ -1,12 +1,6 @@
-use amaru_kernel::TransactionInput;
-use amaru_ledger::store::columns::utxo;
+use amaru_kernel::{StakeCredential, TransactionInput};
 use serde::{Deserialize, Serialize};
 use strum::Display;
-
-#[derive(Debug, Clone, PartialEq, Eq, Display, Serialize, Deserialize)]
-pub enum SelectedItem {
-    Utxo(TransactionInput),
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Display, Serialize, Deserialize)]
 pub enum Action {
@@ -24,19 +18,24 @@ pub enum Action {
     SelectItem(SelectedItem),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Display, Serialize, Deserialize)]
+pub enum SelectedItem {
+    EntityType(Entity),
+    Account(StakeCredential),
+    Utxo(TransactionInput),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Display, Serialize, Deserialize, Hash)]
+#[serde(rename_all = "lowercase")]
+pub enum Entity {
+    Accounts,
+    Utxos,
+}
+
 pub trait SelectsFrom {
     fn from_selected(item: &SelectedItem) -> Option<Self>
     where
         Self: Sized;
-}
-
-impl SelectsFrom for TransactionInput {
-    fn from_selected(item: &SelectedItem) -> Option<Self> {
-        match item {
-            SelectedItem::Utxo(k) => Some(k.clone()),
-            _ => None,
-        }
-    }
 }
 
 pub struct SelectedState<T> {
@@ -61,5 +60,32 @@ where
             }
         }
         false
+    }
+}
+
+impl SelectsFrom for TransactionInput {
+    fn from_selected(item: &SelectedItem) -> Option<Self> {
+        match item {
+            SelectedItem::Utxo(u) => Some(u.clone()),
+            _ => None,
+        }
+    }
+}
+
+impl SelectsFrom for StakeCredential {
+    fn from_selected(item: &SelectedItem) -> Option<Self> {
+        match item {
+            SelectedItem::Account(a) => Some(a.clone()),
+            _ => None,
+        }
+    }
+}
+
+impl SelectsFrom for Entity {
+    fn from_selected(item: &SelectedItem) -> Option<Self> {
+        match item {
+            SelectedItem::EntityType(e) => Some(e.clone()),
+            _ => None,
+        }
     }
 }

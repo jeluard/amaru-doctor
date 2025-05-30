@@ -1,38 +1,54 @@
 use crate::{
+    action::Entity,
     components::{
+        account::{new_account_details_component, new_account_list_component},
+        entity_types::new_entity_types_list,
         fps::FpsCounter,
         group::ComponentGroup,
         layout::RootLayout,
         message::Message,
-        resources::ResourceList,
         split::{Axis, SplitComponent},
+        switch::SwitchComponent,
         utxo::{new_utxo_details_component, new_utxo_list_component},
     },
-    focus::FocusManager,
-    shared::shared,
+    focus::{FocusManager, FocusableComponent},
+    shared::{Shared, shared},
 };
 use amaru_stores::rocksdb::RocksDB;
 use color_eyre::Result;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 pub fn build_layout<'a>(
     ledger_path_str: &String,
     db: &'a Arc<RocksDB>,
 ) -> Result<(RootLayout<'a>, FocusManager<'a>)> {
-    let resource_list = shared(ResourceList::default());
+    let entity_types = shared(new_entity_types_list());
+
     let utxos = shared(new_utxo_list_component(db));
+    let accounts = shared(new_account_list_component(db));
+    let mut entity_id_components: HashMap<Entity, Shared<dyn FocusableComponent>> = HashMap::new();
+    entity_id_components.insert(Entity::Utxos, utxos);
+    entity_id_components.insert(Entity::Accounts, accounts);
+    let entity_ids_switcher = shared(SwitchComponent::new(entity_id_components));
+
     let utxo_details = shared(new_utxo_details_component(db));
+    let account_details = shared(new_account_details_component(db));
+    let mut entity_detail_components: HashMap<Entity, Shared<dyn FocusableComponent>> =
+        HashMap::new();
+    entity_detail_components.insert(Entity::Utxos, utxo_details);
+    entity_detail_components.insert(Entity::Accounts, account_details);
+    let entity_details_switcher = shared(SwitchComponent::new(entity_detail_components));
 
     let body = shared(SplitComponent::new_2(
         Axis::Vertical,
         30,
         shared(SplitComponent::new_2_evenly(
             Axis::Horizontal,
-            resource_list.clone(),
-            utxos.clone(),
+            entity_types.clone(),
+            entity_ids_switcher.clone(),
         )),
         70,
-        utxo_details.clone(),
+        entity_details_switcher.clone(),
     ));
 
     let layout = RootLayout::new(
@@ -52,9 +68,9 @@ pub fn build_layout<'a>(
     Ok((
         layout,
         FocusManager::new(vec![
-            utxos.clone(),
-            utxo_details.clone(),
-            resource_list.clone(),
+            entity_types.clone(),
+            entity_ids_switcher.clone(),
+            entity_details_switcher.clone(),
         ]),
     ))
 }
