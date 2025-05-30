@@ -46,8 +46,8 @@ impl<T> SelectedState<T>
 where
     T: SelectsFrom + PartialEq + Clone,
 {
-    pub fn new() -> Self {
-        Self { value: None }
+    pub fn new(value: Option<T>) -> Self {
+        Self { value }
     }
 
     pub fn update(&mut self, action: &Action) -> bool {

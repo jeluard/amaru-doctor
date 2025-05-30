@@ -25,10 +25,10 @@ where
     K: Clone + PartialEq + SelectsFrom,
     F: Fn(&K) -> Result<Option<RichText>>,
 {
-    pub fn new(title: String, render: F) -> Self {
+    pub fn new(title: String, value: Option<K>, render: F) -> Self {
         Self {
             title,
-            selected: SelectedState::new(),
+            selected: SelectedState::new(value),
             focus: FocusState::default(),
             scroll_offset: 0,
             render,

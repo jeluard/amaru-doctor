@@ -47,5 +47,10 @@ pub fn new_utxo_details_component<'a>(
         Ok(val.map(|v| (key.clone(), v).into_rich_text()))
     };
 
-    DetailsComponent::new("UTXO Details".to_string(), render)
+    let first_key = db
+        .iter_utxos()
+        .ok()
+        .and_then(|mut i| i.next().map(|(k, _)| k));
+
+    DetailsComponent::new("UTXO Details".to_string(), first_key, render)
 }

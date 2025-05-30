@@ -1,6 +1,7 @@
 use super::{details::DetailsComponent, scroll::ScrollableListComponent};
 use crate::{
-    action::SelectedItem,
+    action::{SelectedItem, SelectedState},
+    shared::Shared,
     to_rich::{RichText, ToRichText, account::StakeCredentialDisplay},
 };
 use amaru_kernel::StakeCredential;
@@ -48,5 +49,10 @@ pub fn new_account_details_component<'a>(
         Ok(val.map(|v| (key.clone(), v).into_rich_text()))
     };
 
-    DetailsComponent::new("UTXO Details".to_string(), render)
+    let first_key = db
+        .iter_accounts()
+        .ok()
+        .and_then(|mut i| i.next().map(|(k, _)| k));
+
+    DetailsComponent::new("Account Details".to_string(), first_key, render)
 }

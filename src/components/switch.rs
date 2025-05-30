@@ -29,7 +29,7 @@ where
 {
     pub fn new(components: HashMap<K, Shared<'a, dyn FocusableComponent + 'a>>) -> Self {
         Self {
-            selected: SelectedState::new(),
+            selected: SelectedState::new(components.iter().next().map(|(k, _)| k.clone())),
             focus: FocusState::default(),
             components,
         }

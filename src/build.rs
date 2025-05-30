@@ -24,19 +24,19 @@ pub fn build_layout<'a>(
 ) -> Result<(RootLayout<'a>, FocusManager<'a>)> {
     let entity_types = shared(new_entity_types_list());
 
-    let utxos = shared(new_utxo_list_component(db));
     let accounts = shared(new_account_list_component(db));
+    let utxos = shared(new_utxo_list_component(db));
     let mut entity_id_components: HashMap<Entity, Shared<dyn FocusableComponent>> = HashMap::new();
-    entity_id_components.insert(Entity::Utxos, utxos);
     entity_id_components.insert(Entity::Accounts, accounts);
+    entity_id_components.insert(Entity::Utxos, utxos);
     let entity_ids_switcher = shared(SwitchComponent::new(entity_id_components));
 
-    let utxo_details = shared(new_utxo_details_component(db));
     let account_details = shared(new_account_details_component(db));
+    let utxo_details = shared(new_utxo_details_component(db));
     let mut entity_detail_components: HashMap<Entity, Shared<dyn FocusableComponent>> =
         HashMap::new();
-    entity_detail_components.insert(Entity::Utxos, utxo_details);
     entity_detail_components.insert(Entity::Accounts, account_details);
+    entity_detail_components.insert(Entity::Utxos, utxo_details);
     let entity_details_switcher = shared(SwitchComponent::new(entity_detail_components));
 
     let body = shared(SplitComponent::new_2(
