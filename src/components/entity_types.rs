@@ -16,7 +16,12 @@ pub fn new_entity_types_list() -> ScrollableListComponent<
         ListItem::new(item.clone())
     }
 
-    let items = vec!["accounts".to_string(), "utxos".to_string()].into_iter();
+    let items = vec![
+        "accounts".to_string(),
+        "pools".to_string(),
+        "utxos".to_string(),
+    ]
+    .into_iter();
 
     ScrollableListComponent::new("Resources".to_string(), items, 10, select, render)
 }

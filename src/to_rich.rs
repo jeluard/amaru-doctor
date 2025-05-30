@@ -2,6 +2,7 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 
 pub mod account;
+pub mod pool;
 pub mod utxo;
 
 const LABEL_STYLE: Style = Style::new().fg(Color::Gray).add_modifier(Modifier::BOLD);

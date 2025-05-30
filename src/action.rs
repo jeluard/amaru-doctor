@@ -1,4 +1,4 @@
-use amaru_kernel::{StakeCredential, TransactionInput};
+use amaru_kernel::{PoolId, StakeCredential, TransactionInput};
 use serde::{Deserialize, Serialize};
 use strum::Display;
 
@@ -22,6 +22,7 @@ pub enum Action {
 pub enum SelectedItem {
     EntityType(Entity),
     Account(StakeCredential),
+    Pool(PoolId),
     Utxo(TransactionInput),
 }
 
@@ -29,6 +30,7 @@ pub enum SelectedItem {
 #[serde(rename_all = "lowercase")]
 pub enum Entity {
     Accounts,
+    Pools,
     Utxos,
 }
 
@@ -63,19 +65,28 @@ where
     }
 }
 
-impl SelectsFrom for TransactionInput {
+impl SelectsFrom for StakeCredential {
     fn from_selected(item: &SelectedItem) -> Option<Self> {
         match item {
-            SelectedItem::Utxo(u) => Some(u.clone()),
+            SelectedItem::Account(a) => Some(a.clone()),
             _ => None,
         }
     }
 }
 
-impl SelectsFrom for StakeCredential {
+impl SelectsFrom for PoolId {
     fn from_selected(item: &SelectedItem) -> Option<Self> {
         match item {
-            SelectedItem::Account(a) => Some(a.clone()),
+            SelectedItem::Pool(p) => Some(p.clone()),
+            _ => None,
+        }
+    }
+}
+
+impl SelectsFrom for TransactionInput {
+    fn from_selected(item: &SelectedItem) -> Option<Self> {
+        match item {
+            SelectedItem::Utxo(u) => Some(u.clone()),
             _ => None,
         }
     }
