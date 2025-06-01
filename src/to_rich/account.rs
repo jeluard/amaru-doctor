@@ -3,7 +3,7 @@ use amaru_kernel::{CertificatePointer, DRep, StakeCredential};
 use amaru_ledger::store::columns::accounts::Row;
 use ratatui::{
     style::{Color, Style},
-    text::{Line, Span},
+    text::Span,
 };
 use std::fmt;
 

@@ -38,15 +38,6 @@ where
         self.window.view().get(self.selected)
     }
 
-    pub fn selected_index(&self) -> usize {
-        self.selected
-    }
-
-    pub fn set_selected_index(&mut self, index: usize) {
-        let len = self.window.view().len();
-        self.selected = index.min(len.saturating_sub(1));
-    }
-
     pub fn scroll_up(&mut self) {
         if self.selected == 0 {
             self.window.shift_up();

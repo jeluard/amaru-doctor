@@ -77,7 +77,7 @@ impl SelectsFrom for StakeCredential {
 impl SelectsFrom for PoolId {
     fn from_selected(item: &SelectedItem) -> Option<Self> {
         match item {
-            SelectedItem::Pool(p) => Some(p.clone()),
+            SelectedItem::Pool(p) => Some(*p),
             _ => None,
         }
     }

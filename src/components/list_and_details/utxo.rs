@@ -15,8 +15,8 @@ type UtxoEnumEntry = (usize, UtxoListEntry);
 type UtxoListSelector = fn(&UtxoEnumEntry) -> Option<SelectedItem>;
 type UtxoListRenderer = fn(&UtxoEnumEntry) -> ListItem;
 
-pub fn new_utxo_list_component<'a>(
-    db: &'a Arc<RocksDB>,
+pub fn new_utxo_list_component(
+    db: &Arc<RocksDB>,
 ) -> ScrollableListComponent<
     UtxoEnumEntry,
     impl Iterator<Item = UtxoEnumEntry>,

@@ -13,7 +13,7 @@ use ratatui::{
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::trace;
 
-use super::group::ComponentGroup;
+use super::ComponentGroup;
 
 pub struct RootLayout<'a> {
     group: ComponentGroup<'a>, // holds header, body, footer

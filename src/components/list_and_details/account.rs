@@ -14,8 +14,8 @@ type AccountListEntry = (StakeCredential, amaru_ledger::store::columns::accounts
 type AccountListSelector = fn(&AccountListEntry) -> Option<SelectedItem>;
 type AccountListRenderer = fn(&AccountListEntry) -> ListItem;
 
-pub fn new_account_list_component<'a>(
-    db: &'a Arc<RocksDB>,
+pub fn new_account_list_component(
+    db: &Arc<RocksDB>,
 ) -> ScrollableListComponent<
     AccountListEntry,
     impl Iterator<Item = AccountListEntry>,
@@ -31,7 +31,7 @@ pub fn new_account_list_component<'a>(
         let (key, _) = item;
         ListItem::new(format!(
             "{}",
-            StakeCredentialDisplay(key.clone()).to_string()
+            StakeCredentialDisplay(key.clone())
         ))
     }
 

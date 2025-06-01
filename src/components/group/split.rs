@@ -1,5 +1,4 @@
-use super::group::ComponentGroup;
-use crate::{action::Action, components::Component, config::Config, shared::Shared, tui::Event};
+use crate::{action::Action, components::{group::ComponentGroup, Component}, config::Config, shared::Shared, tui::Event};
 use color_eyre::Result;
 use crossterm::event::{KeyEvent, MouseEvent};
 use delegate::delegate;
@@ -45,23 +44,6 @@ impl<'a> SplitComponent<'a> {
         comp_b: Shared<dyn Component + 'a>,
     ) -> Self {
         Self::new_n(axis, vec![ratio_a, ratio_b], vec![comp_a, comp_b])
-    }
-
-    pub fn new_n_evenly(axis: Axis, components: Vec<Shared<dyn Component + 'a>>) -> Self {
-        let n = components.len();
-        assert!(n > 0);
-        let base = 100 / n as u16;
-        let remainder = 100 % n as u16;
-        let ratios: Vec<u16> = (0..n)
-            .map(|i| {
-                if i < remainder as usize {
-                    base + 1
-                } else {
-                    base
-                }
-            })
-            .collect();
-        Self::new_n(axis, ratios, components)
     }
 
     pub fn new_2_evenly(

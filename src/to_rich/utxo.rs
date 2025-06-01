@@ -173,7 +173,7 @@ impl ToRichText for PseudoDatumOption<PlutusData> {
 
 pub struct CborWrapRichText<T>(pub CborWrap<T>);
 
-impl<'a, T: minicbor::Encode<()>> ToRichText for CborWrapRichText<T> {
+impl<T: minicbor::Encode<()>> ToRichText for CborWrapRichText<T> {
     fn into_rich_text(self) -> RichText {
         match minicbor::to_vec(&self.0) {
             Ok(inner_bytes) => match cbor_diag::parse_bytes(&inner_bytes) {

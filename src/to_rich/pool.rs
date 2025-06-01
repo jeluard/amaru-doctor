@@ -1,7 +1,7 @@
 use crate::to_rich::{RichText, ToRichText, labeled};
 use amaru_kernel::{Epoch, Nullable, PoolId, PoolParams, Relay};
 use amaru_ledger::store::columns::pools::Row;
-use ratatui::style::{Color, Style};
+use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use std::fmt;
 
@@ -9,7 +9,7 @@ pub struct PoolIdDisplay(pub PoolId);
 
 impl fmt::Display for PoolIdDisplay {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0.to_string())
+        write!(f, "{}", self.0)
     }
 }
 

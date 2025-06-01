@@ -4,14 +4,14 @@ use crate::{
         entity_types::new_entity_types_list,
         fps::FpsCounter,
         group::{
-            group::ComponentGroup,
+            ComponentGroup,
             layout::RootLayout,
             split::{Axis, SplitComponent},
             switch::SwitchComponent,
         },
         list_and_details::{
             account::{new_account_details_component, new_account_list_component},
-            pool::{self, new_pool_details_component, new_pool_list_component},
+            pool::{new_pool_details_component, new_pool_list_component},
             utxo::{new_utxo_details_component, new_utxo_list_component},
         },
         message::Message,
