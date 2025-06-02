@@ -1,8 +1,8 @@
 use crate::{
-    action::{Action, SelectedState, SelectsFrom},
+    action::Action,
     components::Component,
     focus::{FocusState, FocusableComponent},
-    shared::{Getter, Shared, SharedGetter},
+    shared::{Shared, SharedGetter},
 };
 use color_eyre::Result;
 use crossterm::event::{KeyEvent, MouseEvent};
@@ -47,18 +47,22 @@ where
         }
     }
 
-    fn current(&self) -> Option<&Shared<'a, dyn FocusableComponent + 'a>> {
-        self.shared
-            .borrow_mut()
-            .get_mut()
-            .and_then(|s| self.components.get(&(self.mapper)(&s)))
+    fn current(&self) -> Option<Shared<'a, dyn FocusableComponent + 'a>> {
+        let key = {
+            let mut shared = self.shared.borrow_mut();
+            shared.get_mut().map(|s| (self.mapper)(&s))
+        };
+
+        key.and_then(|k| self.components.get(&k).cloned())
     }
 
     fn current_mut(&mut self) -> Option<Shared<'a, dyn FocusableComponent + 'a>> {
-        self.shared
-            .borrow_mut()
-            .get_mut()
-            .and_then(|s| self.components.get(&(self.mapper)(&s)).cloned())
+        let key = {
+            let mut shared = self.shared.borrow_mut();
+            shared.get_mut().map(|s| (self.mapper)(&s))
+        };
+
+        key.and_then(|k| self.components.get(&k).cloned())
     }
 }
 
@@ -99,16 +103,6 @@ where
     fn debug_name(&self) -> String {
         format!("{:?}", self.components.keys().collect::<Vec<_>>())
     }
-
-    // No longer listening
-    // fn update(&mut self, action: Action) -> Result<Vec<Action>> {
-    //     self.selected.update(&action);
-    //     if let Some(c) = self.current_mut() {
-    //         c.borrow_mut().update(action)
-    //     } else {
-    //         Ok(vec![])
-    //     }
-    // }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         if let Some(c) = self.current_mut() {

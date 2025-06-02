@@ -1,6 +1,7 @@
 use crate::{
     action::SelectedItem,
     components::{details::DetailsComponent, group::scroll::ScrollableListComponent},
+    shared::{Getter, SharedGetter, shared},
     to_rich::{RichText, ToRichText},
 };
 use amaru_kernel::{TransactionInput, TransactionOutput};
@@ -20,13 +21,13 @@ pub fn new_utxo_list_component(
 ) -> ScrollableListComponent<
     UtxoEnumEntry,
     impl Iterator<Item = UtxoEnumEntry>,
-    UtxoListSelector,
+    // UtxoListSelector,
     UtxoListRenderer,
 > {
-    fn select(item: &UtxoEnumEntry) -> Option<SelectedItem> {
-        let (_, (input, _)) = item;
-        Some(SelectedItem::Utxo(input.clone()))
-    }
+    // fn select(item: &UtxoEnumEntry) -> Option<SelectedItem> {
+    //     let (_, (input, _)) = item;
+    //     Some(SelectedItem::Utxo(input.clone()))
+    // }
 
     fn render(item: &UtxoEnumEntry) -> ListItem {
         let (i, (input, _)) = item;
@@ -35,22 +36,37 @@ pub fn new_utxo_list_component(
 
     let iter = db.iter_utxos().unwrap().enumerate();
 
-    ScrollableListComponent::new("UTXOs".to_string(), iter, 10, select, render)
+    ScrollableListComponent::new("UTXOs".to_string(), iter, 10, render)
+}
+
+struct MappedGetter<'a> {
+    inner: SharedGetter<'a, UtxoEnumEntry>,
+}
+
+impl<'a> Getter<UtxoListEntry> for MappedGetter<'a> {
+    fn get_mut(&mut self) -> Option<UtxoListEntry> {
+        self.inner.borrow_mut().get_mut().map(|(_, val)| val)
+    }
+}
+
+fn map(shared_getter: SharedGetter<UtxoEnumEntry>) -> SharedGetter<UtxoListEntry> {
+    shared(MappedGetter {
+        inner: shared_getter,
+    })
 }
 
 pub fn new_utxo_details_component<'a>(
-    db: &'a Arc<RocksDB>,
-) -> DetailsComponent<TransactionInput, impl Fn(&TransactionInput) -> Result<Option<RichText>> + 'a>
-{
-    let render = move |key: &TransactionInput| {
-        let val = db.utxo(key)?;
-        Ok(val.map(|v| (key.clone(), v).into_rich_text()))
-    };
+    shared_getter: SharedGetter<UtxoEnumEntry>,
+) -> DetailsComponent<UtxoListEntry> {
+    // let render = move |key: &TransactionInput| {
+    //     let val = db.utxo(key)?;
+    //     Ok(val.map(|v| (key.clone(), v).into_rich_text()))
+    // };
 
-    let first_key = db
-        .iter_utxos()
-        .ok()
-        .and_then(|mut i| i.next().map(|(k, _)| k));
+    // let first_key = db
+    //     .iter_utxos()
+    //     .ok()
+    //     .and_then(|mut i| i.next().map(|(k, _)| k));
 
-    DetailsComponent::new("UTXO Details".to_string(), first_key, render)
+    DetailsComponent::new("UTXO Details".to_string(), map(shared_getter))
 }

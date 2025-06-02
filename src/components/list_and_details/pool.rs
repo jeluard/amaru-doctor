@@ -1,6 +1,7 @@
 use crate::{
     action::SelectedItem,
     components::{details::DetailsComponent, group::scroll::ScrollableListComponent},
+    shared::SharedGetter,
     to_rich::{RichText, ToRichText, pool::PoolIdDisplay},
 };
 use amaru_kernel::PoolId;
@@ -19,13 +20,13 @@ pub fn new_pool_list_component(
 ) -> ScrollableListComponent<
     PoolListEntry,
     impl Iterator<Item = PoolListEntry>,
-    PoolListSelector,
+    // PoolListSelector,
     PoolListRenderer,
 > {
-    fn select(item: &PoolListEntry) -> Option<SelectedItem> {
-        let (pool_id, _) = item;
-        Some(SelectedItem::Pool(*pool_id))
-    }
+    // fn select(item: &PoolListEntry) -> Option<SelectedItem> {
+    //     let (pool_id, _) = item;
+    //     Some(SelectedItem::Pool(*pool_id))
+    // }
 
     fn render(item: &PoolListEntry) -> ListItem {
         let (key, _) = item;
@@ -34,21 +35,18 @@ pub fn new_pool_list_component(
 
     let iter = db.iter_pools().unwrap();
 
-    ScrollableListComponent::new("Pools".to_string(), iter, 10, select, render)
+    ScrollableListComponent::new("Pools".to_string(), iter, 10, render)
 }
 
 pub fn new_pool_details_component<'a>(
-    db: &'a Arc<RocksDB>,
-) -> DetailsComponent<PoolId, impl Fn(&PoolId) -> Result<Option<RichText>> + 'a> {
-    let render = move |key: &PoolId| {
-        let val = db.pool(key)?;
-        Ok(val.map(|v| (*key, v).into_rich_text()))
-    };
+    shared: SharedGetter<PoolListEntry>,
+) -> DetailsComponent<PoolListEntry> {
+    // let render = |item: &PoolListEntry| Ok(item.into_rich_text()));
 
-    let first_key = db
-        .iter_pools()
-        .ok()
-        .and_then(|mut i| i.next().map(|(k, _)| k));
+    // let first_key = db
+    //     .iter_pools()
+    //     .ok()
+    //     .and_then(|mut i| i.next().map(|(k, _)| k));
 
-    DetailsComponent::new("Pool Details".to_string(), first_key, render)
+    DetailsComponent::new("Pool Details".to_string(), shared)
 }

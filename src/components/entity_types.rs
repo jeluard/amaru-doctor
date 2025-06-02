@@ -6,13 +6,13 @@ use ratatui::widgets::ListItem;
 pub fn new_entity_types_list() -> ScrollableListComponent<
     String,
     std::vec::IntoIter<String>,
-    fn(&String) -> Option<SelectedItem>,
+    // fn(&String) -> Option<SelectedItem>,
     fn(&String) -> ListItem,
 > {
-    #[allow(clippy::ptr_arg)]
-    fn select(s: &String) -> Option<SelectedItem> {
-        Some(SelectedItem::EntityType(serde_plain::from_str(s).unwrap()))
-    }
+    // #[allow(clippy::ptr_arg)]
+    // fn select(s: &String) -> Option<SelectedItem> {
+    //     Some(SelectedItem::EntityType(serde_plain::from_str(s).unwrap()))
+    // }
 
     #[allow(clippy::ptr_arg)]
     fn render(item: &String) -> ListItem {
@@ -26,5 +26,5 @@ pub fn new_entity_types_list() -> ScrollableListComponent<
     ]
     .into_iter();
 
-    ScrollableListComponent::new("Entity Types".to_string(), items, 10, select, render)
+    ScrollableListComponent::new("Entity Types".to_string(), items, 10, render)
 }

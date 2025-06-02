@@ -13,7 +13,7 @@ pub enum RichText {
 }
 
 pub trait ToRichText {
-    fn into_rich_text(self) -> RichText;
+    fn into_rich_text(&self) -> RichText;
 }
 
 impl RichText {

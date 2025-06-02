@@ -1,46 +1,42 @@
 use super::Component;
 use crate::{
-    action::{Action, SelectedState, SelectsFrom},
+    action::Action,
     focus::{FocusState, FocusableComponent},
-    to_rich::RichText,
+    shared::SharedGetter,
+    to_rich::{RichText, ToRichText},
 };
 use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
 use tracing::trace;
 
-pub struct DetailsComponent<K, F>
+pub struct DetailsComponent<'a, K>
 where
-    K: Clone + PartialEq,
-    F: Fn(&K) -> Result<Option<RichText>>,
+    K: Clone + PartialEq + ToRichText,
 {
     title: String,
-    selected: SelectedState<K>,
+    shared: SharedGetter<'a, K>,
     focus: FocusState,
     scroll_offset: u16,
-    render: F,
 }
 
-impl<K, F> DetailsComponent<K, F>
+impl<'a, K> DetailsComponent<'a, K>
 where
-    K: Clone + PartialEq + SelectsFrom,
-    F: Fn(&K) -> Result<Option<RichText>>,
+    K: Clone + PartialEq + ToRichText,
 {
-    pub fn new(title: String, value: Option<K>, render: F) -> Self {
+    pub fn new(title: String, shared: SharedGetter<'a, K>) -> Self {
         Self {
             title,
-            selected: SelectedState::new(value),
+            shared,
             focus: FocusState::default(),
             scroll_offset: 0,
-            render,
         }
     }
 }
 
-impl<K, F> FocusableComponent for DetailsComponent<K, F>
+impl<'a, K> FocusableComponent for DetailsComponent<'a, K>
 where
-    K: Clone + PartialEq + SelectsFrom,
-    F: Fn(&K) -> Result<Option<RichText>>,
+    K: Clone + PartialEq + ToRichText,
 {
     fn focus_state(&self) -> &FocusState {
         &self.focus
@@ -51,10 +47,9 @@ where
     }
 }
 
-impl<K, F> Component for DetailsComponent<K, F>
+impl<'a, K> Component for DetailsComponent<'a, K>
 where
-    K: Clone + PartialEq + SelectsFrom,
-    F: Fn(&K) -> Result<Option<RichText>>,
+    K: Clone + PartialEq + ToRichText,
 {
     fn debug_name(&self) -> String {
         format!("DetailsComponent:{}", self.title)
@@ -93,11 +88,8 @@ where
             block = block.border_style(Style::default().fg(Color::Blue));
         }
 
-        let lines = match self.selected.value.as_ref() {
-            Some(key) => match (self.render)(key)? {
-                Some(rich) => rich.unwrap_lines(),
-                None => vec![Line::from("Not found")],
-            },
+        let lines = match self.shared.borrow_mut().get_mut() {
+            Some(val) => val.into_rich_text().unwrap_lines(),
             None => vec![Line::from("None selected")],
         };
 

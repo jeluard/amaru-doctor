@@ -10,32 +10,32 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
 use tracing::trace;
 
-pub struct ScrollableListComponent<T, I, S, F>
+pub struct ScrollableListComponent<T, I, F>
 where
     T: Clone,
     I: Iterator<Item = T>,
-    S: Fn(&T) -> Option<SelectedItem> + Copy,
+    // S: Fn(&T) -> Option<SelectedItem> + Copy,
     F: Fn(&T) -> ListItem + Copy,
 {
     title: String,
     state: WindowState<T, I>,
     focus: FocusState,
-    select_mapper: S,
+    // select_mapper: S,
     render_item: F,
 }
 
-impl<T, I, S, F> ScrollableListComponent<T, I, S, F>
+impl<T, I, F> ScrollableListComponent<T, I, F>
 where
     T: Clone,
     I: Iterator<Item = T>,
-    S: Fn(&T) -> Option<SelectedItem> + Copy,
+    // S: Fn(&T) -> Option<SelectedItem> + Copy,
     F: Fn(&T) -> ListItem + Copy,
 {
     pub fn new(
         title: String,
         iter: I,
         window_size: usize,
-        select_mapper: S,
+        // select_mapper: S,
         render_item: F,
     ) -> Self {
         let state = WindowState::new(iter, window_size);
@@ -43,30 +43,30 @@ where
             title,
             state,
             focus: FocusState::default(),
-            select_mapper,
+            // select_mapper,
             render_item,
         }
     }
 
-    fn create_select_item(&mut self) -> Option<Action> {
-        if let Some(item) = self.state.selected_item() {
-            if let Some(selected) = (self.select_mapper)(item) {
-                trace!(
-                    "ScrollableListComponent::{}: selection {}",
-                    self.title, selected
-                );
-                return Some(Action::SelectItem(selected));
-            }
-        }
-        return None;
-    }
+    // fn create_select_item(&mut self) -> Option<Action> {
+    //     if let Some(item) = self.state.selected_item() {
+    //         if let Some(selected) = (self.select_mapper)(item) {
+    //             trace!(
+    //                 "ScrollableListComponent::{}: selection {}",
+    //                 self.title, selected
+    //             );
+    //             return Some(Action::SelectItem(selected));
+    //         }
+    //     }
+    //     return None;
+    // }
 }
 
-impl<T, I, S, F> Getter<T> for ScrollableListComponent<T, I, S, F>
+impl<T, I, F> Getter<T> for ScrollableListComponent<T, I, F>
 where
     T: Clone,
     I: Iterator<Item = T>,
-    S: Fn(&T) -> Option<SelectedItem> + Copy,
+    // S: Fn(&T) -> Option<SelectedItem> + Copy,
     F: Fn(&T) -> ListItem + Copy,
 {
     fn get_mut(&mut self) -> Option<T> {
@@ -74,11 +74,11 @@ where
     }
 }
 
-impl<T, I, S, F> FocusableComponent for ScrollableListComponent<T, I, S, F>
+impl<T, I, F> FocusableComponent for ScrollableListComponent<T, I, F>
 where
     T: Clone,
     I: Iterator<Item = T>,
-    S: Fn(&T) -> Option<SelectedItem> + Copy,
+    // S: Fn(&T) -> Option<SelectedItem> + Copy,
     F: Fn(&T) -> ListItem + Copy,
 {
     fn focus_state(&self) -> &FocusState {
@@ -90,11 +90,11 @@ where
     }
 }
 
-impl<T, I, S, F> Component for ScrollableListComponent<T, I, S, F>
+impl<T, I, F> Component for ScrollableListComponent<T, I, F>
 where
     T: Clone,
     I: Iterator<Item = T>,
-    S: Fn(&T) -> Option<SelectedItem> + Copy,
+    // S: Fn(&T) -> Option<SelectedItem> + Copy,
     F: Fn(&T) -> ListItem + Copy,
 {
     fn debug_name(&self) -> String {
@@ -111,15 +111,15 @@ where
         match key.code {
             KeyCode::Up => {
                 self.state.scroll_up();
-                if let Some(action) = self.create_select_item() {
-                    return Ok(vec![action]);
-                }
+                // if let Some(action) = self.create_select_item() {
+                //     return Ok(vec![action]);
+                // }
             }
             KeyCode::Down => {
                 self.state.scroll_down();
-                if let Some(action) = self.create_select_item() {
-                    return Ok(vec![action]);
-                }
+                // if let Some(action) = self.create_select_item() {
+                //     return Ok(vec![action]);
+                // }
             }
             _ => {
                 trace!(

@@ -11,7 +11,7 @@ use ratatui::text::{Line, Span};
 use super::{RichText, ToRichText, labeled};
 
 impl ToRichText for (TransactionInput, TransactionOutput) {
-    fn into_rich_text(self) -> RichText {
+    fn into_rich_text(&self) -> RichText {
         let mut lines = Vec::new();
         lines.extend(labeled(
             "UTXO".to_string(),
@@ -24,7 +24,7 @@ impl ToRichText for (TransactionInput, TransactionOutput) {
 }
 
 impl ToRichText for TransactionOutput {
-    fn into_rich_text(self) -> RichText {
+    fn into_rich_text(&self) -> RichText {
         match self {
             PseudoTransactionOutput::Legacy(inner) => inner.into_rich_text(),
             PseudoTransactionOutput::PostAlonzo(inner) => inner.into_rich_text(),
@@ -33,7 +33,7 @@ impl ToRichText for TransactionOutput {
 }
 
 impl ToRichText for PostAlonzoTransactionOutput {
-    fn into_rich_text(self) -> RichText {
+    fn into_rich_text(&self) -> RichText {
         let mut lines = Vec::new();
         lines.extend(labeled(
             "Type".to_string(),
@@ -51,13 +51,14 @@ impl ToRichText for PostAlonzoTransactionOutput {
         ));
         lines.extend(labeled(
             "Value".to_string(),
-            GenericValueRichText(self.value).into_rich_text(),
+            GenericValueRichText(&self.value).into_rich_text(),
             Style::default(),
         ));
 
         lines.extend(labeled(
             "Datum".to_string(),
             self.datum_option
+                .as_ref()
                 .map(|d| d.into_rich_text())
                 .unwrap_or_else(|| RichText::Single(Span::raw("None"))),
             Style::default(),
@@ -66,7 +67,8 @@ impl ToRichText for PostAlonzoTransactionOutput {
         lines.extend(labeled(
             "Script".to_string(),
             self.script_ref
-                .map(|s| CborWrapRichText(s).into_rich_text())
+                .as_ref()
+                .map(|s| CborWrapRichText(&s).into_rich_text())
                 .unwrap_or_else(|| RichText::Single(Span::raw("None"))),
             Style::default(),
         ));
@@ -76,7 +78,7 @@ impl ToRichText for PostAlonzoTransactionOutput {
 }
 
 impl ToRichText for alonzo::TransactionOutput {
-    fn into_rich_text(self) -> RichText {
+    fn into_rich_text(&self) -> RichText {
         let mut lines = Vec::new();
         lines.extend(labeled(
             "Output Type".to_string(),
@@ -103,17 +105,17 @@ impl ToRichText for alonzo::TransactionOutput {
         ));
         lines.extend(labeled(
             "Value".to_string(),
-            AlonzoValueRichText(self.amount).into_rich_text(),
+            AlonzoValueRichText(&self.amount).into_rich_text(),
             Style::default(),
         ));
         RichText::Lines(lines)
     }
 }
 
-pub struct GenericValueRichText(pub Value);
+pub struct GenericValueRichText<'a>(pub &'a Value);
 
-impl ToRichText for GenericValueRichText {
-    fn into_rich_text(self) -> RichText {
+impl<'a> ToRichText for GenericValueRichText<'a> {
+    fn into_rich_text(&self) -> RichText {
         match self.0 {
             Value::Coin(c) => RichText::Single(Span::raw(format!("{} lovelace", c))),
             Value::Multiasset(coin, assets) => {
@@ -136,10 +138,10 @@ impl ToRichText for GenericValueRichText {
     }
 }
 
-pub struct AlonzoValueRichText(pub amaru_kernel::alonzo::Value);
+pub struct AlonzoValueRichText<'a>(pub &'a amaru_kernel::alonzo::Value);
 
-impl ToRichText for AlonzoValueRichText {
-    fn into_rich_text(self) -> RichText {
+impl<'a> ToRichText for AlonzoValueRichText<'a> {
+    fn into_rich_text(&self) -> RichText {
         match self.0 {
             amaru_kernel::alonzo::Value::Coin(c) => {
                 RichText::Single(Span::raw(format!("{} lovelace", c)))
@@ -163,7 +165,7 @@ impl ToRichText for AlonzoValueRichText {
 }
 
 impl ToRichText for PseudoDatumOption<PlutusData> {
-    fn into_rich_text(self) -> RichText {
+    fn into_rich_text(&self) -> RichText {
         match self {
             PseudoDatumOption::Hash(h) => RichText::Single(Span::raw(format!("DatumHash({})", h))),
             PseudoDatumOption::Data(cbor) => CborWrapRichText(cbor).into_rich_text(),
@@ -171,10 +173,10 @@ impl ToRichText for PseudoDatumOption<PlutusData> {
     }
 }
 
-pub struct CborWrapRichText<T>(pub CborWrap<T>);
+pub struct CborWrapRichText<'a, T>(pub &'a CborWrap<T>);
 
-impl<T: minicbor::Encode<()>> ToRichText for CborWrapRichText<T> {
-    fn into_rich_text(self) -> RichText {
+impl<'a, T: minicbor::Encode<()>> ToRichText for CborWrapRichText<'a, T> {
+    fn into_rich_text(&self) -> RichText {
         match minicbor::to_vec(&self.0) {
             Ok(inner_bytes) => match cbor_diag::parse_bytes(&inner_bytes) {
                 Ok(diag) => RichText::Single(Span::styled(

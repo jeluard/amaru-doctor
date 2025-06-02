@@ -14,7 +14,7 @@ impl fmt::Display for PoolIdDisplay {
 }
 
 impl ToRichText for (PoolId, Row) {
-    fn into_rich_text(self) -> RichText {
+    fn into_rich_text(&self) -> RichText {
         let (id, row) = self;
         let mut lines = Vec::new();
 
@@ -34,7 +34,7 @@ impl ToRichText for (PoolId, Row) {
         } else {
             RichText::Lines(
                 row.future_params
-                    .into_iter()
+                    .iter()
                     .flat_map(|entry| entry.into_rich_text().unwrap_lines())
                     .collect(),
             )
@@ -51,7 +51,7 @@ impl ToRichText for (PoolId, Row) {
 }
 
 impl ToRichText for PoolParams {
-    fn into_rich_text(self) -> RichText {
+    fn into_rich_text(&self) -> RichText {
         let mut lines = Vec::new();
 
         lines.extend(labeled(
@@ -115,7 +115,7 @@ impl ToRichText for PoolParams {
 
         lines.extend(labeled(
             "Metadata".into(),
-            match self.metadata {
+            match &self.metadata {
                 Nullable::Some(m) => RichText::Single(Span::raw(format!("{:?}", m))),
                 Nullable::Null => RichText::Single(Span::raw("None")),
                 Nullable::Undefined => RichText::Single(Span::raw("Undefined")),
@@ -128,7 +128,7 @@ impl ToRichText for PoolParams {
 }
 
 impl ToRichText for Relay {
-    fn into_rich_text(self) -> RichText {
+    fn into_rich_text(&self) -> RichText {
         match self {
             Relay::SingleHostAddr(port, ipv4, ipv6) => {
                 let mut lines = Vec::new();
@@ -178,7 +178,7 @@ impl ToRichText for Relay {
 
                 lines.extend(labeled(
                     "Hostname".to_string(),
-                    RichText::Single(Span::raw(hostname)),
+                    RichText::Single(Span::raw(hostname.clone())),
                     Style::default(),
                 ));
 
@@ -204,7 +204,7 @@ impl ToRichText for Relay {
 
                 lines.extend(labeled(
                     "Hostname".to_string(),
-                    RichText::Single(Span::raw(hostname)),
+                    RichText::Single(Span::raw(hostname.clone())),
                     Style::default(),
                 ));
 
@@ -215,7 +215,7 @@ impl ToRichText for Relay {
 }
 
 impl ToRichText for (Option<PoolParams>, Epoch) {
-    fn into_rich_text(self) -> RichText {
+    fn into_rich_text(&self) -> RichText {
         match self {
             (Some(p), epoch) => {
                 let mut lines = vec![Line::from(vec![Span::raw(format!(
