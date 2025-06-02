@@ -1,4 +1,10 @@
-use crate::{action::Action, components::{group::ComponentGroup, Component}, config::Config, shared::Shared, tui::Event};
+use crate::{
+    action::Action,
+    components::{Component, group::ComponentGroup},
+    config::Config,
+    shared::Shared,
+    tui::Event,
+};
 use color_eyre::Result;
 use crossterm::event::{KeyEvent, MouseEvent};
 use delegate::delegate;

@@ -29,10 +29,7 @@ pub fn new_account_list_component(
 
     fn render(item: &AccountListEntry) -> ListItem {
         let (key, _) = item;
-        ListItem::new(format!(
-            "{}",
-            StakeCredentialDisplay(key.clone())
-        ))
+        ListItem::new(format!("{}", StakeCredentialDisplay(key.clone())))
     }
 
     let iter = db.iter_accounts().unwrap();
