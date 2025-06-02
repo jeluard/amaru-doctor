@@ -1,8 +1,8 @@
 use crate::{
     action::{Action, SelectedState, SelectsFrom},
     components::Component,
-    focus::{FocusState, Focusable, FocusableComponent},
-    shared::Shared,
+    focus::{FocusState, FocusableComponent},
+    shared::{Getter, Shared, SharedGetter},
 };
 use color_eyre::Result;
 use crossterm::event::{KeyEvent, MouseEvent};
@@ -10,49 +10,63 @@ use ratatui::{
     Frame,
     layout::{Rect, Size},
 };
-use std::collections::HashMap;
-use std::hash::Hash;
+use std::{collections::HashMap, fmt::Debug, hash::Hash};
 use tokio::sync::mpsc::UnboundedSender;
+use tracing::trace;
 
-pub struct SwitchComponent<'a, K>
+pub struct SwitchComponent<'a, S, M, K>
 where
-    K: Eq + Hash + Clone + SelectsFrom,
+    S: Debug,
+    M: Fn(&S) -> K,
+    K: Eq + Hash + Clone + Debug,
 {
-    selected: SelectedState<K>,
+    shared: SharedGetter<'a, S>,
+    mapper: M,
     focus: FocusState,
     components: HashMap<K, Shared<'a, dyn FocusableComponent + 'a>>,
 }
 
-impl<'a, K> SwitchComponent<'a, K>
+impl<'a, S, M, K> SwitchComponent<'a, S, M, K>
 where
-    K: Eq + Hash + Clone + SelectsFrom,
+    S: Debug,
+    M: Fn(&S) -> K,
+    K: Eq + Hash + Clone + Debug,
 {
-    pub fn new(components: HashMap<K, Shared<'a, dyn FocusableComponent + 'a>>) -> Self {
+    pub fn new(
+        shared: SharedGetter<'a, S>,
+        mapper: M,
+        components: HashMap<K, Shared<'a, dyn FocusableComponent + 'a>>,
+    ) -> Self {
+        let k = components.iter().next().map(|(k, _)| k.clone());
+        trace!("SwitchComponent init'ing, first selected: {:?}", k);
         Self {
-            selected: SelectedState::new(components.iter().next().map(|(k, _)| k.clone())),
+            shared,
+            mapper,
             focus: FocusState::default(),
             components,
         }
     }
 
     fn current(&self) -> Option<&Shared<'a, dyn FocusableComponent + 'a>> {
-        self.selected
-            .value
-            .as_ref()
-            .and_then(|k| self.components.get(k))
+        self.shared
+            .borrow_mut()
+            .get_mut()
+            .and_then(|s| self.components.get(&(self.mapper)(&s)))
     }
 
-    fn current_mut(&mut self) -> Option<&mut Shared<'a, dyn FocusableComponent + 'a>> {
-        self.selected
-            .value
-            .as_ref()
-            .and_then(|k| self.components.get_mut(k))
+    fn current_mut(&mut self) -> Option<Shared<'a, dyn FocusableComponent + 'a>> {
+        self.shared
+            .borrow_mut()
+            .get_mut()
+            .and_then(|s| self.components.get(&(self.mapper)(&s)).cloned())
     }
 }
 
-impl<'a, K> Focusable for SwitchComponent<'a, K>
+impl<'a, S, M, K> FocusableComponent for SwitchComponent<'a, S, M, K>
 where
-    K: Eq + Hash + Clone + SelectsFrom,
+    S: Debug,
+    M: Fn(&S) -> K,
+    K: Eq + Hash + Clone + Debug,
 {
     fn focus_state(&self) -> &FocusState {
         &self.focus
@@ -76,18 +90,25 @@ where
     }
 }
 
-impl<'a, K> Component for SwitchComponent<'a, K>
+impl<'a, S, M, K> Component for SwitchComponent<'a, S, M, K>
 where
-    K: Eq + Hash + Clone + SelectsFrom,
+    S: Debug,
+    M: Fn(&S) -> K,
+    K: Eq + Hash + Clone + Debug,
 {
-    fn update(&mut self, action: Action) -> Result<Vec<Action>> {
-        self.selected.update(&action);
-        if let Some(c) = self.current_mut() {
-            c.borrow_mut().update(action)
-        } else {
-            Ok(vec![])
-        }
+    fn debug_name(&self) -> String {
+        format!("{:?}", self.components.keys().collect::<Vec<_>>())
     }
+
+    // No longer listening
+    // fn update(&mut self, action: Action) -> Result<Vec<Action>> {
+    //     self.selected.update(&action);
+    //     if let Some(c) = self.current_mut() {
+    //         c.borrow_mut().update(action)
+    //     } else {
+    //         Ok(vec![])
+    //     }
+    // }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         if let Some(c) = self.current_mut() {
@@ -98,12 +119,23 @@ where
     }
 
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
+        let mut selected = self.shared.borrow_mut();
+        let selected_key = selected.get_mut();
+
         if !self.has_focus() {
+            trace!("{}: no focus", self.debug_name());
             return Ok(vec![]);
         }
-        if let Some(c) = self.current_mut() {
+
+        if let Some(c) = self.current() {
+            trace!(
+                "{}: forwarding key to component {:?}",
+                self.debug_name(),
+                selected_key
+            );
             c.borrow_mut().handle_key_event(key)
         } else {
+            trace!("{}: nothing selected", self.debug_name());
             Ok(vec![])
         }
     }

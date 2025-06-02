@@ -34,7 +34,14 @@ impl<'a> ComponentGroup<'a> {
 }
 
 impl<'a> Component for ComponentGroup<'a> {
+    fn debug_name(&self) -> String {
+        "ComponentGroup".to_string()
+    }
+
     fn update(&mut self, action: Action) -> Result<Vec<Action>> {
+        if !matches!(action, Action::Render | Action::Tick) {
+            trace!("ComponentGroup::update(key={:?})", action);
+        }
         let mut results = Vec::new();
         for component in self.components.iter_mut() {
             let actions = component.borrow_mut().update(action.clone())?;
@@ -60,7 +67,7 @@ impl<'a> Component for ComponentGroup<'a> {
     }
 
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
-        trace!("ComponentGroup::handle_key_event - key: {:?}", key);
+        trace!("ComponentGroup::handle_key_event(key={:?})", key);
         let mut results = Vec::new();
         for (i, component) in self.components.iter_mut().enumerate() {
             trace!("Forwarding to child component [{}]", i);

@@ -12,6 +12,10 @@ pub struct Home {
 }
 
 impl Component for Home {
+    fn debug_name(&self) -> String {
+        "Home".to_string()
+    }
+
     fn register_action_handler(&mut self, tx: UnboundedSender<Action>) -> Result<()> {
         self.command_tx = Some(tx);
         Ok(())

@@ -1,12 +1,13 @@
 use super::Component;
 use crate::{
     action::{Action, SelectedState, SelectsFrom},
-    focus::{FocusState, Focusable},
+    focus::{FocusState, FocusableComponent},
     to_rich::RichText,
 };
 use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
+use tracing::trace;
 
 pub struct DetailsComponent<K, F>
 where
@@ -36,7 +37,7 @@ where
     }
 }
 
-impl<K, F> Focusable for DetailsComponent<K, F>
+impl<K, F> FocusableComponent for DetailsComponent<K, F>
 where
     K: Clone + PartialEq + SelectsFrom,
     F: Fn(&K) -> Result<Option<RichText>>,
@@ -55,17 +56,24 @@ where
     K: Clone + PartialEq + SelectsFrom,
     F: Fn(&K) -> Result<Option<RichText>>,
 {
-    fn update(&mut self, action: Action) -> Result<Vec<Action>> {
-        if self.selected.update(&action) {
-            self.scroll_offset = 0;
-        }
-        Ok(vec![])
+    fn debug_name(&self) -> String {
+        format!("DetailsComponent:{}", self.title)
     }
+
+    // No longer listening
+    // fn update(&mut self, action: Action) -> Result<Vec<Action>> {
+    //     if self.selected.update(&action) {
+    //         self.scroll_offset = 0;
+    //     }
+    //     Ok(vec![])
+    // }
 
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
         if !self.has_focus() {
+            trace!("DetailsComponent::{}: no focus", self.title);
             return Ok(vec![]);
         }
+        trace!("DetailsComponent::{}: has focus", self.title);
 
         match key.code {
             KeyCode::Up => self.scroll_offset = self.scroll_offset.saturating_sub(1),

@@ -1,7 +1,8 @@
 use crate::{
-    action::Entity,
+    action::{Entity, SelectedItem},
     components::{
-        entity_types::new_entity_types_list,
+        empty::EmptyComponent,
+        entity_types::{self, new_entity_types_list},
         fps::FpsCounter,
         group::{
             ComponentGroup,
@@ -36,17 +37,22 @@ pub fn build_layout<'a>(
     entity_id_components.insert(Entity::Accounts, accounts);
     entity_id_components.insert(Entity::Pools, pools);
     entity_id_components.insert(Entity::Utxos, utxos);
-    let entity_ids_switcher = shared(SwitchComponent::new(entity_id_components));
+    let entity_ids_switcher = shared(SwitchComponent::new(
+        entity_types.clone(),
+        |s| serde_plain::from_str(s).unwrap(),
+        entity_id_components,
+    ));
 
-    let account_details = shared(new_account_details_component(db));
-    let pool_details = shared(new_pool_details_component(db));
-    let utxo_details = shared(new_utxo_details_component(db));
-    let mut entity_detail_components: HashMap<Entity, Shared<dyn FocusableComponent>> =
-        HashMap::new();
-    entity_detail_components.insert(Entity::Accounts, account_details);
-    entity_detail_components.insert(Entity::Pools, pool_details);
-    entity_detail_components.insert(Entity::Utxos, utxo_details);
-    let entity_details_switcher = shared(SwitchComponent::new(entity_detail_components));
+    // let account_details = shared(new_account_details_component(db));
+    // let pool_details = shared(new_pool_details_component(db));
+    // let utxo_details = shared(new_utxo_details_component(db));
+    // let mut entity_detail_components: HashMap<Entity, Shared<dyn FocusableComponent>> =
+    //     HashMap::new();
+    // entity_detail_components.insert(Entity::Accounts, account_details);
+    // entity_detail_components.insert(Entity::Pools, pool_details);
+    // entity_detail_components.insert(Entity::Utxos, utxo_details);
+    // let entity_details_switcher = shared(SwitchComponent::new(entity_detail_components));
+    let entity_details_switcher = shared(EmptyComponent::default());
 
     let body = shared(SplitComponent::new_2(
         Axis::Vertical,

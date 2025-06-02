@@ -1,12 +1,14 @@
 use crate::{
     action::{Action, SelectedItem},
     components::Component,
-    focus::{FocusState, Focusable},
+    focus::{FocusState, FocusableComponent},
+    shared::Getter,
     window::state::WindowState,
 };
-use color_eyre::Result;
+use color_eyre::{Result, eyre::Ok};
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
+use tracing::trace;
 
 pub struct ScrollableListComponent<T, I, S, F>
 where
@@ -45,9 +47,34 @@ where
             render_item,
         }
     }
+
+    fn create_select_item(&mut self) -> Option<Action> {
+        if let Some(item) = self.state.selected_item() {
+            if let Some(selected) = (self.select_mapper)(item) {
+                trace!(
+                    "ScrollableListComponent::{}: selection {}",
+                    self.title, selected
+                );
+                return Some(Action::SelectItem(selected));
+            }
+        }
+        return None;
+    }
 }
 
-impl<T, I, S, F> Focusable for ScrollableListComponent<T, I, S, F>
+impl<T, I, S, F> Getter<T> for ScrollableListComponent<T, I, S, F>
+where
+    T: Clone,
+    I: Iterator<Item = T>,
+    S: Fn(&T) -> Option<SelectedItem> + Copy,
+    F: Fn(&T) -> ListItem + Copy,
+{
+    fn get_mut(&mut self) -> Option<T> {
+        self.state.selected_item().cloned()
+    }
+}
+
+impl<T, I, S, F> FocusableComponent for ScrollableListComponent<T, I, S, F>
 where
     T: Clone,
     I: Iterator<Item = T>,
@@ -70,22 +97,38 @@ where
     S: Fn(&T) -> Option<SelectedItem> + Copy,
     F: Fn(&T) -> ListItem + Copy,
 {
+    fn debug_name(&self) -> String {
+        format!("ScrollableListComponent:{}", self.title)
+    }
+
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
         if !self.has_focus() {
+            trace!("ScrollableListComponent::{}: no focus", self.title);
             return Ok(vec![]);
         }
+        trace!("ScrollableListComponent::{}: has focus", self.title);
 
         match key.code {
-            KeyCode::Up => self.state.scroll_up(),
-            KeyCode::Down => self.state.scroll_down(),
-            _ => {}
-        }
-
-        if let Some(item) = self.state.selected_item() {
-            if let Some(selected) = (self.select_mapper)(item) {
-                return Ok(vec![Action::SelectItem(selected)]);
+            KeyCode::Up => {
+                self.state.scroll_up();
+                if let Some(action) = self.create_select_item() {
+                    return Ok(vec![action]);
+                }
+            }
+            KeyCode::Down => {
+                self.state.scroll_down();
+                if let Some(action) = self.create_select_item() {
+                    return Ok(vec![action]);
+                }
+            }
+            _ => {
+                trace!(
+                    "ScrollableListComponent::{}: no match for key code {}",
+                    self.title, key.code
+                );
             }
         }
+
         Ok(vec![])
     }
 

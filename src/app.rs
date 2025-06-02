@@ -119,7 +119,7 @@ impl<'a> App<'a> {
         };
         match keymap.get(&vec![key]) {
             Some(action) => {
-                info!("Got action: {action:?}");
+                info!("Key to action: {action:?}. Will broadcast.");
                 action_tx.send(action.clone())?;
             }
             _ => {

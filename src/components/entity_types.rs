@@ -26,5 +26,5 @@ pub fn new_entity_types_list() -> ScrollableListComponent<
     ]
     .into_iter();
 
-    ScrollableListComponent::new("Resources".to_string(), items, 10, select, render)
+    ScrollableListComponent::new("Entity Types".to_string(), items, 10, select, render)
 }

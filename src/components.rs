@@ -21,6 +21,7 @@ pub mod message;
 /// Implementors of this trait can be registered with the main application loop and will be able to
 /// receive events, update state, and be rendered on the screen.
 pub trait Component {
+    fn debug_name(&self) -> String;
     /// Register an action handler that can send actions for processing if necessary.
     ///
     /// # Arguments
