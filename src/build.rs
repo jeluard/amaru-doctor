@@ -1,8 +1,7 @@
 use crate::{
-    action::{Entity, SelectedItem},
+    action::Entity,
     components::{
-        empty::EmptyComponent,
-        entity_types::{self, new_entity_types_list},
+        entity_types::new_entity_types_list,
         fps::FpsCounter,
         group::{
             ComponentGroup,
@@ -36,7 +35,7 @@ pub fn build_layout<'a>(
     let mut entity_id_components: HashMap<Entity, Shared<dyn FocusableComponent>> = HashMap::new();
     entity_id_components.insert(Entity::Accounts, accounts.clone());
     entity_id_components.insert(Entity::Pools, pools.clone());
-    entity_id_components.insert(Entity::Utxos, utxos.clone());
+    entity_id_components.insert(Entity::UTXOs, utxos.clone());
     let entity_ids_switcher = shared(SwitchComponent::new(
         entity_types.clone(),
         |s| serde_plain::from_str(s).unwrap(),
@@ -50,13 +49,12 @@ pub fn build_layout<'a>(
         HashMap::new();
     entity_detail_components.insert(Entity::Accounts, account_details);
     entity_detail_components.insert(Entity::Pools, pool_details);
-    entity_detail_components.insert(Entity::Utxos, utxo_details);
+    entity_detail_components.insert(Entity::UTXOs, utxo_details);
     let entity_details_switcher = shared(SwitchComponent::new(
         entity_types.clone(),
         |s| serde_plain::from_str(s).unwrap(),
         entity_detail_components,
     ));
-    // let entity_details_switcher = shared(EmptyComponent::default());
 
     let body = shared(SplitComponent::new_2(
         Axis::Vertical,

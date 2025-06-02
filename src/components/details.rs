@@ -3,7 +3,7 @@ use crate::{
     action::Action,
     focus::{FocusState, FocusableComponent},
     shared::SharedGetter,
-    to_rich::{RichText, ToRichText},
+    to_rich::ToRichText,
 };
 use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent};

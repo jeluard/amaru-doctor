@@ -1,34 +1,20 @@
 use crate::{
-    action::SelectedItem,
     components::{details::DetailsComponent, group::scroll::ScrollableListComponent},
     shared::{Getter, SharedGetter, shared},
-    to_rich::{RichText, ToRichText},
 };
 use amaru_kernel::{TransactionInput, TransactionOutput};
 use amaru_ledger::store::ReadOnlyStore;
 use amaru_stores::rocksdb::RocksDB;
-use color_eyre::Result;
 use ratatui::widgets::ListItem;
 use std::sync::Arc;
 
 type UtxoListEntry = (TransactionInput, TransactionOutput);
 type UtxoEnumEntry = (usize, UtxoListEntry);
-type UtxoListSelector = fn(&UtxoEnumEntry) -> Option<SelectedItem>;
 type UtxoListRenderer = fn(&UtxoEnumEntry) -> ListItem;
 
 pub fn new_utxo_list_component(
     db: &Arc<RocksDB>,
-) -> ScrollableListComponent<
-    UtxoEnumEntry,
-    impl Iterator<Item = UtxoEnumEntry>,
-    // UtxoListSelector,
-    UtxoListRenderer,
-> {
-    // fn select(item: &UtxoEnumEntry) -> Option<SelectedItem> {
-    //     let (_, (input, _)) = item;
-    //     Some(SelectedItem::Utxo(input.clone()))
-    // }
-
+) -> ScrollableListComponent<UtxoEnumEntry, impl Iterator<Item = UtxoEnumEntry>, UtxoListRenderer> {
     fn render(item: &UtxoEnumEntry) -> ListItem {
         let (i, (input, _)) = item;
         ListItem::new(format!("{}: {}", i, input.transaction_id))
@@ -58,15 +44,5 @@ fn map(shared_getter: SharedGetter<UtxoEnumEntry>) -> SharedGetter<UtxoListEntry
 pub fn new_utxo_details_component<'a>(
     shared_getter: SharedGetter<UtxoEnumEntry>,
 ) -> DetailsComponent<UtxoListEntry> {
-    // let render = move |key: &TransactionInput| {
-    //     let val = db.utxo(key)?;
-    //     Ok(val.map(|v| (key.clone(), v).into_rich_text()))
-    // };
-
-    // let first_key = db
-    //     .iter_utxos()
-    //     .ok()
-    //     .and_then(|mut i| i.next().map(|(k, _)| k));
-
     DetailsComponent::new("UTXO Details".to_string(), map(shared_getter))
 }

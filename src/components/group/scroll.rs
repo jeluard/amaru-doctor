@@ -1,5 +1,5 @@
 use crate::{
-    action::{Action, SelectedItem},
+    action::Action,
     components::Component,
     focus::{FocusState, FocusableComponent},
     shared::Getter,
@@ -14,13 +14,11 @@ pub struct ScrollableListComponent<T, I, F>
 where
     T: Clone,
     I: Iterator<Item = T>,
-    // S: Fn(&T) -> Option<SelectedItem> + Copy,
     F: Fn(&T) -> ListItem + Copy,
 {
     title: String,
     state: WindowState<T, I>,
     focus: FocusState,
-    // select_mapper: S,
     render_item: F,
 }
 
@@ -28,45 +26,23 @@ impl<T, I, F> ScrollableListComponent<T, I, F>
 where
     T: Clone,
     I: Iterator<Item = T>,
-    // S: Fn(&T) -> Option<SelectedItem> + Copy,
     F: Fn(&T) -> ListItem + Copy,
 {
-    pub fn new(
-        title: String,
-        iter: I,
-        window_size: usize,
-        // select_mapper: S,
-        render_item: F,
-    ) -> Self {
+    pub fn new(title: String, iter: I, window_size: usize, render_item: F) -> Self {
         let state = WindowState::new(iter, window_size);
         Self {
             title,
             state,
             focus: FocusState::default(),
-            // select_mapper,
             render_item,
         }
     }
-
-    // fn create_select_item(&mut self) -> Option<Action> {
-    //     if let Some(item) = self.state.selected_item() {
-    //         if let Some(selected) = (self.select_mapper)(item) {
-    //             trace!(
-    //                 "ScrollableListComponent::{}: selection {}",
-    //                 self.title, selected
-    //             );
-    //             return Some(Action::SelectItem(selected));
-    //         }
-    //     }
-    //     return None;
-    // }
 }
 
 impl<T, I, F> Getter<T> for ScrollableListComponent<T, I, F>
 where
     T: Clone,
     I: Iterator<Item = T>,
-    // S: Fn(&T) -> Option<SelectedItem> + Copy,
     F: Fn(&T) -> ListItem + Copy,
 {
     fn get_mut(&mut self) -> Option<T> {
@@ -78,7 +54,6 @@ impl<T, I, F> FocusableComponent for ScrollableListComponent<T, I, F>
 where
     T: Clone,
     I: Iterator<Item = T>,
-    // S: Fn(&T) -> Option<SelectedItem> + Copy,
     F: Fn(&T) -> ListItem + Copy,
 {
     fn focus_state(&self) -> &FocusState {
@@ -94,7 +69,6 @@ impl<T, I, F> Component for ScrollableListComponent<T, I, F>
 where
     T: Clone,
     I: Iterator<Item = T>,
-    // S: Fn(&T) -> Option<SelectedItem> + Copy,
     F: Fn(&T) -> ListItem + Copy,
 {
     fn debug_name(&self) -> String {
@@ -109,18 +83,8 @@ where
         trace!("ScrollableListComponent::{}: has focus", self.title);
 
         match key.code {
-            KeyCode::Up => {
-                self.state.scroll_up();
-                // if let Some(action) = self.create_select_item() {
-                //     return Ok(vec![action]);
-                // }
-            }
-            KeyCode::Down => {
-                self.state.scroll_down();
-                // if let Some(action) = self.create_select_item() {
-                //     return Ok(vec![action]);
-                // }
-            }
+            KeyCode::Up => self.state.scroll_up(),
+            KeyCode::Down => self.state.scroll_down(),
             _ => {
                 trace!(
                     "ScrollableListComponent::{}: no match for key code {}",
