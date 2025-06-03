@@ -60,9 +60,12 @@ jobs:
         env:
           RUSTDOCFLAGS: -D warnings
         run: cargo doc --no-deps --document-private-items --all-features --workspace --examples
-      - uses: charmbracelet/vhs-action@v1
-        with:
-          path: 'resources/demo.tape'
+      - name: 🧪 Generate tgifs
+        run: |
+          sudo apt update
+          sudo apt install -y ffmpeg ttyd
+          go install github.com/charmbracelet/vhs@latest
+          vhs resources/vhs.tape
         env:
           AMARU_LEDGER_DB: 'resources/ledger.db'
       - uses: stefanzweifel/git-auto-commit-action@v4
