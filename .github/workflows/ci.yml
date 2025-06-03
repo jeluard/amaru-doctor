@@ -19,7 +19,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Run tests
         run: cargo test --locked --all-features --workspace
-
   rustfmt:
     name: Rustfmt
     runs-on: ubuntu-latest
@@ -61,3 +60,18 @@ jobs:
         env:
           RUSTDOCFLAGS: -D warnings
         run: cargo doc --no-deps --document-private-items --all-features --workspace --examples
+      - uses: charmbracelet/vhs-action@v1
+        with:
+          path: 'resources/demo.tape'
+        env:
+          AMARU_LEDGER_DB: 'resources/ledger.db'
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          commit_message: Update generated VHS GIF
+          branch: main
+          commit_user_name: vhs-action 📼
+          commit_user_email: actions@github.com
+          commit_author: vhs-action 📼 <actions@github.com>
+          file_pattern: 'resources/*.gif'

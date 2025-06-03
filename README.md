@@ -6,3 +6,7 @@ A TUI for amaru
 
 
 Run with `AMARU_LEDGER_DB=path/to/ledger.db cargo run`
+
+![Demo](./resources/demo.gif)
+
+Thanks to https://github.com/geofflittle for the contributions.
