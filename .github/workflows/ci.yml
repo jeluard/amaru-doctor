@@ -62,6 +62,8 @@ jobs:
         env:
           RUSTDOCFLAGS: -D warnings
         run: cargo doc --no-deps --document-private-items --all-features --workspace --examples
+      - name: Build
+        run: cargo build --release
       - name: 🚀 Setup Go
         uses: actions/setup-go@v5.5.0
       - name: 🧪 Generate gifs

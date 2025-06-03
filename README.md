@@ -1,7 +1,5 @@
 # amaru-doctor
 
-[![CI](https://github.com/jeluard/amaru-doctor/workflows/ci/badge.svg)](https://github.com/jeluard/amaru-doctor/actions)
-
 A TUI for amaru
 
 
