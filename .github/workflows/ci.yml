@@ -6,6 +6,8 @@ on:
       - main
   pull_request:
 
+permissions:
+   contents: write
 jobs:
 
   test:
@@ -70,7 +72,7 @@ jobs:
           vhs resources/demo.tape
         env:
           AMARU_LEDGER_DB: 'resources/ledger.db'
-      - uses: stefanzweifel/git-auto-commit-action@v4
+      - uses: stefanzweifel/git-auto-commit-action@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
