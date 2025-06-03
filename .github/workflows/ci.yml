@@ -67,7 +67,7 @@ jobs:
           sudo apt update
           sudo apt install -y ffmpeg ttyd
           go install github.com/charmbracelet/vhs@latest
-          vhs resources/vhs.tape
+          vhs resources/demo.tape
         env:
           AMARU_LEDGER_DB: 'resources/ledger.db'
       - uses: stefanzweifel/git-auto-commit-action@v4
