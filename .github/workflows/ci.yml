@@ -60,7 +60,9 @@ jobs:
         env:
           RUSTDOCFLAGS: -D warnings
         run: cargo doc --no-deps --document-private-items --all-features --workspace --examples
-      - name: 🧪 Generate tgifs
+      - name: 🚀 Setup Go
+        uses: actions/setup-go@v5.5.0
+      - name: 🧪 Generate gifs
         run: |
           sudo apt update
           sudo apt install -y ffmpeg ttyd
