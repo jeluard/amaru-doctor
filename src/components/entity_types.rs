@@ -1,23 +1,23 @@
 use ratatui::widgets::ListItem;
 
-use crate::to_list_item::ToListItem;
+use crate::{action::Entity, to_list_item::ToListItem};
 
 use super::group::scroll::ScrollableListComponent;
 
-impl ToListItem for String {
+impl ToListItem for Entity {
     fn to_list_item(&self) -> ListItem<'static> {
-        ListItem::new(self.to_owned())
+        ListItem::new(self.to_string())
     }
 }
 
-pub fn new_entity_types_list() -> ScrollableListComponent<'static, String> {
+pub fn new_entity_types_list() -> ScrollableListComponent<'static, Entity> {
     let items = vec![
-        "accounts".to_string(),
-        "block issuers".to_string(),
-        "dreps".to_string(),
-        "pools".to_string(),
-        "proposals".to_string(),
-        "utxos".to_string(),
+        Entity::Accounts,
+        Entity::BlockIssuers,
+        Entity::DReps,
+        Entity::Pools,
+        Entity::Proposals,
+        Entity::UTXOs,
     ]
     .into_iter();
 

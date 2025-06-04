@@ -9,6 +9,7 @@ use crate::{
 use color_eyre::{Result, eyre::Ok};
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
+use std::cell::{Ref, RefMut};
 use tracing::trace;
 
 pub struct ScrollableListComponent<'a, T>
@@ -16,7 +17,7 @@ where
     T: Clone + ToListItem,
 {
     title: String,
-    state: WindowState<T, Box<dyn Iterator<Item = T> + 'a>>,
+    state: WindowState<'a, T>,
     focus: FocusState,
 }
 
@@ -28,8 +29,7 @@ where
     where
         I: Iterator<Item = T> + 'a,
     {
-        let box_iter: Box<dyn Iterator<Item = T>> = Box::new(iter);
-        let state = WindowState::new(box_iter, window_size);
+        let state = WindowState::new(iter, window_size);
         Self {
             title,
             state,
@@ -40,10 +40,14 @@ where
 
 impl<'a, T> Getter<T> for ScrollableListComponent<'a, T>
 where
-    T: Clone + ToListItem,
+    T: Clone + ToListItem + 'a,
 {
-    fn get_mut(&mut self) -> Option<T> {
-        self.state.selected_item().cloned()
+    fn get(&self) -> Option<Ref<T>> {
+        self.state.selected_item()
+    }
+
+    fn get_mut(&self) -> Option<RefMut<T>> {
+        self.state.selected_item_mut()
     }
 }
 

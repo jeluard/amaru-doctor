@@ -44,7 +44,6 @@ pub fn build_layout<'a>(
     entity_id_components.insert(Entity::UTXOs, utxos);
     let entity_ids_switcher = shared(SwitchComponent::new(
         entity_types.clone(),
-        |s| serde_plain::from_str(s).unwrap(),
         entity_id_components,
     ));
 
@@ -58,7 +57,6 @@ pub fn build_layout<'a>(
     entity_detail_components.insert(Entity::UTXOs, utxo_details);
     let entity_details_switcher = shared(SwitchComponent::new(
         entity_types.clone(),
-        |s| serde_plain::from_str(s).unwrap(),
         entity_detail_components,
     ));
 

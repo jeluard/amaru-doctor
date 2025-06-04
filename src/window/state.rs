@@ -1,21 +1,13 @@
-use std::iter::Iterator;
-
 use crate::window::iter::WindowIter;
+use std::cell::{Ref, RefMut};
 
-pub struct WindowState<T, I>
-where
-    I: Iterator<Item = T>,
-{
-    window: WindowIter<T, I>,
+pub struct WindowState<'a, I> {
+    window: WindowIter<'a, I>,
     selected: usize,
 }
 
-impl<T, I> WindowState<T, I>
-where
-    T: Clone,
-    I: Iterator<Item = T>,
-{
-    pub fn new(iter: I, window_size: usize) -> Self {
+impl<'a, I> WindowState<'a, I> {
+    pub fn new<T: Iterator<Item = I> + 'a>(iter: T, window_size: usize) -> Self {
         Self {
             window: WindowIter::new(iter, window_size),
             selected: 0,
@@ -29,13 +21,27 @@ where
             .min(self.window.view().len().saturating_sub(1));
     }
 
-    pub fn window_with_selected_index(&mut self) -> (&[T], usize) {
+    pub fn window_with_selected_index(&self) -> (Ref<[I]>, usize) {
         let view = self.window.view();
         (view, self.selected)
     }
 
-    pub fn selected_item(&mut self) -> Option<&T> {
-        self.window.view().get(self.selected)
+    pub fn selected_item(&self) -> Option<Ref<I>> {
+        let view = self.window.view();
+        if self.selected < view.len() {
+            Some(Ref::map(view, |v| &v[self.selected]))
+        } else {
+            None
+        }
+    }
+
+    pub fn selected_item_mut(&self) -> Option<RefMut<I>> {
+        let view = self.window.view_mut();
+        if self.selected < view.len() {
+            Some(RefMut::map(view, |v| &mut v[self.selected]))
+        } else {
+            None
+        }
     }
 
     pub fn scroll_up(&mut self) {

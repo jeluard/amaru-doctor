@@ -14,62 +14,47 @@ use std::{collections::HashMap, fmt::Debug, hash::Hash};
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::trace;
 
-pub struct SwitchComponent<'a, S, M, K>
+pub struct SwitchComponent<'a, K>
 where
-    S: Debug,
-    M: Fn(&S) -> K,
-    K: Eq + Hash + Clone + Debug,
+    K: Eq + Hash + Debug,
 {
-    shared: SharedGetter<'a, S>,
-    mapper: M,
+    shared: SharedGetter<'a, K>,
     focus: FocusState,
     components: HashMap<K, Shared<'a, dyn FocusableComponent + 'a>>,
 }
 
-impl<'a, S, M, K> SwitchComponent<'a, S, M, K>
+impl<'a, K> SwitchComponent<'a, K>
 where
-    S: Debug,
-    M: Fn(&S) -> K,
-    K: Eq + Hash + Clone + Debug,
+    K: Eq + Hash + Debug + Clone,
 {
     pub fn new(
-        shared: SharedGetter<'a, S>,
-        mapper: M,
-        components: HashMap<K, Shared<'a, dyn FocusableComponent + 'a>>,
+        shared: SharedGetter<'a, K>,
+        components: HashMap<K, Shared<dyn FocusableComponent + 'a>>,
     ) -> Self {
-        let k = components.iter().next().map(|(k, _)| k.clone());
+        let k = components.keys().next();
         trace!("SwitchComponent init'ing, first selected: {:?}", k);
         Self {
             shared,
-            mapper,
             focus: FocusState::default(),
             components,
         }
     }
 
-    fn current(&self) -> Option<Shared<'a, dyn FocusableComponent + 'a>> {
-        let key = {
-            let mut shared = self.shared.borrow_mut();
-            shared.get_mut().map(|s| (self.mapper)(&s))
-        };
-
-        key.and_then(|k| self.components.get(&k).cloned())
+    fn current_key(&self) -> Option<K> {
+        self.shared.borrow().get().map(|k| k.clone())
     }
 
-    fn current_mut(&mut self) -> Option<Shared<'a, dyn FocusableComponent + 'a>> {
-        let key = {
-            let mut shared = self.shared.borrow_mut();
-            shared.get_mut().map(|s| (self.mapper)(&s))
-        };
+    fn current(&self) -> Option<&Shared<dyn FocusableComponent + 'a>> {
+        self.current_key().and_then(|k| self.components.get(&k))
+    }
 
-        key.and_then(|k| self.components.get(&k).cloned())
+    fn current_mut(&mut self) -> Option<&Shared<dyn FocusableComponent + 'a>> {
+        self.current_key().and_then(|k| self.components.get(&k))
     }
 }
 
-impl<'a, S, M, K> FocusableComponent for SwitchComponent<'a, S, M, K>
+impl<'a, K> FocusableComponent for SwitchComponent<'a, K>
 where
-    S: Debug,
-    M: Fn(&S) -> K,
     K: Eq + Hash + Clone + Debug,
 {
     fn focus_state(&self) -> &FocusState {
@@ -94,10 +79,8 @@ where
     }
 }
 
-impl<'a, S, M, K> Component for SwitchComponent<'a, S, M, K>
+impl<'a, K> Component for SwitchComponent<'a, K>
 where
-    S: Debug,
-    M: Fn(&S) -> K,
     K: Eq + Hash + Clone + Debug,
 {
     fn debug_name(&self) -> String {
@@ -113,7 +96,7 @@ where
     }
 
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
-        let mut selected = self.shared.borrow_mut();
+        let selected = self.shared.borrow_mut();
         let selected_key = selected.get_mut();
 
         if !self.has_focus() {
