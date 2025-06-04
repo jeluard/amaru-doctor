@@ -25,7 +25,7 @@ pub fn new_proposal_list_component(
     ScrollableListComponent::new("Accounts".to_string(), iter, 10, render)
 }
 
-pub fn new_proposal_details_component<'a>(
+pub fn new_proposal_details_component(
     shared: SharedGetter<ProposalItem>,
 ) -> DetailsComponent<ProposalItem> {
     DetailsComponent::new("Proposal Details".to_string(), shared)

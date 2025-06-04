@@ -1,10 +1,8 @@
 use super::group::scroll::ScrollableListComponent;
 use ratatui::widgets::ListItem;
 
-#[allow(clippy::type_complexity)]
 pub fn new_entity_types_list()
 -> ScrollableListComponent<String, std::vec::IntoIter<String>, fn(&String) -> ListItem> {
-    #[allow(clippy::ptr_arg)]
     fn render(item: &String) -> ListItem {
         ListItem::new(item.to_owned())
     }

@@ -24,8 +24,6 @@ pub fn new_drep_list_component(
     ScrollableListComponent::new("Accounts".to_string(), iter, 10, render)
 }
 
-pub fn new_drep_details_component<'a>(
-    shared: SharedGetter<DRepItem>,
-) -> DetailsComponent<DRepItem> {
+pub fn new_drep_details_component(shared: SharedGetter<DRepItem>) -> DetailsComponent<DRepItem> {
     DetailsComponent::new("DRep Details".to_string(), shared)
 }

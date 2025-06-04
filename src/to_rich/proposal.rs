@@ -23,25 +23,25 @@ impl<'a> fmt::Display for ProposalIdDisplay<'a> {
 }
 
 impl ToRichText for ProposalId {
-    fn into_rich_text(&self) -> super::RichText {
+    fn to_rich_text(&self) -> super::RichText {
         super::RichText::Single(Span::raw(ProposalIdDisplay(self).to_string()))
     }
 }
 
 impl ToRichText for ProposalItem {
-    fn into_rich_text(&self) -> super::RichText {
+    fn to_rich_text(&self) -> super::RichText {
         let mut lines = Vec::new();
         lines.extend(labeled_default_single(
             "Proposal",
             ProposalIdDisplay(&self.0),
         ));
-        lines.extend(self.1.into_rich_text().unwrap_lines());
+        lines.extend(self.1.to_rich_text().unwrap_lines());
         super::RichText::Lines(lines)
     }
 }
 
 impl ToRichText for proposals::Row {
-    fn into_rich_text(&self) -> super::RichText {
+    fn to_rich_text(&self) -> super::RichText {
         let mut lines = Vec::new();
         lines.extend(labeled_default("Proposed In", &self.proposed_in));
         lines.extend(labeled_default_single("Valid Until", self.valid_until));
@@ -51,7 +51,7 @@ impl ToRichText for proposals::Row {
 }
 
 impl ToRichText for ProposalPointer {
-    fn into_rich_text(&self) -> super::RichText {
+    fn to_rich_text(&self) -> super::RichText {
         let mut lines = Vec::new();
         lines.extend(labeled_default("Transaction", &self.transaction));
         lines.extend(labeled_default_single(
@@ -63,7 +63,7 @@ impl ToRichText for ProposalPointer {
 }
 
 impl ToRichText for TransactionPointer {
-    fn into_rich_text(&self) -> super::RichText {
+    fn to_rich_text(&self) -> super::RichText {
         let mut lines = Vec::new();
         lines.extend(labeled_default_single("Slot", self.slot));
         lines.extend(labeled_default_single(
@@ -75,7 +75,7 @@ impl ToRichText for TransactionPointer {
 }
 
 impl ToRichText for Proposal {
-    fn into_rich_text(&self) -> super::RichText {
+    fn to_rich_text(&self) -> super::RichText {
         let mut lines = Vec::new();
         lines.extend(labeled_default_single("Deposit", self.deposit));
         lines.extend(labeled_default_single(
@@ -89,7 +89,7 @@ impl ToRichText for Proposal {
 }
 
 impl ToRichText for GovAction {
-    fn into_rich_text(&self) -> super::RichText {
+    fn to_rich_text(&self) -> super::RichText {
         let mut lines = vec![];
 
         match self {
@@ -141,7 +141,7 @@ impl ToRichText for GovAction {
 }
 
 impl ToRichText for ProtocolParamUpdate {
-    fn into_rich_text(&self) -> super::RichText {
+    fn to_rich_text(&self) -> super::RichText {
         let mut lines = Vec::new();
         //         pub struct ProtocolParamUpdate {
         lines.extend(labeled_default_opt_single("Min Fee {a}", self.minfee_a));
@@ -255,7 +255,7 @@ impl ToRichText for ProtocolParamUpdate {
 }
 
 impl ToRichText for CostModels {
-    fn into_rich_text(&self) -> super::RichText {
+    fn to_rich_text(&self) -> super::RichText {
         let mut lines = Vec::new();
         lines.extend(labeled_default_opt_single(
             "Plutus V1",
@@ -282,7 +282,7 @@ impl<'a> fmt::Display for CostModelDisplay<'a> {
 }
 
 impl ToRichText for ExUnitPrices {
-    fn into_rich_text(&self) -> super::RichText {
+    fn to_rich_text(&self) -> super::RichText {
         let mut lines = Vec::new();
         lines.extend(labeled_default_single(
             "Mem price",
@@ -297,7 +297,7 @@ impl ToRichText for ExUnitPrices {
 }
 
 impl ToRichText for ExUnits {
-    fn into_rich_text(&self) -> super::RichText {
+    fn to_rich_text(&self) -> super::RichText {
         let mut lines = Vec::new();
         lines.extend(labeled_default_single("Mem", self.mem));
         lines.extend(labeled_default_single("Steps", self.steps));
@@ -306,7 +306,7 @@ impl ToRichText for ExUnits {
 }
 
 impl ToRichText for PoolVotingThresholds {
-    fn into_rich_text(&self) -> super::RichText {
+    fn to_rich_text(&self) -> super::RichText {
         let mut lines = Vec::new();
         lines.extend(labeled_default(
             "Motion No Confidence",

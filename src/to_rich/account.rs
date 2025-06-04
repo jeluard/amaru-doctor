@@ -24,25 +24,25 @@ impl<'a> fmt::Display for StakeCredentialDisplay<'a> {
 }
 
 impl ToRichText for StakeCredential {
-    fn into_rich_text(&self) -> RichText {
-        RichText::Single(Span::raw(StakeCredentialDisplay(&self).to_string()))
+    fn to_rich_text(&self) -> RichText {
+        RichText::Single(Span::raw(StakeCredentialDisplay(self).to_string()))
     }
 }
 
 impl ToRichText for AccountListEntry {
-    fn into_rich_text(&self) -> RichText {
+    fn to_rich_text(&self) -> RichText {
         let mut lines = Vec::new();
         lines.extend(labeled_default_single(
             "Account",
             StakeCredentialDisplay(&self.0),
         ));
-        lines.extend(self.1.into_rich_text().unwrap_lines());
+        lines.extend(self.1.to_rich_text().unwrap_lines());
         RichText::Lines(lines)
     }
 }
 
 impl ToRichText for Row {
-    fn into_rich_text(&self) -> RichText {
+    fn to_rich_text(&self) -> RichText {
         let mut lines = Vec::new();
 
         lines.extend(labeled(
@@ -64,8 +64,8 @@ impl ToRichText for Row {
             self.drep
                 .as_ref()
                 .map(|(drep, ptr)| {
-                    let mut drep_lines = drep.into_rich_text().unwrap_lines();
-                    drep_lines.extend(ptr.into_rich_text().unwrap_lines());
+                    let mut drep_lines = drep.to_rich_text().unwrap_lines();
+                    drep_lines.extend(ptr.to_rich_text().unwrap_lines());
                     RichText::Lines(drep_lines)
                 })
                 .unwrap_or_else(|| RichText::Single(Span::raw("None"))),
@@ -83,7 +83,7 @@ impl ToRichText for Row {
 }
 
 impl ToRichText for DRep {
-    fn into_rich_text(&self) -> RichText {
+    fn to_rich_text(&self) -> RichText {
         let (label, value, color) = match self {
             DRep::Key(h) => ("DRep", format!("Key({})", h), Color::Green),
             DRep::Script(h) => ("DRep", format!("Script({})", h), Color::Magenta),

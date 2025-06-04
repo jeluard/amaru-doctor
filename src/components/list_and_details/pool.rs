@@ -25,7 +25,7 @@ pub fn new_pool_list_component(
     ScrollableListComponent::new("Pools".to_string(), iter, 10, render)
 }
 
-pub fn new_pool_details_component<'a>(
+pub fn new_pool_details_component(
     shared: SharedGetter<PoolListEntry>,
 ) -> DetailsComponent<PoolListEntry> {
     DetailsComponent::new("Pool Details".to_string(), shared)

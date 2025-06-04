@@ -29,7 +29,7 @@ pub fn new_account_list_component(
     ScrollableListComponent::new("Accounts".to_string(), iter, 10, render)
 }
 
-pub fn new_account_details_component<'a>(
+pub fn new_account_details_component(
     shared: SharedGetter<AccountListEntry>,
 ) -> DetailsComponent<AccountListEntry> {
     DetailsComponent::new("Account Details".to_string(), shared)

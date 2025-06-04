@@ -41,7 +41,7 @@ fn map(shared_getter: SharedGetter<UtxoEnumEntry>) -> SharedGetter<UtxoListEntry
     })
 }
 
-pub fn new_utxo_details_component<'a>(
+pub fn new_utxo_details_component(
     shared_getter: SharedGetter<UtxoEnumEntry>,
 ) -> DetailsComponent<UtxoListEntry> {
     DetailsComponent::new("UTXO Details".to_string(), map(shared_getter))

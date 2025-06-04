@@ -19,7 +19,7 @@ pub enum RichText {
 }
 
 pub trait ToRichText {
-    fn into_rich_text(&self) -> RichText;
+    fn to_rich_text(&self) -> RichText;
 }
 
 impl RichText {
@@ -72,7 +72,7 @@ fn labeled_default<T>(label: &str, value: &T) -> Vec<Line<'static>>
 where
     T: ToRichText,
 {
-    labeled(label.to_owned(), value.into_rich_text(), Style::default())
+    labeled(label.to_owned(), value.to_rich_text(), Style::default())
 }
 
 fn labeled_default_single<T>(label: &str, value: T) -> Vec<Line<'static>>
@@ -93,7 +93,7 @@ where
     labeled(
         label.to_owned(),
         value
-            .map(|v| v.into_rich_text())
+            .map(|v| v.to_rich_text())
             .unwrap_or(RichText::Single(Span::raw("None"))),
         Style::default(),
     )
@@ -121,25 +121,25 @@ impl<'a> fmt::Display for RationalNumberDisplay<'a> {
 }
 
 impl ToRichText for RationalNumber {
-    fn into_rich_text(&self) -> RichText {
-        RichText::Single(Span::raw(RationalNumberDisplay(&self).to_string()))
+    fn to_rich_text(&self) -> RichText {
+        RichText::Single(Span::raw(RationalNumberDisplay(self).to_string()))
     }
 }
 
 impl ToRichText for u64 {
-    fn into_rich_text(&self) -> RichText {
+    fn to_rich_text(&self) -> RichText {
         RichText::Single(Span::raw(self.to_string()))
     }
 }
 
 impl ToRichText for Bytes {
-    fn into_rich_text(&self) -> RichText {
+    fn to_rich_text(&self) -> RichText {
         RichText::Single(Span::raw(self.to_string()))
     }
 }
 
 impl<const BYTES: usize> ToRichText for Hash<BYTES> {
-    fn into_rich_text(&self) -> RichText {
+    fn to_rich_text(&self) -> RichText {
         RichText::Single(Span::raw(self.to_string()))
     }
 }
@@ -148,7 +148,7 @@ impl<T> ToRichText for (T, T)
 where
     T: fmt::Display,
 {
-    fn into_rich_text(&self) -> RichText {
+    fn to_rich_text(&self) -> RichText {
         RichText::Single(Span::raw(format!("({}, {})", self.0, self.1)))
     }
 }
@@ -157,9 +157,9 @@ impl<T> ToRichText for Nullable<T>
 where
     T: Clone + ToRichText,
 {
-    fn into_rich_text(&self) -> RichText {
+    fn to_rich_text(&self) -> RichText {
         match &self {
-            Nullable::Some(v) => v.into_rich_text(),
+            Nullable::Some(v) => v.to_rich_text(),
             Nullable::Null => RichText::Single(Span::raw("None")),
             Nullable::Undefined => RichText::Single(Span::raw("Undefined")),
         }
@@ -170,9 +170,9 @@ impl<K> ToRichText for Set<K>
 where
     K: ToRichText,
 {
-    fn into_rich_text(&self) -> RichText {
+    fn to_rich_text(&self) -> RichText {
         self.iter()
-            .flat_map(|k| k.into_rich_text().unwrap_lines())
+            .flat_map(|k| k.to_rich_text().unwrap_lines())
             .collect()
     }
 }
@@ -182,7 +182,7 @@ where
     K: Clone + ToRichText,
     V: Clone + ToRichText,
 {
-    fn into_rich_text(&self) -> RichText {
+    fn to_rich_text(&self) -> RichText {
         self.iter()
             .flat_map(|(k, v)| {
                 let mut lines = Vec::new();
@@ -195,7 +195,7 @@ where
 }
 
 impl ToRichText for CertificatePointer {
-    fn into_rich_text(&self) -> RichText {
+    fn to_rich_text(&self) -> RichText {
         let mut lines = Vec::new();
         lines.extend(labeled(
             "Slot".to_string(),

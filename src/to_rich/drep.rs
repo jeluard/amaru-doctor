@@ -9,19 +9,19 @@ use amaru_kernel::Anchor;
 use amaru_ledger::store::columns::dreps;
 
 impl ToRichText for DRepItem {
-    fn into_rich_text(&self) -> super::RichText {
+    fn to_rich_text(&self) -> super::RichText {
         let mut lines = Vec::new();
         lines.extend(labeled_default_single(
             "DRep",
             StakeCredentialDisplay(&self.0),
         ));
-        lines.extend(self.1.into_rich_text().unwrap_lines());
+        lines.extend(self.1.to_rich_text().unwrap_lines());
         RichText::Lines(lines)
     }
 }
 
 impl ToRichText for dreps::Row {
-    fn into_rich_text(&self) -> RichText {
+    fn to_rich_text(&self) -> RichText {
         let mut lines = Vec::new();
         lines.extend(labeled_default_single("Deposit", self.deposit));
         lines.extend(labeled_default_opt("Anchor", self.anchor.as_ref()));
@@ -39,7 +39,7 @@ impl ToRichText for dreps::Row {
 }
 
 impl ToRichText for Anchor {
-    fn into_rich_text(&self) -> RichText {
+    fn to_rich_text(&self) -> RichText {
         let mut lines = Vec::new();
         lines.extend(labeled_default_single("Url", &self.url));
         lines.extend(labeled_default_single("Content Hash", self.content_hash));

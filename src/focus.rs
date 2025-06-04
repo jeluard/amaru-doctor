@@ -17,19 +17,6 @@ impl FocusState {
     }
 }
 
-// pub trait Focusable {
-//     fn focus_state(&self) -> &FocusState;
-//     fn focus_state_mut(&mut self) -> &mut FocusState;
-
-//     fn set_focus(&mut self, b: bool) {
-//         self.focus_state_mut().set(b);
-//     }
-
-//     fn has_focus(&self) -> bool {
-//         self.focus_state().get()
-//     }
-// }
-
 pub trait FocusableComponent: Component {
     fn focus_state(&self) -> &FocusState;
     fn focus_state_mut(&mut self) -> &mut FocusState;
@@ -40,11 +27,9 @@ pub trait FocusableComponent: Component {
     }
 
     fn has_focus(&self) -> bool {
-        let focus = self.focus_state().get();
-        focus
+        self.focus_state().get()
     }
 }
-// impl<T: Component + Focusable> FocusableComponent for T {}
 
 #[derive(Default)]
 pub struct FocusManager<'a> {

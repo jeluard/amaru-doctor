@@ -89,7 +89,7 @@ where
         }
 
         let lines = match self.shared.borrow_mut().get_mut() {
-            Some(val) => val.into_rich_text().unwrap_lines(),
+            Some(val) => val.to_rich_text().unwrap_lines(),
             None => vec![Line::from("None selected")],
         };
 
