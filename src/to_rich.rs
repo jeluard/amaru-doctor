@@ -12,10 +12,8 @@ pub mod utxo;
 
 const LABEL_STYLE: Style = Style::new().fg(Color::Gray).add_modifier(Modifier::BOLD);
 
-// TODO: Check if this is a good structure + into_rich_text + unwrap_lines
 pub enum RichText {
     Lines(Vec<Line<'static>>),
-    // TODO: Change to T: Display?
     Single(Span<'static>),
 }
 
@@ -38,15 +36,6 @@ impl FromIterator<Line<'static>> for RichText {
     }
 }
 
-// pub struct DisplayRichText<'a, T: fmt::Display>(pub &'a T);
-
-// impl<'a, T: fmt::Display> ToRichText for DisplayRichText<'a, T> {
-//     fn into_rich_text(&self) -> RichText {
-//         RichText::Single(Span::raw(self.0.to_string()))
-//     }
-// }
-
-// TODO: Change to &String or &str?
 fn labeled(label: String, value: RichText, value_style: Style) -> Vec<Line<'static>> {
     match value {
         RichText::Single(span) => vec![Line::from(vec![

@@ -143,7 +143,6 @@ impl ToRichText for GovAction {
 impl ToRichText for ProtocolParamUpdate {
     fn to_rich_text(&self) -> super::RichText {
         let mut lines = Vec::new();
-        //         pub struct ProtocolParamUpdate {
         lines.extend(labeled_default_opt_single("Min Fee {a}", self.minfee_a));
         lines.extend(labeled_default_opt_single("Min Fee {b}", self.minfee_b));
         lines.extend(labeled_default_opt_single(
