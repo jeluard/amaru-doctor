@@ -1,6 +1,5 @@
-use crate::{components::list_and_details::account::AccountItem, to_rich::labeled_default_single};
-
 use super::{RichText, ToRichText, labeled};
+use crate::{to_list_item::AccountItem, to_rich::labeled_default_single};
 use amaru_kernel::{DRep, StakeCredential};
 use amaru_ledger::store::columns::accounts::Row;
 use ratatui::{

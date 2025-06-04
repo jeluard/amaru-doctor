@@ -9,18 +9,13 @@ use crate::{
             split::{Axis, SplitComponent},
             switch::SwitchComponent,
         },
-        list_and_details::{
-            account::{new_account_details_component, new_account_list_component},
-            drep::{new_drep_details_component, new_drep_list_component},
-            pool::{new_pool_details_component, new_pool_list_component},
-            proposal::{new_proposal_details_component, new_proposal_list_component},
-            utxo::{new_utxo_details_component, new_utxo_list_component},
-        },
+        list_and_details::new_list_detail_components,
         message::Message,
     },
     focus::{FocusManager, FocusableComponent},
     shared::{Shared, shared},
 };
+use amaru_ledger::store::ReadOnlyStore;
 use amaru_stores::rocksdb::RocksDB;
 use color_eyre::Result;
 use std::{collections::HashMap, sync::Arc};
@@ -31,31 +26,32 @@ pub fn build_layout<'a>(
 ) -> Result<(RootLayout<'a>, FocusManager<'a>)> {
     let entity_types = shared(new_entity_types_list());
 
-    let accounts = shared(new_account_list_component(db));
-    let dreps = shared(new_drep_list_component(db));
-    let pools = shared(new_pool_list_component(db));
-    let proposals = shared(new_proposal_list_component(db));
-    let utxos = shared(new_utxo_list_component(db));
+    let (accounts, account_details) =
+        new_list_detail_components("Account", db.iter_accounts().unwrap());
+    let (block_issuers, block_issuer_details) =
+        new_list_detail_components("Block Issuer", db.iter_block_issuers().unwrap());
+    let (dreps, drep_details) = new_list_detail_components("DRep", db.iter_dreps().unwrap());
+    let (pools, pool_details) = new_list_detail_components("Pool", db.iter_pools().unwrap());
+    let (proposals, proposal_details) =
+        new_list_detail_components("Proposal", db.iter_proposals().unwrap());
+    let (utxos, utxo_details) = new_list_detail_components("UTXO", db.iter_utxos().unwrap());
     let mut entity_id_components: HashMap<Entity, Shared<dyn FocusableComponent>> = HashMap::new();
-    entity_id_components.insert(Entity::Accounts, accounts.clone());
-    entity_id_components.insert(Entity::DReps, dreps.clone());
-    entity_id_components.insert(Entity::Pools, pools.clone());
-    entity_id_components.insert(Entity::Proposals, proposals.clone());
-    entity_id_components.insert(Entity::UTXOs, utxos.clone());
+    entity_id_components.insert(Entity::Accounts, accounts);
+    entity_id_components.insert(Entity::BlockIssuers, block_issuers);
+    entity_id_components.insert(Entity::DReps, dreps);
+    entity_id_components.insert(Entity::Pools, pools);
+    entity_id_components.insert(Entity::Proposals, proposals);
+    entity_id_components.insert(Entity::UTXOs, utxos);
     let entity_ids_switcher = shared(SwitchComponent::new(
         entity_types.clone(),
         |s| serde_plain::from_str(s).unwrap(),
         entity_id_components,
     ));
 
-    let account_details = shared(new_account_details_component(accounts.clone()));
-    let drep_details = shared(new_drep_details_component(dreps.clone()));
-    let pool_details = shared(new_pool_details_component(pools.clone()));
-    let proposal_details = shared(new_proposal_details_component(proposals.clone()));
-    let utxo_details = shared(new_utxo_details_component(utxos.clone()));
     let mut entity_detail_components: HashMap<Entity, Shared<dyn FocusableComponent>> =
         HashMap::new();
     entity_detail_components.insert(Entity::Accounts, account_details);
+    entity_detail_components.insert(Entity::BlockIssuers, block_issuer_details);
     entity_detail_components.insert(Entity::DReps, drep_details);
     entity_detail_components.insert(Entity::Proposals, proposal_details);
     entity_detail_components.insert(Entity::Pools, pool_details);

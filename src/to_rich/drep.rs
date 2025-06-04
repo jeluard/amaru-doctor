@@ -1,5 +1,5 @@
 use crate::{
-    components::list_and_details::drep::DRepItem,
+    to_list_item::DRepItem,
     to_rich::{
         RichText, ToRichText, account::StakeCredentialDisplay, labeled_default,
         labeled_default_opt, labeled_default_opt_single, labeled_default_single,

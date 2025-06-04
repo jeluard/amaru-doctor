@@ -1,5 +1,5 @@
 use crate::{
-    components::list_and_details::proposal::ProposalItem,
+    to_list_item::ProposalItem,
     to_rich::{
         RationalNumberDisplay, ToRichText, labeled_default, labeled_default_opt,
         labeled_default_opt_single, labeled_default_single,

@@ -20,6 +20,8 @@ pub enum Action {
 #[serde(rename_all = "lowercase")]
 pub enum Entity {
     Accounts,
+    #[serde(rename = "block issuers")]
+    BlockIssuers,
     DReps,
     Pools,
     Proposals,

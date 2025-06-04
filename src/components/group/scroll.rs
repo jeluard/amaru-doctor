@@ -4,7 +4,6 @@ use crate::{
     focus::{FocusState, FocusableComponent},
     shared::Getter,
     to_list_item::ToListItem,
-    to_rich::ToRichText,
     window::state::WindowState,
 };
 use color_eyre::{Result, eyre::Ok};
@@ -12,23 +11,25 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
 use tracing::trace;
 
-pub struct ScrollableListComponent<T, I>
+pub struct ScrollableListComponent<'a, T>
 where
     T: Clone + ToListItem,
-    I: Iterator<Item = T>,
 {
     title: String,
-    state: WindowState<T, I>,
+    state: WindowState<T, Box<dyn Iterator<Item = T> + 'a>>,
     focus: FocusState,
 }
 
-impl<T, I> ScrollableListComponent<T, I>
+impl<'a, T> ScrollableListComponent<'a, T>
 where
     T: Clone + ToListItem,
-    I: Iterator<Item = T>,
 {
-    pub fn new(title: String, iter: I, window_size: usize) -> Self {
-        let state = WindowState::new(iter, window_size);
+    pub fn new<I>(title: String, iter: I, window_size: usize) -> Self
+    where
+        I: Iterator<Item = T> + 'a,
+    {
+        let box_iter: Box<dyn Iterator<Item = T>> = Box::new(iter);
+        let state = WindowState::new(box_iter, window_size);
         Self {
             title,
             state,
@@ -37,20 +38,18 @@ where
     }
 }
 
-impl<T, I> Getter<T> for ScrollableListComponent<T, I>
+impl<'a, T> Getter<T> for ScrollableListComponent<'a, T>
 where
     T: Clone + ToListItem,
-    I: Iterator<Item = T>,
 {
     fn get_mut(&mut self) -> Option<T> {
         self.state.selected_item().cloned()
     }
 }
 
-impl<T, I> FocusableComponent for ScrollableListComponent<T, I>
+impl<'a, T> FocusableComponent for ScrollableListComponent<'a, T>
 where
     T: Clone + ToListItem,
-    I: Iterator<Item = T>,
 {
     fn focus_state(&self) -> &FocusState {
         &self.focus
@@ -61,10 +60,9 @@ where
     }
 }
 
-impl<T, I> Component for ScrollableListComponent<T, I>
+impl<'a, T> Component for ScrollableListComponent<'a, T>
 where
     T: Clone + ToListItem,
-    I: Iterator<Item = T>,
 {
     fn debug_name(&self) -> String {
         format!("ScrollableListComponent:{}", self.title)

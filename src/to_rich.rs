@@ -4,6 +4,7 @@ use ratatui::text::{Line, Span};
 use std::fmt;
 
 pub mod account;
+pub mod block_issuer;
 pub mod drep;
 pub mod pool;
 pub mod proposal;

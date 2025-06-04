@@ -12,7 +12,7 @@ use tracing::trace;
 
 pub struct DetailsComponent<'a, K>
 where
-    K: Clone + PartialEq + ToRichText,
+    K: Clone + ToRichText,
 {
     title: String,
     shared: SharedGetter<'a, K>,
@@ -22,7 +22,7 @@ where
 
 impl<'a, K> DetailsComponent<'a, K>
 where
-    K: Clone + PartialEq + ToRichText,
+    K: Clone + ToRichText,
 {
     pub fn new(title: String, shared: SharedGetter<'a, K>) -> Self {
         Self {
@@ -36,7 +36,7 @@ where
 
 impl<'a, K> FocusableComponent for DetailsComponent<'a, K>
 where
-    K: Clone + PartialEq + ToRichText,
+    K: Clone + ToRichText,
 {
     fn focus_state(&self) -> &FocusState {
         &self.focus
@@ -49,19 +49,11 @@ where
 
 impl<'a, K> Component for DetailsComponent<'a, K>
 where
-    K: Clone + PartialEq + ToRichText,
+    K: Clone + ToRichText,
 {
     fn debug_name(&self) -> String {
         format!("DetailsComponent:{}", self.title)
     }
-
-    // No longer listening
-    // fn update(&mut self, action: Action) -> Result<Vec<Action>> {
-    //     if self.selected.update(&action) {
-    //         self.scroll_offset = 0;
-    //     }
-    //     Ok(vec![])
-    // }
 
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
         if !self.has_focus() {

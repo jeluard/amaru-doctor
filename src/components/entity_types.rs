@@ -10,9 +10,10 @@ impl ToListItem for String {
     }
 }
 
-pub fn new_entity_types_list() -> ScrollableListComponent<String, std::vec::IntoIter<String>> {
+pub fn new_entity_types_list() -> ScrollableListComponent<'static, String> {
     let items = vec![
         "accounts".to_string(),
+        "block issuers".to_string(),
         "dreps".to_string(),
         "pools".to_string(),
         "proposals".to_string(),
