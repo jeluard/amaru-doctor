@@ -1,3 +1,6 @@
+use std::fmt;
+
+use super::{RichText, ToRichText, labeled};
 use amaru_kernel::Address;
 use amaru_kernel::{
     PostAlonzoTransactionOutput, PseudoTransactionOutput, TransactionInput, TransactionOutput,
@@ -8,7 +11,13 @@ use pallas_primitives::babbage::PseudoDatumOption;
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 
-use super::{RichText, ToRichText, labeled};
+pub struct TransactionInputDisplay<'a>(pub &'a TransactionInput);
+
+impl<'a> fmt::Display for TransactionInputDisplay<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.0.transaction_id, self.0.index)
+    }
+}
 
 impl ToRichText for (TransactionInput, TransactionOutput) {
     fn to_rich_text(&self) -> RichText {

@@ -3,6 +3,8 @@ use crate::{
     components::Component,
     focus::{FocusState, FocusableComponent},
     shared::Getter,
+    to_list_item::ToListItem,
+    to_rich::ToRichText,
     window::state::WindowState,
 };
 use color_eyre::{Result, eyre::Ok};
@@ -10,51 +12,45 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
 use tracing::trace;
 
-pub struct ScrollableListComponent<T, I, F>
+pub struct ScrollableListComponent<T, I>
 where
-    T: Clone,
+    T: Clone + ToListItem,
     I: Iterator<Item = T>,
-    F: Fn(&T) -> ListItem + Copy,
 {
     title: String,
     state: WindowState<T, I>,
     focus: FocusState,
-    render_item: F,
 }
 
-impl<T, I, F> ScrollableListComponent<T, I, F>
+impl<T, I> ScrollableListComponent<T, I>
 where
-    T: Clone,
+    T: Clone + ToListItem,
     I: Iterator<Item = T>,
-    F: Fn(&T) -> ListItem + Copy,
 {
-    pub fn new(title: String, iter: I, window_size: usize, render_item: F) -> Self {
+    pub fn new(title: String, iter: I, window_size: usize) -> Self {
         let state = WindowState::new(iter, window_size);
         Self {
             title,
             state,
             focus: FocusState::default(),
-            render_item,
         }
     }
 }
 
-impl<T, I, F> Getter<T> for ScrollableListComponent<T, I, F>
+impl<T, I> Getter<T> for ScrollableListComponent<T, I>
 where
-    T: Clone,
+    T: Clone + ToListItem,
     I: Iterator<Item = T>,
-    F: Fn(&T) -> ListItem + Copy,
 {
     fn get_mut(&mut self) -> Option<T> {
         self.state.selected_item().cloned()
     }
 }
 
-impl<T, I, F> FocusableComponent for ScrollableListComponent<T, I, F>
+impl<T, I> FocusableComponent for ScrollableListComponent<T, I>
 where
-    T: Clone,
+    T: Clone + ToListItem,
     I: Iterator<Item = T>,
-    F: Fn(&T) -> ListItem + Copy,
 {
     fn focus_state(&self) -> &FocusState {
         &self.focus
@@ -65,11 +61,10 @@ where
     }
 }
 
-impl<T, I, F> Component for ScrollableListComponent<T, I, F>
+impl<T, I> Component for ScrollableListComponent<T, I>
 where
-    T: Clone,
+    T: Clone + ToListItem,
     I: Iterator<Item = T>,
-    F: Fn(&T) -> ListItem + Copy,
 {
     fn debug_name(&self) -> String {
         format!("ScrollableListComponent:{}", self.title)
@@ -100,7 +95,7 @@ where
         let is_focused = self.has_focus();
         self.state.set_window_size(area.rows().count());
         let (view, selected) = self.state.window_with_selected_index();
-        let items: Vec<ListItem> = view.iter().map(self.render_item).collect();
+        let items: Vec<ListItem> = view.iter().map(|i| i.to_list_item()).collect();
 
         let mut block = Block::default()
             .title(self.title.clone())

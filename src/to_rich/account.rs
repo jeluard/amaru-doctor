@@ -1,6 +1,4 @@
-use crate::{
-    components::list_and_details::account::AccountListEntry, to_rich::labeled_default_single,
-};
+use crate::{components::list_and_details::account::AccountItem, to_rich::labeled_default_single};
 
 use super::{RichText, ToRichText, labeled};
 use amaru_kernel::{DRep, StakeCredential};
@@ -29,7 +27,7 @@ impl ToRichText for StakeCredential {
     }
 }
 
-impl ToRichText for AccountListEntry {
+impl ToRichText for AccountItem {
     fn to_rich_text(&self) -> RichText {
         let mut lines = Vec::new();
         lines.extend(labeled_default_single(

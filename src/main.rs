@@ -18,6 +18,7 @@ mod errors;
 mod focus;
 mod logging;
 mod shared;
+mod to_list_item;
 mod to_rich;
 mod tui;
 mod window;

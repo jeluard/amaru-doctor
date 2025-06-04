@@ -144,6 +144,12 @@ impl<const BYTES: usize> ToRichText for Hash<BYTES> {
     }
 }
 
+impl ToRichText for String {
+    fn to_rich_text(&self) -> RichText {
+        RichText::Single(Span::raw(self.to_owned()))
+    }
+}
+
 impl<T> ToRichText for (T, T)
 where
     T: fmt::Display,
