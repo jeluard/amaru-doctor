@@ -1,5 +1,5 @@
-use crate::to_rich::{RichText, ToRichText, labeled};
-use amaru_kernel::{Epoch, Nullable, PoolId, PoolParams, Relay};
+use crate::to_rich::{RichText, ToRichText, labeled, labeled_default, labeled_default_single};
+use amaru_kernel::{Epoch, Nullable, PoolId, PoolMetadata, PoolParams, Relay};
 use amaru_ledger::store::columns::pools::Row;
 use ratatui::style::Style;
 use ratatui::text::{Line, Span};
@@ -113,16 +113,17 @@ impl ToRichText for PoolParams {
             Style::default(),
         ));
 
-        lines.extend(labeled(
-            "Metadata".into(),
-            match &self.metadata {
-                Nullable::Some(m) => RichText::Single(Span::raw(format!("{:?}", m))),
-                Nullable::Null => RichText::Single(Span::raw("None")),
-                Nullable::Undefined => RichText::Single(Span::raw("Undefined")),
-            },
-            Style::default(),
-        ));
+        lines.extend(labeled_default("Metadata".into(), &self.metadata));
 
+        RichText::Lines(lines)
+    }
+}
+
+impl ToRichText for PoolMetadata {
+    fn into_rich_text(&self) -> RichText {
+        let mut lines = Vec::new();
+        lines.extend(labeled_default_single("Url", &self.url));
+        lines.extend(labeled_default_single("Hash", self.hash));
         RichText::Lines(lines)
     }
 }

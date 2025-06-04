@@ -1,5 +1,9 @@
+use crate::{
+    components::list_and_details::account::AccountListEntry, to_rich::labeled_default_single,
+};
+
 use super::{RichText, ToRichText, labeled};
-use amaru_kernel::{CertificatePointer, DRep, StakeCredential};
+use amaru_kernel::{DRep, StakeCredential};
 use amaru_ledger::store::columns::accounts::Row;
 use ratatui::{
     style::{Color, Style},
@@ -19,13 +23,18 @@ impl<'a> fmt::Display for StakeCredentialDisplay<'a> {
     }
 }
 
-impl ToRichText for (StakeCredential, Row) {
+impl ToRichText for StakeCredential {
+    fn into_rich_text(&self) -> RichText {
+        RichText::Single(Span::raw(StakeCredentialDisplay(&self).to_string()))
+    }
+}
+
+impl ToRichText for AccountListEntry {
     fn into_rich_text(&self) -> RichText {
         let mut lines = Vec::new();
-        lines.extend(labeled(
-            "Account".to_string(),
-            RichText::Single(Span::raw(StakeCredentialDisplay(&self.0).to_string())),
-            Style::default(),
+        lines.extend(labeled_default_single(
+            "Account",
+            StakeCredentialDisplay(&self.0),
         ));
         lines.extend(self.1.into_rich_text().unwrap_lines());
         RichText::Lines(lines)
@@ -87,27 +96,5 @@ impl ToRichText for DRep {
             RichText::Single(Span::raw(value)),
             Style::default().fg(color),
         ))
-    }
-}
-
-impl ToRichText for CertificatePointer {
-    fn into_rich_text(&self) -> RichText {
-        let mut lines = Vec::new();
-        lines.extend(labeled(
-            "Slot".to_string(),
-            RichText::Single(Span::raw(self.transaction.slot.to_string())),
-            Style::default(),
-        ));
-        lines.extend(labeled(
-            "Transaction Index".to_string(),
-            RichText::Single(Span::raw(self.transaction.transaction_index.to_string())),
-            Style::default(),
-        ));
-        lines.extend(labeled(
-            "Certificate Index".to_string(),
-            RichText::Single(Span::raw(self.certificate_index.to_string())),
-            Style::default(),
-        ));
-        RichText::Lines(lines)
     }
 }

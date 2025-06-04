@@ -4,12 +4,12 @@ use crate::{
     to_rich::account::StakeCredentialDisplay,
 };
 use amaru_kernel::StakeCredential;
-use amaru_ledger::store::ReadOnlyStore;
+use amaru_ledger::store::{ReadOnlyStore, columns::accounts};
 use amaru_stores::rocksdb::RocksDB;
 use ratatui::widgets::ListItem;
 use std::sync::Arc;
 
-type AccountListEntry = (StakeCredential, amaru_ledger::store::columns::accounts::Row);
+pub type AccountListEntry = (StakeCredential, accounts::Row);
 type AccountListRenderer = fn(&AccountListEntry) -> ListItem;
 
 pub fn new_account_list_component(
