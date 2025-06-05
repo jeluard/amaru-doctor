@@ -25,9 +25,7 @@ mod window;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let ledger_path_str = &env::var("AMARU_LEDGER_DB").unwrap_or_else(|_| {
-        "ledgerdb".to_string()
-    });
+    let ledger_path_str = &env::var("AMARU_LEDGER_DB").unwrap_or_else(|_| "ledgerdb".to_string());
     eprintln!("Using ledger path: {}", ledger_path_str);
 
     crate::errors::init()?;
@@ -37,7 +35,10 @@ async fn main() -> Result<()> {
     let path = Path::new(ledger_path_str);
     if let Some(epoch) = env::var("AMARU_LEDGER_EPOCH").ok() {
         eprintln!("Using epoch: {}", epoch);
-        let db_arc = Arc::new(RocksDBHistoricalStores::for_epoch_with(path, epoch.parse::<u64>()?)?);
+        let db_arc = Arc::new(RocksDBHistoricalStores::for_epoch_with(
+            path,
+            epoch.parse::<u64>()?,
+        )?);
         let mut app = App::new(ledger_path_str, args.tick_rate, args.frame_rate, &db_arc)?;
         app.run().await?;
     } else {
