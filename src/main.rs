@@ -33,7 +33,7 @@ async fn main() -> Result<()> {
 
     let args = Cli::parse();
     let path = Path::new(ledger_path_str);
-    if let Some(epoch) = env::var("AMARU_LEDGER_EPOCH").ok() {
+    if let Ok(epoch) = env::var("AMARU_LEDGER_EPOCH") {
         eprintln!("Using epoch: {}", epoch);
         let db_arc = Arc::new(RocksDBHistoricalStores::for_epoch_with(
             path,
