@@ -2,8 +2,17 @@
 
 A TUI for amaru
 
+# Usage
 
-Run with `AMARU_LEDGER_DB=path/to/ledger.db cargo run`
+First you will need to compile locally the `amaru-doctor` binary:
+
+```shell
+git clone https://github.com/jeluard/amaru-doctor
+cd amaru-doctor
+cargo install --path .
+```
+
+You can now run with `AMARU_LEDGER_DB=path/to/ledger.db amaru-doctor`
 
 ![Demo](./resources/demo.gif)
 
