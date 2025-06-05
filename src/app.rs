@@ -1,25 +1,43 @@
 use crate::{
     action::Action,
     build,
-    components::{Component, group::layout::RootLayout},
+    components::Component,
     config::Config,
     focus::FocusManager,
+    shared::Shared,
     tui::{Event, Tui},
 };
 use amaru_ledger::store::ReadOnlyStore;
 use color_eyre::Result;
 use crossterm::event::KeyEvent;
-use ratatui::prelude::Rect;
+use ratatui::{
+    layout::{Constraint, Direction, Layout},
+    prelude::Rect,
+};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::{debug, info, trace};
 
+pub struct AppComponents<'a> {
+    all: Vec<Shared<'a, dyn Component + 'a>>,
+}
+
+impl<'a> AppComponents<'a> {
+    pub fn new(all: Vec<Shared<'a, dyn Component + 'a>>) -> Self {
+        Self { all }
+    }
+
+    fn iter(&self) -> impl Iterator<Item = &Shared<'a, dyn Component + 'a>> {
+        self.all.iter()
+    }
+}
+
 pub struct App<'a> {
     config: Config,
     tick_rate: f64,
     frame_rate: f64,
-    components: RootLayout<'a>,
+    components: AppComponents<'a>,
     focus: FocusManager<'a>,
     should_quit: bool,
     should_suspend: bool,
@@ -43,11 +61,11 @@ impl<'a> App<'a> {
         db: &'a Arc<impl ReadOnlyStore>,
     ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
-        let (layout, focus) = build::build_layout(ledger_path_str, db)?;
+        let (components, focus) = build::build_layout(ledger_path_str, db)?;
         Ok(Self {
             tick_rate,
             frame_rate,
-            components: layout,
+            components,
             focus,
             should_quit: false,
             should_suspend: false,
@@ -67,11 +85,16 @@ impl<'a> App<'a> {
         tui.terminal.clear()?;
         tui.enter()?;
 
+        self.components.iter().try_for_each(|c| {
+            c.borrow_mut()
+                .register_action_handler(self.action_tx.clone())
+        })?;
         self.components
-            .register_action_handler(self.action_tx.clone())?;
+            .iter()
+            .try_for_each(|c| c.borrow_mut().register_config_handler(self.config.clone()))?;
         self.components
-            .register_config_handler(self.config.clone())?;
-        self.components.init(tui.size()?)?;
+            .iter()
+            .try_for_each(|c| c.borrow_mut().init(tui.size()?))?;
 
         let action_tx = self.action_tx.clone();
         loop {
@@ -105,8 +128,10 @@ impl<'a> App<'a> {
             Event::Key(key) => self.handle_key_event(key)?,
             _ => {}
         }
-        for action in self.components.handle_events(Some(event.clone()))? {
-            action_tx.send(action)?;
+        for component in self.components.iter() {
+            for action in component.borrow_mut().handle_events(Some(event.clone()))? {
+                action_tx.send(action)?;
+            }
         }
         Ok(())
     }
@@ -156,8 +181,10 @@ impl<'a> App<'a> {
                 Action::FocusNext => self.focus.shift_next(),
                 _ => {}
             }
-            for action in self.components.update(action.clone())? {
-                self.action_tx.send(action)?;
+            for component in self.components.iter() {
+                for action in component.borrow_mut().update(action.clone())? {
+                    self.action_tx.send(action)?;
+                }
             }
         }
         Ok(())
@@ -171,10 +198,25 @@ impl<'a> App<'a> {
 
     fn render(&mut self, tui: &mut Tui) -> Result<()> {
         tui.draw(|frame| {
-            if let Err(err) = self.components.draw(frame, frame.area()) {
-                let _ = self
-                    .action_tx
-                    .send(Action::Error(format!("Failed to draw: {:?}", err)));
+            let area = frame.area();
+            let chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints(vec![
+                    Constraint::Length(1),
+                    Constraint::Min(1),
+                    Constraint::Length(1),
+                ])
+                .split(area);
+            let header = self.components.all[0].borrow_mut().draw(frame, chunks[0]);
+            let body = self.components.all[1].borrow_mut().draw(frame, chunks[1]);
+            let footer = self.components.all[2].borrow_mut().draw(frame, chunks[2]);
+
+            for result in [header, body, footer] {
+                if let Err(err) = result {
+                    let _ = self
+                        .action_tx
+                        .send(Action::Error(format!("Failed to draw: {:?}", err)));
+                }
             }
         })?;
         Ok(())

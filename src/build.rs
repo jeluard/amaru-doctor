@@ -1,11 +1,11 @@
 use crate::{
     action::Entity,
+    app::AppComponents,
     components::{
         entity_types::new_entity_types_list,
         fps::FpsCounter,
         group::{
             ComponentGroup,
-            layout::RootLayout,
             split::{Axis, SplitComponent},
             switch::SwitchComponent,
         },
@@ -22,7 +22,7 @@ use std::{collections::HashMap, sync::Arc};
 pub fn build_layout<'a>(
     ledger_path_str: &String,
     db: &'a Arc<impl ReadOnlyStore>,
-) -> Result<(RootLayout<'a>, FocusManager<'a>)> {
+) -> Result<(AppComponents<'a>, FocusManager<'a>)> {
     let entity_types = shared(new_entity_types_list());
 
     let (accounts, account_details) =
@@ -71,7 +71,7 @@ pub fn build_layout<'a>(
         entity_details_switcher.clone(),
     ));
 
-    let layout = RootLayout::new(
+    let layout = AppComponents::new(vec![
         shared(ComponentGroup::new(vec![
             shared(Message::new(format!(
                 "Reading amaru ledger at {:?}",
@@ -83,7 +83,7 @@ pub fn build_layout<'a>(
         shared(ComponentGroup::new(vec![shared(Message::new(
             "Use Shift + Left/Right/Up/Down (←↑→↓) to move focus. Use Left/Right/Up/Down to scroll within focus.".to_string(),
         ))])),
-    );
+    ]);
 
     Ok((
         layout,

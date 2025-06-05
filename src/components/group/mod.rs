@@ -10,7 +10,6 @@ use ratatui::{
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::trace;
 
-pub mod layout;
 pub mod scroll;
 pub mod split;
 pub mod switch;
@@ -26,10 +25,6 @@ impl<'a> ComponentGroup<'a> {
 
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Shared<dyn Component + 'a>> {
         self.components.iter_mut()
-    }
-
-    pub fn components_mut(&mut self) -> &mut Vec<Shared<dyn Component + 'a>> {
-        &mut self.components
     }
 }
 
