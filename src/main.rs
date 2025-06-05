@@ -25,7 +25,10 @@ mod window;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let ledger_path_str = &env::var("AMARU_LEDGER_DB")?;
+    let ledger_path_str = &env::var("AMARU_LEDGER_DB").unwrap_or_else(|_| {
+        "ledger.db".to_string()
+    });
+    eprintln!("Using ledger path: {}", ledger_path_str);
     let db = RocksDB::new(Path::new(ledger_path_str), NetworkName::Preprod.into())?;
     let db_arc: Arc<RocksDB> = Arc::new(db);
 
