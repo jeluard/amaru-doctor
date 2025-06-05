@@ -4,7 +4,7 @@ use crate::{
     components::{
         entity_types::new_entity_types_list,
         fps::FpsCounter,
-        group::{ComponentGroup, layout::LayoutComponent, switch::SwitchComponent},
+        group::{layout::LayoutComponent, switch::SwitchComponent},
         list_and_details::new_list_detail_components,
         message::Message,
     },
@@ -60,6 +60,20 @@ pub fn build_layout<'a>(
     let entity_ids_switcher_clone = entity_ids_switcher.clone();
     let entity_details_switcher_clone = entity_details_switcher.clone();
 
+    let header = shared(LayoutComponent::new(
+        Direction::Vertical,
+        vec![
+            (
+                Constraint::Length(1),
+                shared(Message::new(format!(
+                    "Reading amaru ledger at {:?}",
+                    ledger_path_str
+                ))),
+            ),
+            (Constraint::Length(1), shared(FpsCounter::default())),
+        ],
+    ));
+
     let left_column = shared(LayoutComponent::new(
         Direction::Vertical,
         vec![
@@ -76,19 +90,17 @@ pub fn build_layout<'a>(
         ],
     ));
 
-    let layout = AppComponents::new(vec![
-        shared(ComponentGroup::new(vec![
-            shared(Message::new(format!(
-                "Reading amaru ledger at {:?}",
-                ledger_path_str
-            ))),
-            shared(FpsCounter::default()),
-        ])),
-        body,
-        shared(ComponentGroup::new(vec![shared(Message::new(
-            "Use Shift + Left/Right/Up/Down (←↑→↓) to move focus. Use Left/Right/Up/Down to scroll within focus.".to_string(),
-        ))])),
-    ]);
+    let footer = shared(LayoutComponent::new(
+        Direction::Vertical,
+        vec![(
+            Constraint::Length(1),
+            shared(Message::new(
+                "Use Shift + Arrow keys to move focus...".to_string(),
+            )),
+        )],
+    ));
+
+    let layout = AppComponents::new(vec![header, body, footer]);
 
     Ok((
         layout,
