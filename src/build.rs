@@ -15,7 +15,7 @@ use crate::{
 use amaru_ledger::store::ReadOnlyStore;
 use color_eyre::Result;
 use ratatui::layout::{Constraint, Direction};
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 pub fn build_layout<'a>(
     ledger_path_str: &String,
@@ -55,29 +55,33 @@ fn make_entity_lists<'a>(
         new_list_detail_components("Proposal", db.iter_proposals().unwrap());
     let (utxos, utxo_details) = new_list_detail_components("UTXO", db.iter_utxos().unwrap());
 
-    let mut id_components: HashMap<Entity, Shared<dyn FocusableComponent>> = HashMap::new();
-    id_components.insert(Entity::Accounts, accounts);
-    id_components.insert(Entity::BlockIssuers, block_issuers);
-    id_components.insert(Entity::DReps, dreps);
-    id_components.insert(Entity::Pools, pools);
-    id_components.insert(Entity::Proposals, proposals);
-    id_components.insert(Entity::UTXOs, utxos);
-
-    let mut detail_components: HashMap<Entity, Shared<dyn FocusableComponent>> = HashMap::new();
-    detail_components.insert(Entity::Accounts, account_details);
-    detail_components.insert(Entity::BlockIssuers, block_issuer_details);
-    detail_components.insert(Entity::DReps, drep_details);
-    detail_components.insert(Entity::Proposals, proposal_details);
-    detail_components.insert(Entity::Pools, pool_details);
-    detail_components.insert(Entity::UTXOs, utxo_details);
-
-    let ids_switcher = shared(SwitchComponent::new(entity_types.clone(), id_components));
-    let details_switcher = shared(SwitchComponent::new(
+    let entity_id_components: Vec<(Entity, Shared<dyn FocusableComponent>)> = vec![
+        (Entity::Accounts, accounts),
+        (Entity::BlockIssuers, block_issuers),
+        (Entity::DReps, dreps),
+        (Entity::Pools, pools),
+        (Entity::Proposals, proposals),
+        (Entity::UTXOs, utxos),
+    ];
+    let entity_ids_switcher = shared(SwitchComponent::new(
         entity_types.clone(),
-        detail_components,
+        entity_id_components,
     ));
 
-    (entity_types, ids_switcher, details_switcher)
+    let entity_detail_components: Vec<(Entity, Shared<dyn FocusableComponent>)> = vec![
+        (Entity::Accounts, account_details),
+        (Entity::BlockIssuers, block_issuer_details),
+        (Entity::DReps, drep_details),
+        (Entity::Pools, pool_details),
+        (Entity::Proposals, proposal_details),
+        (Entity::UTXOs, utxo_details),
+    ];
+    let entity_details_switcher = shared(SwitchComponent::new(
+        entity_types.clone(),
+        entity_detail_components,
+    ));
+
+    (entity_types, entity_ids_switcher, entity_details_switcher)
 }
 
 fn make_header<'a>(ledger_path_str: &String) -> Shared<'a, dyn Component + 'a> {

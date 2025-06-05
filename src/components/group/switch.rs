@@ -10,7 +10,7 @@ use ratatui::{
     Frame,
     layout::{Rect, Size},
 };
-use std::{collections::HashMap, fmt::Debug, hash::Hash};
+use std::{fmt::Debug, hash::Hash};
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::trace;
 
@@ -20,7 +20,7 @@ where
 {
     shared: SharedGetter<'a, K>,
     focus: FocusState,
-    components: HashMap<K, Shared<'a, dyn FocusableComponent + 'a>>,
+    components: Vec<(K, Shared<'a, dyn FocusableComponent + 'a>)>,
 }
 
 impl<'a, K> SwitchComponent<'a, K>
@@ -29,9 +29,9 @@ where
 {
     pub fn new(
         shared: SharedGetter<'a, K>,
-        components: HashMap<K, Shared<dyn FocusableComponent + 'a>>,
+        components: Vec<(K, Shared<'a, dyn FocusableComponent + 'a>)>,
     ) -> Self {
-        let k = components.keys().next();
+        let k = &components[0].0;
         trace!("SwitchComponent init'ing, first selected: {:?}", k);
         Self {
             shared,
@@ -41,15 +41,19 @@ where
     }
 
     fn current_key(&self) -> Option<K> {
-        self.shared.borrow().get().map(|k| k.clone())
+        self.shared.borrow().get().map(|r| r.clone())
     }
 
-    fn current(&self) -> Option<&Shared<dyn FocusableComponent + 'a>> {
-        self.current_key().and_then(|k| self.components.get(&k))
+    fn current(&self) -> Option<&Shared<'a, dyn FocusableComponent + 'a>> {
+        self.current_key()
+            .and_then(|k| self.components.iter().find(|(key, _)| *key == k))
+            .map(|(_, c)| c)
     }
 
-    fn current_mut(&mut self) -> Option<&Shared<dyn FocusableComponent + 'a>> {
-        self.current_key().and_then(|k| self.components.get(&k))
+    fn current_mut(&mut self) -> Option<&Shared<'a, dyn FocusableComponent + 'a>> {
+        self.current_key()
+            .and_then(|k| self.components.iter().find(|(key, _)| *key == k))
+            .map(|(_, c)| c)
     }
 }
 
@@ -84,7 +88,10 @@ where
     K: Eq + Hash + Clone + Debug,
 {
     fn debug_name(&self) -> String {
-        format!("{:?}", self.components.keys().collect::<Vec<_>>())
+        format!(
+            "{:?}",
+            self.components.iter().map(|(k, _)| k).collect::<Vec<_>>()
+        )
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
@@ -96,8 +103,7 @@ where
     }
 
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
-        let selected = self.shared.borrow_mut();
-        let selected_key = selected.get_mut();
+        let selected_key = self.shared.borrow().get().map(|r| r.clone());
 
         if !self.has_focus() {
             trace!("{}: no focus", self.debug_name());
@@ -134,21 +140,21 @@ where
     }
 
     fn init(&mut self, area: Size) -> Result<()> {
-        for (_, c) in self.components.iter_mut() {
+        for (_, c) in &self.components {
             c.borrow_mut().init(area)?;
         }
         Ok(())
     }
 
     fn register_action_handler(&mut self, tx: UnboundedSender<Action>) -> Result<()> {
-        for (_, c) in self.components.iter_mut() {
+        for (_, c) in &self.components {
             c.borrow_mut().register_action_handler(tx.clone())?;
         }
         Ok(())
     }
 
     fn register_config_handler(&mut self, config: crate::config::Config) -> Result<()> {
-        for (_, c) in self.components.iter_mut() {
+        for (_, c) in &self.components {
             c.borrow_mut().register_config_handler(config.clone())?;
         }
         Ok(())
