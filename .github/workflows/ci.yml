@@ -77,7 +77,6 @@ jobs:
         with:
           commit_message: Update generated VHS GIF
           branch: main
-          commit_user_name: vhs-action 📼
-          commit_user_email: actions@github.com
-          commit_author: vhs-action 📼 <actions@github.com>
+          commit_user_name: jeluard
+          commit_user_email: "jeluard@users.noreply.github.com"
           file_pattern: 'resources/*.gif'
