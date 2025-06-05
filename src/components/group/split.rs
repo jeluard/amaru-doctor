@@ -62,6 +62,10 @@ impl<'a> SplitComponent<'a> {
 }
 
 impl<'a> Component for SplitComponent<'a> {
+    fn debug_name(&self) -> String {
+        "SplitComponent".to_string()
+    }
+
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         let constraints: Vec<Constraint> = self
             .percents

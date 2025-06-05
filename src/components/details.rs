@@ -1,45 +1,42 @@
 use super::Component;
 use crate::{
-    action::{Action, SelectedState, SelectsFrom},
-    focus::{FocusState, Focusable},
-    to_rich::RichText,
+    action::Action,
+    focus::{FocusState, FocusableComponent},
+    shared::SharedGetter,
+    to_rich::ToRichText,
 };
 use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
+use tracing::trace;
 
-pub struct DetailsComponent<K, F>
+pub struct DetailsComponent<'a, K>
 where
-    K: Clone + PartialEq,
-    F: Fn(&K) -> Result<Option<RichText>>,
+    K: Clone + ToRichText,
 {
     title: String,
-    selected: SelectedState<K>,
+    shared: SharedGetter<'a, K>,
     focus: FocusState,
     scroll_offset: u16,
-    render: F,
 }
 
-impl<K, F> DetailsComponent<K, F>
+impl<'a, K> DetailsComponent<'a, K>
 where
-    K: Clone + PartialEq + SelectsFrom,
-    F: Fn(&K) -> Result<Option<RichText>>,
+    K: Clone + ToRichText,
 {
-    pub fn new(title: String, value: Option<K>, render: F) -> Self {
+    pub fn new(title: String, shared: SharedGetter<'a, K>) -> Self {
         Self {
             title,
-            selected: SelectedState::new(value),
+            shared,
             focus: FocusState::default(),
             scroll_offset: 0,
-            render,
         }
     }
 }
 
-impl<K, F> Focusable for DetailsComponent<K, F>
+impl<'a, K> FocusableComponent for DetailsComponent<'a, K>
 where
-    K: Clone + PartialEq + SelectsFrom,
-    F: Fn(&K) -> Result<Option<RichText>>,
+    K: Clone + ToRichText,
 {
     fn focus_state(&self) -> &FocusState {
         &self.focus
@@ -50,22 +47,20 @@ where
     }
 }
 
-impl<K, F> Component for DetailsComponent<K, F>
+impl<'a, K> Component for DetailsComponent<'a, K>
 where
-    K: Clone + PartialEq + SelectsFrom,
-    F: Fn(&K) -> Result<Option<RichText>>,
+    K: Clone + ToRichText,
 {
-    fn update(&mut self, action: Action) -> Result<Vec<Action>> {
-        if self.selected.update(&action) {
-            self.scroll_offset = 0;
-        }
-        Ok(vec![])
+    fn debug_name(&self) -> String {
+        format!("DetailsComponent:{}", self.title)
     }
 
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
         if !self.has_focus() {
+            trace!("DetailsComponent::{}: no focus", self.title);
             return Ok(vec![]);
         }
+        trace!("DetailsComponent::{}: has focus", self.title);
 
         match key.code {
             KeyCode::Up => self.scroll_offset = self.scroll_offset.saturating_sub(1),
@@ -85,11 +80,8 @@ where
             block = block.border_style(Style::default().fg(Color::Blue));
         }
 
-        let lines = match self.selected.value.as_ref() {
-            Some(key) => match (self.render)(key)? {
-                Some(rich) => rich.unwrap_lines(),
-                None => vec![Line::from("Not found")],
-            },
+        let lines = match self.shared.borrow_mut().get_mut() {
+            Some(val) => val.to_rich_text().unwrap_lines(),
             None => vec![Line::from("None selected")],
         };
 

@@ -1,3 +1,5 @@
+use tracing::trace;
+
 use crate::{components::Component, shared::Shared};
 
 #[derive(Default)]
@@ -15,11 +17,12 @@ impl FocusState {
     }
 }
 
-pub trait Focusable {
+pub trait FocusableComponent: Component {
     fn focus_state(&self) -> &FocusState;
     fn focus_state_mut(&mut self) -> &mut FocusState;
 
     fn set_focus(&mut self, b: bool) {
+        trace!("{}: set focus to {}", self.debug_name(), b);
         self.focus_state_mut().set(b);
     }
 
@@ -28,17 +31,14 @@ pub trait Focusable {
     }
 }
 
-pub trait FocusableComponent: Component + Focusable {}
-impl<T: Component + Focusable> FocusableComponent for T {}
-
 #[derive(Default)]
 pub struct FocusManager<'a> {
     index: usize,
-    components: Vec<Shared<'a, dyn Focusable + 'a>>,
+    components: Vec<Shared<'a, dyn FocusableComponent + 'a>>,
 }
 
 impl<'a> FocusManager<'a> {
-    pub fn new(components: Vec<Shared<'a, dyn Focusable + 'a>>) -> Self {
+    pub fn new(components: Vec<Shared<'a, dyn FocusableComponent + 'a>>) -> Self {
         if !components.is_empty() {
             components[0].borrow_mut().set_focus(true);
         }
@@ -49,12 +49,14 @@ impl<'a> FocusManager<'a> {
     }
 
     pub fn shift_prev(&mut self) {
+        trace!("FocusManager:: Will shift focus prev");
         self.components[self.index].borrow_mut().set_focus(false);
         self.index = (self.index + self.components.len() - 1) % self.components.len();
         self.components[self.index].borrow_mut().set_focus(true);
     }
 
     pub fn shift_next(&mut self) {
+        trace!("FocusManager:: Will shift focus next");
         self.components[self.index].borrow_mut().set_focus(false);
         self.index = (self.index + 1) % self.components.len();
         self.components[self.index].borrow_mut().set_focus(true);

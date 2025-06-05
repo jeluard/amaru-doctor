@@ -1,21 +1,17 @@
-pub struct WindowIter<T, I>
-where
-    I: Iterator<Item = T>,
-{
-    iter: I,
-    buffer: Vec<T>,
+use std::cell::{Ref, RefCell, RefMut};
+
+pub struct WindowIter<'a, I> {
+    iter: RefCell<Box<dyn Iterator<Item = I> + 'a>>,
+    buffer: RefCell<Vec<I>>,
     window_start: usize,
     window_size: usize,
 }
 
-impl<T, I> WindowIter<T, I>
-where
-    I: Iterator<Item = T>,
-{
-    pub fn new(iter: I, window_size: usize) -> Self {
+impl<'a, I> WindowIter<'a, I> {
+    pub fn new<T: Iterator<Item = I> + 'a>(iter: T, window_size: usize) -> Self {
         Self {
-            iter,
-            buffer: Vec::new(),
+            iter: RefCell::new(Box::new(iter)),
+            buffer: RefCell::new(Vec::new()),
             window_start: 0,
             window_size,
         }
@@ -26,10 +22,18 @@ where
         self.fill_buffer();
     }
 
-    pub fn view(&mut self) -> &[T] {
+    pub fn view(&self) -> Ref<[I]> {
         self.fill_buffer();
-        let end = (self.window_start + self.window_size).min(self.buffer.len());
-        &self.buffer[self.window_start..end]
+        let start = self.window_start;
+        let end = (start + self.window_size).min(self.buffer.borrow().len());
+        Ref::map(self.buffer.borrow(), |buf| &buf[start..end])
+    }
+
+    pub fn view_mut(&self) -> RefMut<[I]> {
+        self.fill_buffer();
+        let start = self.window_start;
+        let end = (start + self.window_size).min(self.buffer.borrow().len());
+        RefMut::map(self.buffer.borrow_mut(), |buf| &mut buf[start..end])
     }
 
     pub fn shift_up(&mut self) {
@@ -40,18 +44,21 @@ where
 
     pub fn shift_down(&mut self) {
         self.fill_buffer();
-        if self.window_start + self.window_size < self.buffer.len() {
+        let buffer_len = self.buffer.borrow().len();
+        if self.window_start + self.window_size < buffer_len {
             self.window_start += 1;
-        } else if let Some(next_item) = self.iter.next() {
-            self.buffer.push(next_item);
+        } else if let Some(item) = self.iter.borrow_mut().next() {
+            self.buffer.borrow_mut().push(item);
             self.window_start += 1;
         }
     }
 
-    fn fill_buffer(&mut self) {
-        while self.buffer.len() < self.window_start + self.window_size {
-            if let Some(item) = self.iter.next() {
-                self.buffer.push(item);
+    fn fill_buffer(&self) {
+        let mut buffer = self.buffer.borrow_mut();
+        let mut iter = self.iter.borrow_mut();
+        while buffer.len() < self.window_start + self.window_size {
+            if let Some(item) = iter.next() {
+                buffer.push(item);
             } else {
                 break;
             }

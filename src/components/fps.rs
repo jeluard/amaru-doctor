@@ -68,6 +68,10 @@ impl FpsCounter {
 }
 
 impl Component for FpsCounter {
+    fn debug_name(&self) -> String {
+        "FpsCounter".to_string()
+    }
+
     fn update(&mut self, action: Action) -> Result<Vec<Action>> {
         match action {
             Action::Tick => self.app_tick()?,

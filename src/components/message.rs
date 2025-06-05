@@ -21,6 +21,10 @@ impl Message {
 }
 
 impl Component for Message {
+    fn debug_name(&self) -> String {
+        "Message".to_string()
+    }
+
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         let span = Span::styled(&self.message, Style::new().dim());
         let paragraph = Paragraph::new(span).left_aligned();

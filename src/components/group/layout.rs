@@ -32,6 +32,10 @@ impl<'a> RootLayout<'a> {
 }
 
 impl<'a> Component for RootLayout<'a> {
+    fn debug_name(&self) -> String {
+        "RootLayout".to_string()
+    }
+
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         let [header_area, body_area, footer_area] = Layout::vertical([
             Constraint::Length(1),
@@ -48,7 +52,7 @@ impl<'a> Component for RootLayout<'a> {
     }
 
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
-        trace!("AppLayout::handle_key_event - {:?}", key);
+        trace!("RootLayout::handle_key_event(key={:?})", key);
         let components = &mut self.group.components_mut();
 
         let mut results = Vec::new();
