@@ -71,6 +71,7 @@ jobs:
         env:
           AMARU_LEDGER_DB: 'resources/ledger.db'
       - uses: stefanzweifel/git-auto-commit-action@v5
+        if: github.event_name == 'push'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
