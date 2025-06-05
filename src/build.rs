@@ -4,11 +4,7 @@ use crate::{
     components::{
         entity_types::new_entity_types_list,
         fps::FpsCounter,
-        group::{
-            ComponentGroup,
-            split::{Axis, SplitComponent},
-            switch::SwitchComponent,
-        },
+        group::{ComponentGroup, layout::LayoutComponent, switch::SwitchComponent},
         list_and_details::new_list_detail_components,
         message::Message,
     },
@@ -17,6 +13,7 @@ use crate::{
 };
 use amaru_ledger::store::ReadOnlyStore;
 use color_eyre::Result;
+use ratatui::layout::{Constraint, Direction};
 use std::{collections::HashMap, sync::Arc};
 
 pub fn build_layout<'a>(
@@ -59,16 +56,24 @@ pub fn build_layout<'a>(
         entity_detail_components,
     ));
 
-    let body = shared(SplitComponent::new_2(
-        Axis::Vertical,
-        30,
-        shared(SplitComponent::new_2_evenly(
-            Axis::Horizontal,
-            entity_types.clone(),
-            entity_ids_switcher.clone(),
-        )),
-        70,
-        entity_details_switcher.clone(),
+    let entity_types_clone = entity_types.clone();
+    let entity_ids_switcher_clone = entity_ids_switcher.clone();
+    let entity_details_switcher_clone = entity_details_switcher.clone();
+
+    let left_column = shared(LayoutComponent::new(
+        Direction::Vertical,
+        vec![
+            (Constraint::Percentage(50), entity_types.clone()),
+            (Constraint::Percentage(50), entity_ids_switcher.clone()),
+        ],
+    ));
+
+    let body = shared(LayoutComponent::new(
+        Direction::Horizontal,
+        vec![
+            (Constraint::Percentage(30), left_column),
+            (Constraint::Percentage(70), entity_details_switcher.clone()),
+        ],
     ));
 
     let layout = AppComponents::new(vec![
@@ -88,9 +93,9 @@ pub fn build_layout<'a>(
     Ok((
         layout,
         FocusManager::new(vec![
-            entity_types.clone(),
-            entity_ids_switcher.clone(),
-            entity_details_switcher.clone(),
+            entity_types_clone,
+            entity_ids_switcher_clone,
+            entity_details_switcher_clone,
         ]),
     ))
 }

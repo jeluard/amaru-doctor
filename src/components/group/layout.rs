@@ -1,0 +1,86 @@
+use crate::{
+    action::Action,
+    components::{Component, Shared},
+    config::Config,
+    tui::Event,
+};
+use color_eyre::Result;
+use ratatui::{
+    Frame,
+    layout::{Constraint, Direction, Layout, Rect},
+    prelude::Size,
+};
+use tokio::sync::mpsc::UnboundedSender;
+
+pub struct LayoutComponent<'a> {
+    direction: Direction,
+    children: Vec<(Constraint, Shared<'a, dyn Component + 'a>)>,
+}
+
+impl<'a> LayoutComponent<'a> {
+    pub fn new(
+        direction: Direction,
+        children: Vec<(Constraint, Shared<'a, dyn Component + 'a>)>,
+    ) -> Self {
+        Self {
+            direction,
+            children,
+        }
+    }
+}
+impl<'a> Component for LayoutComponent<'a> {
+    fn debug_name(&self) -> String {
+        "LayoutComponent".to_string()
+    }
+
+    fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
+        let (constraints, widgets): (Vec<_>, Vec<_>) = self.children.iter().cloned().unzip();
+        let chunks = Layout::default()
+            .direction(self.direction)
+            .constraints(constraints)
+            .split(area);
+
+        for (child, rect) in widgets.iter().zip(chunks.iter()) {
+            child.borrow_mut().draw(frame, *rect)?;
+        }
+
+        Ok(())
+    }
+
+    fn init(&mut self, area: Size) -> Result<()> {
+        for (_, c) in &self.children {
+            c.borrow_mut().init(area)?;
+        }
+        Ok(())
+    }
+
+    fn register_action_handler(&mut self, tx: UnboundedSender<Action>) -> Result<()> {
+        for (_, c) in &self.children {
+            c.borrow_mut().register_action_handler(tx.clone())?;
+        }
+        Ok(())
+    }
+
+    fn register_config_handler(&mut self, config: Config) -> Result<()> {
+        for (_, c) in &self.children {
+            c.borrow_mut().register_config_handler(config.clone())?;
+        }
+        Ok(())
+    }
+
+    fn handle_events(&mut self, event: Option<Event>) -> Result<Vec<Action>> {
+        let mut actions = vec![];
+        for (_, c) in &self.children {
+            actions.extend(c.borrow_mut().handle_events(event.clone())?);
+        }
+        Ok(actions)
+    }
+
+    fn update(&mut self, action: Action) -> Result<Vec<Action>> {
+        let mut actions = vec![];
+        for (_, c) in &self.children {
+            actions.extend(c.borrow_mut().update(action.clone())?);
+        }
+        Ok(actions)
+    }
+}

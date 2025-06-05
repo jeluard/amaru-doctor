@@ -1,4 +1,4 @@
-use crate::{action::Action, config::Config, tui::Event};
+use crate::{action::Action, config::Config, shared::Shared, tui::Event};
 use color_eyre::Result;
 use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{

@@ -10,8 +10,8 @@ use ratatui::{
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::trace;
 
+pub mod layout;
 pub mod scroll;
-pub mod split;
 pub mod switch;
 
 pub struct ComponentGroup<'a> {
