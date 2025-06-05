@@ -16,13 +16,12 @@ use crate::{
     shared::{Shared, shared},
 };
 use amaru_ledger::store::ReadOnlyStore;
-use amaru_stores::rocksdb::RocksDB;
 use color_eyre::Result;
 use std::{collections::HashMap, sync::Arc};
 
 pub fn build_layout<'a>(
     ledger_path_str: &String,
-    db: &'a Arc<RocksDB>,
+    db: &'a Arc<impl ReadOnlyStore>,
 ) -> Result<(RootLayout<'a>, FocusManager<'a>)> {
     let entity_types = shared(new_entity_types_list());
 

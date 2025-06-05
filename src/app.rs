@@ -6,7 +6,7 @@ use crate::{
     focus::FocusManager,
     tui::{Event, Tui},
 };
-use amaru_stores::rocksdb::RocksDB;
+use amaru_ledger::store::ReadOnlyStore;
 use color_eyre::Result;
 use crossterm::event::KeyEvent;
 use ratatui::prelude::Rect;
@@ -40,7 +40,7 @@ impl<'a> App<'a> {
         ledger_path_str: &String,
         tick_rate: f64,
         frame_rate: f64,
-        db: &'a Arc<RocksDB>,
+        db: &'a Arc<impl ReadOnlyStore>,
     ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
         let (layout, focus) = build::build_layout(ledger_path_str, db)?;
