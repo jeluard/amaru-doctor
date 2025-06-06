@@ -15,15 +15,3 @@ pub enum Action {
     FocusPrev,
     FocusNext,
 }
-
-#[derive(Debug, Clone, PartialEq, Eq, Display, Serialize, Deserialize, Hash)]
-#[serde(rename_all = "lowercase")]
-pub enum Entity {
-    Accounts,
-    #[serde(rename = "block issuers")]
-    BlockIssuers,
-    DReps,
-    Pools,
-    Proposals,
-    UTXOs,
-}

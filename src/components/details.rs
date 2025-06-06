@@ -73,11 +73,12 @@ where
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         let mut block = Block::default()
             .title(self.title.clone())
-            .title_style(Style::default().fg(Color::White))
             .borders(Borders::ALL);
 
         if self.has_focus() {
-            block = block.border_style(Style::default().fg(Color::Blue));
+            block = block
+                .title_style(Style::default().fg(Color::White))
+                .border_style(Style::default().fg(Color::Blue));
         }
 
         let lines = match self.shared.borrow().get() {

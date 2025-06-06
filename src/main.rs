@@ -17,6 +17,7 @@ mod config;
 mod errors;
 mod focus;
 mod logging;
+mod nav;
 mod shared;
 mod to_list_item;
 mod to_rich;

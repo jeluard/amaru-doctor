@@ -1,5 +1,3 @@
-use std::fmt;
-
 use super::{RichText, ToRichText, labeled};
 use amaru_kernel::Address;
 use amaru_kernel::{
@@ -10,6 +8,7 @@ use pallas_codec::utils::CborWrap;
 use pallas_primitives::babbage::PseudoDatumOption;
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
+use std::fmt;
 
 pub struct TransactionInputDisplay<'a>(pub &'a TransactionInput);
 

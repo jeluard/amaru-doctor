@@ -10,14 +10,11 @@ use ratatui::{
     Frame,
     layout::{Rect, Size},
 };
-use std::{fmt::Debug, hash::Hash};
+use std::fmt::Debug;
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::trace;
 
-pub struct SwitchComponent<'a, K>
-where
-    K: Eq + Hash + Debug,
-{
+pub struct SwitchComponent<'a, K> {
     shared: SharedGetter<'a, K>,
     focus: FocusState,
     components: Vec<(K, Shared<'a, dyn FocusableComponent + 'a>)>,
@@ -25,7 +22,7 @@ where
 
 impl<'a, K> SwitchComponent<'a, K>
 where
-    K: Eq + Hash + Debug + Clone,
+    K: Clone + Debug + Eq,
 {
     pub fn new(
         shared: SharedGetter<'a, K>,
@@ -59,7 +56,7 @@ where
 
 impl<'a, K> FocusableComponent for SwitchComponent<'a, K>
 where
-    K: Eq + Hash + Clone + Debug,
+    K: Clone + Debug + Eq,
 {
     fn focus_state(&self) -> &FocusState {
         &self.focus
@@ -85,7 +82,7 @@ where
 
 impl<'a, K> Component for SwitchComponent<'a, K>
 where
-    K: Eq + Hash + Clone + Debug,
+    K: Clone + Debug + Eq,
 {
     fn debug_name(&self) -> String {
         format!(

@@ -1,41 +1,9 @@
-use std::{
-    cell::{Ref, RefCell},
-    rc::Rc,
-};
+use std::{cell::Ref, rc::Rc};
 pub trait WindowSource<T> {
     fn view(&self, start: usize, size: usize) -> Ref<[T]>;
     fn len(&self) -> usize;
 }
 
-pub struct VecSource<T> {
-    pub data: RefCell<Vec<T>>,
-}
-
-impl<T> WindowSource<T> for VecSource<T> {
-    fn view(&self, start: usize, size: usize) -> Ref<[T]> {
-        Ref::map(self.data.borrow(), move |v| {
-            let end = (start + size).min(v.len());
-            &v[start..end]
-        })
-    }
-
-    fn len(&self) -> usize {
-        self.data.borrow().len()
-    }
-}
-
-impl<T> WindowSource<T> for RefCell<Vec<T>> {
-    fn view(&self, start: usize, size: usize) -> Ref<[T]> {
-        Ref::map(self.borrow(), move |v| {
-            let end = (start + size).min(v.len());
-            &v[start..end]
-        })
-    }
-
-    fn len(&self) -> usize {
-        self.borrow().len()
-    }
-}
 pub struct WindowState<'a, T> {
     start: usize,
     size: usize,

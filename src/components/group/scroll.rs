@@ -92,11 +92,12 @@ where
 
         let mut block = Block::default()
             .title(self.title.clone())
-            .title_style(Style::default().fg(Color::White))
             .borders(Borders::ALL);
 
         if self.has_focus() {
-            block = block.border_style(Style::default().fg(Color::Blue));
+            block = block
+                .title_style(Style::default().fg(Color::White))
+                .border_style(Style::default().fg(Color::Blue));
         }
 
         let list = List::new(items)
