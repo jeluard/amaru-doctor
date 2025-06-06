@@ -23,11 +23,7 @@ pub fn build_layout<'a>(
 ) -> Result<(AppComponents<'a>, FocusManager<'a>)> {
     let (entity_types, ids_switcher, details_switcher) = make_entity_lists(db);
     let header = make_header(ledger_path_str);
-    let body = make_body(
-        entity_types.clone(),
-        ids_switcher.clone(),
-        details_switcher.clone(),
-    );
+    let body = make_body(&entity_types, &ids_switcher, &details_switcher);
     let footer = make_footer();
 
     let layout = AppComponents::new(vec![header, body, footer]);
@@ -101,15 +97,15 @@ fn make_header<'a>(ledger_path_str: &String) -> Shared<'a, dyn Component + 'a> {
 }
 
 fn make_body<'a>(
-    entity_types: Shared<'a, dyn Component + 'a>,
-    ids_switcher: Shared<'a, dyn Component + 'a>,
-    details_switcher: Shared<'a, dyn Component + 'a>,
+    entity_types: &Shared<'a, dyn FocusableComponent + 'a>,
+    ids_switcher: &Shared<'a, dyn FocusableComponent + 'a>,
+    details_switcher: &Shared<'a, dyn FocusableComponent + 'a>,
 ) -> Shared<'a, dyn Component + 'a> {
     let left_column = shared(LayoutComponent::new(
         Direction::Vertical,
         vec![
-            (Constraint::Percentage(50), entity_types),
-            (Constraint::Percentage(50), ids_switcher),
+            (Constraint::Percentage(50), entity_types.clone()),
+            (Constraint::Percentage(50), ids_switcher.clone()),
         ],
     ));
 
@@ -117,7 +113,7 @@ fn make_body<'a>(
         Direction::Horizontal,
         vec![
             (Constraint::Percentage(30), left_column),
-            (Constraint::Percentage(70), details_switcher),
+            (Constraint::Percentage(70), details_switcher.clone()),
         ],
     ))
 }

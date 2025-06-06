@@ -4,17 +4,17 @@ use crate::{
     focus::{FocusState, FocusableComponent},
     shared::Getter,
     to_list_item::ToListItem,
-    window::state::WindowState,
+    window::{WindowSource, WindowState},
 };
 use color_eyre::{Result, eyre::Ok};
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
-use std::cell::{Ref, RefMut};
+use std::{cell::Ref, rc::Rc};
 use tracing::trace;
 
 pub struct ScrollableListComponent<'a, T>
 where
-    T: Clone + ToListItem,
+    T: Clone + ToListItem + 'a,
 {
     title: String,
     state: WindowState<'a, T>,
@@ -23,16 +23,12 @@ where
 
 impl<'a, T> ScrollableListComponent<'a, T>
 where
-    T: Clone + ToListItem,
+    T: Clone + ToListItem + 'a,
 {
-    pub fn new<I>(title: String, iter: I, window_size: usize) -> Self
-    where
-        I: Iterator<Item = T> + 'a,
-    {
-        let state = WindowState::new(iter, window_size);
+    pub fn new(title: String, source: Rc<dyn WindowSource<T> + 'a>, window_size: usize) -> Self {
         Self {
             title,
-            state,
+            state: WindowState::new(source, window_size),
             focus: FocusState::default(),
         }
     }
@@ -45,15 +41,11 @@ where
     fn get(&self) -> Option<Ref<T>> {
         self.state.selected_item()
     }
-
-    fn get_mut(&self) -> Option<RefMut<T>> {
-        self.state.selected_item_mut()
-    }
 }
 
 impl<'a, T> FocusableComponent for ScrollableListComponent<'a, T>
 where
-    T: Clone + ToListItem,
+    T: Clone + ToListItem + 'a,
 {
     fn focus_state(&self) -> &FocusState {
         &self.focus
@@ -66,7 +58,7 @@ where
 
 impl<'a, T> Component for ScrollableListComponent<'a, T>
 where
-    T: Clone + ToListItem,
+    T: Clone + ToListItem + 'a,
 {
     fn debug_name(&self) -> String {
         format!("ScrollableListComponent:{}", self.title)
@@ -84,7 +76,7 @@ where
             KeyCode::Down => self.state.scroll_down(),
             _ => {
                 trace!(
-                    "ScrollableListComponent::{}: no match for key code {}",
+                    "ScrollableListComponent::{}: no match for key code {:?}",
                     self.title, key.code
                 );
             }
@@ -94,7 +86,6 @@ where
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        let is_focused = self.has_focus();
         self.state.set_window_size(area.rows().count());
         let (view, selected) = self.state.window_with_selected_index();
         let items: Vec<ListItem> = view.iter().map(|i| i.to_list_item()).collect();
@@ -104,7 +95,7 @@ where
             .title_style(Style::default().fg(Color::White))
             .borders(Borders::ALL);
 
-        if is_focused {
+        if self.has_focus() {
             block = block.border_style(Style::default().fg(Color::Blue));
         }
 

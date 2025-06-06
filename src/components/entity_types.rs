@@ -1,8 +1,7 @@
-use ratatui::widgets::ListItem;
-
-use crate::{action::Entity, to_list_item::ToListItem};
-
 use super::group::scroll::ScrollableListComponent;
+use crate::{action::Entity, to_list_item::ToListItem, window::VecSource};
+use ratatui::widgets::ListItem;
+use std::rc::Rc;
 
 impl ToListItem for Entity {
     fn to_list_item(&self) -> ListItem<'static> {
@@ -11,15 +10,17 @@ impl ToListItem for Entity {
 }
 
 pub fn new_entity_types_list() -> ScrollableListComponent<'static, Entity> {
-    let items = vec![
-        Entity::Accounts,
-        Entity::BlockIssuers,
-        Entity::DReps,
-        Entity::Pools,
-        Entity::Proposals,
-        Entity::UTXOs,
-    ]
-    .into_iter();
+    let source = Rc::new(VecSource {
+        data: vec![
+            Entity::Accounts,
+            Entity::BlockIssuers,
+            Entity::DReps,
+            Entity::Pools,
+            Entity::Proposals,
+            Entity::UTXOs,
+        ]
+        .into(),
+    });
 
-    ScrollableListComponent::new("Entity Types".to_string(), items, 10)
+    ScrollableListComponent::new("Entity Types".to_string(), source, 10)
 }

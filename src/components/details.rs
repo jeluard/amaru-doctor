@@ -80,7 +80,7 @@ where
             block = block.border_style(Style::default().fg(Color::Blue));
         }
 
-        let lines = match self.shared.borrow_mut().get_mut() {
+        let lines = match self.shared.borrow().get() {
             Some(val) => val.to_rich_text().unwrap_lines(),
             None => vec![Line::from("None selected")],
         };
