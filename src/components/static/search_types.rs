@@ -1,7 +1,4 @@
-use crate::{
-    components::group::scroll::ScrollableListComponent, to_list_item::ToListItem,
-    window::IteratorSource,
-};
+use crate::{components::list::ListComponent, to_list_item::ToListItem, window::IteratorSource};
 use ratatui::widgets::ListItem;
 use serde::Serialize;
 use std::rc::Rc;
@@ -18,10 +15,10 @@ impl ToListItem for SearchType {
     }
 }
 
-pub fn new_search_types_list() -> ScrollableListComponent<SearchType> {
+pub fn new_search_types_list() -> ListComponent<SearchType> {
     let source = Rc::new(IteratorSource::new(
         vec![SearchType::UtxoByAddress].into_iter(),
     ));
 
-    ScrollableListComponent::new("Search Types".to_string(), source, 10)
+    ListComponent::new("Search Types".to_string(), source, 10)
 }
