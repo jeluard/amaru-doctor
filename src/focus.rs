@@ -32,13 +32,13 @@ pub trait FocusableComponent: Component {
 }
 
 #[derive(Default)]
-pub struct FocusManager<'a> {
+pub struct FocusManager {
     index: usize,
-    components: Vec<Shared<'a, dyn FocusableComponent + 'a>>,
+    components: Vec<Shared<dyn FocusableComponent>>,
 }
 
-impl<'a> FocusManager<'a> {
-    pub fn new(components: Vec<Shared<'a, dyn FocusableComponent + 'a>>) -> Self {
+impl FocusManager {
+    pub fn new(components: Vec<Shared<dyn FocusableComponent>>) -> Self {
         if !components.is_empty() {
             components[0].borrow_mut().set_focus(true);
         }

@@ -12,23 +12,20 @@ use ratatui::{
 };
 use tokio::sync::mpsc::UnboundedSender;
 
-pub struct LayoutComponent<'a> {
+pub struct LayoutComponent {
     direction: Direction,
-    children: Vec<(Constraint, Shared<'a, dyn Component + 'a>)>,
+    children: Vec<(Constraint, Shared<dyn Component>)>,
 }
 
-impl<'a> LayoutComponent<'a> {
-    pub fn new(
-        direction: Direction,
-        children: Vec<(Constraint, Shared<'a, dyn Component + 'a>)>,
-    ) -> Self {
+impl LayoutComponent {
+    pub fn new(direction: Direction, children: Vec<(Constraint, Shared<dyn Component>)>) -> Self {
         Self {
             direction,
             children,
         }
     }
 }
-impl<'a> Component for LayoutComponent<'a> {
+impl Component for LayoutComponent {
     fn debug_name(&self) -> String {
         "LayoutComponent".to_string()
     }

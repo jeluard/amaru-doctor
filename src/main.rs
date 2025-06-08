@@ -16,6 +16,7 @@ mod components;
 mod config;
 mod errors;
 mod focus;
+mod iter;
 mod logging;
 mod nav;
 mod shared;
@@ -40,11 +41,11 @@ async fn main() -> Result<()> {
             path,
             epoch.parse::<u64>()?,
         )?);
-        let mut app = App::new(ledger_path_str, args.tick_rate, args.frame_rate, &db_arc)?;
+        let mut app = App::new(ledger_path_str, args.tick_rate, args.frame_rate, db_arc)?;
         app.run().await?;
     } else {
         let db_arc = Arc::new(RocksDB::new(path, NetworkName::Preprod.into())?);
-        let mut app = App::new(ledger_path_str, args.tick_rate, args.frame_rate, &db_arc)?;
+        let mut app = App::new(ledger_path_str, args.tick_rate, args.frame_rate, db_arc)?;
         app.run().await?;
     };
     Ok(())

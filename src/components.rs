@@ -12,6 +12,7 @@ pub mod empty;
 pub mod fps;
 pub mod group;
 pub mod home;
+pub mod list;
 pub mod list_and_details;
 pub mod message;
 pub mod search;

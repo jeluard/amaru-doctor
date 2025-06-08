@@ -14,19 +14,19 @@ use std::fmt::Debug;
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::trace;
 
-pub struct SwitchComponent<'a, K> {
-    shared: SharedGetter<'a, K>,
+pub struct SwitchComponent<K> {
+    shared: SharedGetter<K>,
     focus: FocusState,
-    components: Vec<(K, Shared<'a, dyn FocusableComponent + 'a>)>,
+    components: Vec<(K, Shared<dyn FocusableComponent>)>,
 }
 
-impl<'a, K> SwitchComponent<'a, K>
+impl<K> SwitchComponent<K>
 where
     K: Clone + Debug + Eq,
 {
     pub fn new(
-        shared: SharedGetter<'a, K>,
-        components: Vec<(K, Shared<'a, dyn FocusableComponent + 'a>)>,
+        shared: SharedGetter<K>,
+        components: Vec<(K, Shared<dyn FocusableComponent>)>,
     ) -> Self {
         let k = &components[0].0;
         trace!("SwitchComponent init'ing, first selected: {:?}", k);
@@ -41,20 +41,20 @@ where
         self.shared.borrow().get().map(|r| r.clone())
     }
 
-    fn current(&self) -> Option<&Shared<'a, dyn FocusableComponent + 'a>> {
+    fn current(&self) -> Option<&Shared<dyn FocusableComponent>> {
         self.current_key()
             .and_then(|k| self.components.iter().find(|(key, _)| *key == k))
             .map(|(_, c)| c)
     }
 
-    fn current_mut(&mut self) -> Option<&Shared<'a, dyn FocusableComponent + 'a>> {
+    fn current_mut(&mut self) -> Option<&Shared<dyn FocusableComponent>> {
         self.current_key()
             .and_then(|k| self.components.iter().find(|(key, _)| *key == k))
             .map(|(_, c)| c)
     }
 }
 
-impl<'a, K> FocusableComponent for SwitchComponent<'a, K>
+impl<K> FocusableComponent for SwitchComponent<K>
 where
     K: Clone + Debug + Eq,
 {
@@ -80,7 +80,7 @@ where
     }
 }
 
-impl<'a, K> Component for SwitchComponent<'a, K>
+impl<K> Component for SwitchComponent<K>
 where
     K: Clone + Debug + Eq,
 {

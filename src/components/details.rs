@@ -10,21 +10,21 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
 use tracing::trace;
 
-pub struct DetailsComponent<'a, K>
+pub struct DetailsComponent<K>
 where
     K: Clone + ToRichText,
 {
     title: String,
-    shared: SharedGetter<'a, K>,
+    shared: SharedGetter<K>,
     focus: FocusState,
     scroll_offset: u16,
 }
 
-impl<'a, K> DetailsComponent<'a, K>
+impl<K> DetailsComponent<K>
 where
     K: Clone + ToRichText,
 {
-    pub fn new(title: String, shared: SharedGetter<'a, K>) -> Self {
+    pub fn new(title: String, shared: SharedGetter<K>) -> Self {
         Self {
             title,
             shared,
@@ -34,7 +34,7 @@ where
     }
 }
 
-impl<'a, K> FocusableComponent for DetailsComponent<'a, K>
+impl<K> FocusableComponent for DetailsComponent<K>
 where
     K: Clone + ToRichText,
 {
@@ -47,7 +47,7 @@ where
     }
 }
 
-impl<'a, K> Component for DetailsComponent<'a, K>
+impl<K> Component for DetailsComponent<K>
 where
     K: Clone + ToRichText,
 {

@@ -1,6 +1,6 @@
 use crate::{
-    components::{group::scroll::ScrollableListComponent, list_and_details::IteratorSource},
-    to_list_item::ToListItem,
+    components::group::scroll::ScrollableListComponent, to_list_item::ToListItem,
+    window::IteratorSource,
 };
 use ratatui::widgets::ListItem;
 use serde::{Deserialize, Serialize};
@@ -25,7 +25,7 @@ impl ToListItem for Entity {
     }
 }
 
-pub fn new_entity_types_list() -> ScrollableListComponent<'static, Entity> {
+pub fn new_entity_types_list() -> ScrollableListComponent<Entity> {
     let source = Rc::new(IteratorSource::new(
         vec![
             Entity::Accounts,

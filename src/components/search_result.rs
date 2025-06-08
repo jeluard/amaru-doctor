@@ -10,26 +10,26 @@ use color_eyre::Result;
 use ratatui::{prelude::*, widgets::*};
 use std::{collections::HashMap, str::FromStr, sync::Arc};
 
-pub struct SearchResultComponent<'a, R>
+pub struct SearchResultComponent<R>
 where
     R: ReadOnlyStore,
 {
-    db: &'a Arc<R>,
-    search_type: SharedGetter<'a, SearchType>,
-    query: SharedGetter<'a, String>,
+    db: Arc<R>,
+    search_type: SharedGetter<SearchType>,
+    query: SharedGetter<String>,
     index: HashMap<Address, Vec<TransactionInput>>,
     results: Vec<TransactionInput>,
     focus: FocusState,
 }
 
-impl<'a, R> SearchResultComponent<'a, R>
+impl<R> SearchResultComponent<R>
 where
     R: ReadOnlyStore,
 {
     pub fn new(
-        db: &'a Arc<R>,
-        search_type: SharedGetter<'a, SearchType>,
-        query: SharedGetter<'a, String>,
+        db: Arc<R>,
+        search_type: SharedGetter<SearchType>,
+        query: SharedGetter<String>,
     ) -> Self {
         Self {
             db,
@@ -72,7 +72,7 @@ where
     }
 }
 
-impl<'a, R> FocusableComponent for SearchResultComponent<'a, R>
+impl<R> FocusableComponent for SearchResultComponent<R>
 where
     R: ReadOnlyStore,
 {
@@ -85,7 +85,7 @@ where
     }
 }
 
-impl<'a, R> Component for SearchResultComponent<'a, R>
+impl<R> Component for SearchResultComponent<R>
 where
     R: ReadOnlyStore,
 {

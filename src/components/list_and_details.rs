@@ -1,83 +1,38 @@
 use crate::{
-    components::{details::DetailsComponent, group::scroll::ScrollableListComponent},
+    components::{details::DetailsComponent, list::ListComponent},
     focus::FocusableComponent,
     shared::{Shared, shared},
     to_list_item::ToListItem,
     to_rich::ToRichText,
-    window::WindowSource,
+    window::IteratorSource,
 };
-use std::{
-    cell::{Ref, RefCell},
-    rc::Rc,
-};
+use std::rc::Rc;
 
-pub struct IteratorSource<T, I>
-where
-    I: Iterator<Item = T>,
-{
-    iter: RefCell<I>,
-    buffer: RefCell<Vec<T>>,
-}
-
-impl<T, I> IteratorSource<T, I>
-where
-    I: Iterator<Item = T>,
-{
-    pub fn new(iter: I) -> Self {
-        Self {
-            iter: RefCell::new(iter),
-            buffer: RefCell::new(Vec::new()),
-        }
-    }
-}
-
-impl<T, I> WindowSource<T> for IteratorSource<T, I>
-where
-    I: Iterator<Item = T>,
-{
-    fn view(&self, start: usize, size: usize) -> Ref<[T]> {
-        {
-            let mut iter = self.iter.borrow_mut();
-            let mut buf = self.buffer.borrow_mut();
-            while buf.len() < start + size {
-                if let Some(item) = iter.next() {
-                    buf.push(item);
-                } else {
-                    break;
-                }
-            }
-        }
-        Ref::map(self.buffer.borrow(), move |v| {
-            let end = (start + size).min(v.len());
-            &v[start..end]
-        })
-    }
-
-    fn len(&self) -> usize {
-        usize::MAX
-    }
-}
-
-pub fn new_list_detail_components<'a, T, I>(
+pub fn new_list_detail_components<T, I>(
     item_name: &'static str,
     iter: I,
 ) -> (
-    Shared<'a, dyn FocusableComponent + 'a>,
-    Shared<'a, dyn FocusableComponent + 'a>,
+    Shared<dyn FocusableComponent>,
+    Shared<dyn FocusableComponent>,
 )
 where
-    T: Clone + ToListItem + ToRichText + 'a,
-    I: Iterator<Item = T> + 'a,
+    T: Clone + ToListItem + ToRichText + 'static,
+    I: Iterator<Item = T> + 'static,
 {
-    let source: Rc<dyn WindowSource<T> + 'a> = Rc::new(IteratorSource::new(iter));
-    let list = shared(ScrollableListComponent::new(
+    let source = Rc::new(IteratorSource::new(iter));
+
+    let list = shared(ListComponent::new(
         format!("{}s", item_name),
-        source,
+        source.clone(),
         10,
     ));
     let detail = shared(DetailsComponent::new(
         format!("{} Details", item_name),
         list.clone(),
     ));
-    (list, detail)
+
+    (
+        list as Shared<dyn FocusableComponent>,
+        detail as Shared<dyn FocusableComponent>,
+    )
 }

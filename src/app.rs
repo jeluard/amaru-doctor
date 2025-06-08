@@ -19,26 +19,26 @@ use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::{debug, info, trace};
 
-pub struct AppComponents<'a> {
-    all: Vec<Shared<'a, dyn Component + 'a>>,
+pub struct AppComponents {
+    all: Vec<Shared<dyn Component>>,
 }
 
-impl<'a> AppComponents<'a> {
-    pub fn new(all: Vec<Shared<'a, dyn Component + 'a>>) -> Self {
+impl AppComponents {
+    pub fn new(all: Vec<Shared<dyn Component>>) -> Self {
         Self { all }
     }
 
-    fn iter(&self) -> impl Iterator<Item = &Shared<'a, dyn Component + 'a>> {
+    fn iter(&self) -> impl Iterator<Item = &Shared<dyn Component>> {
         self.all.iter()
     }
 }
 
-pub struct App<'a> {
+pub struct App {
     config: Config,
     tick_rate: f64,
     frame_rate: f64,
-    components: AppComponents<'a>,
-    focus: FocusManager<'a>,
+    components: AppComponents,
+    focus: FocusManager,
     should_quit: bool,
     should_suspend: bool,
     mode: Mode,
@@ -53,12 +53,12 @@ pub enum Mode {
     Home,
 }
 
-impl<'a> App<'a> {
+impl App {
     pub fn new(
         ledger_path_str: &String,
         tick_rate: f64,
         frame_rate: f64,
-        db: &'a Arc<impl ReadOnlyStore>,
+        db: Arc<impl ReadOnlyStore + Send + Sync + 'static>,
     ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
         let (components, focus) = build::build_layout(ledger_path_str, db)?;
