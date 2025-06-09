@@ -5,6 +5,7 @@ use crate::{
     tui::Event,
 };
 use color_eyre::Result;
+use crossterm::event::KeyEvent;
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
@@ -69,6 +70,14 @@ impl Component for LayoutComponent {
         let mut actions = vec![];
         for (_, c) in &self.children {
             actions.extend(c.borrow_mut().handle_events(event.clone())?);
+        }
+        Ok(actions)
+    }
+
+    fn handle_key_event(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
+        let mut actions = vec![];
+        for (_, c) in &self.children {
+            actions.extend(c.borrow_mut().handle_key_event(key)?);
         }
         Ok(actions)
     }

@@ -46,12 +46,16 @@ impl Component for Message {
         let mut paragraph = Paragraph::new(span).left_aligned();
 
         if let Some(title) = self.title.to_owned() {
-            paragraph = paragraph.block(
-                Block::default()
-                    .title(title)
-                    .title_style(Style::default().fg(Color::White))
-                    .borders(Borders::ALL),
-            )
+            let mut block = Block::default()
+                .title(title)
+                .title_style(Style::default().fg(Color::White))
+                .borders(Borders::ALL);
+            if self.has_focus() {
+                block = block
+                    .border_style(Style::default().fg(Color::Blue))
+                    .title_style(Style::default().fg(Color::White));
+            }
+            paragraph = paragraph.block(block)
         }
 
         frame.render_widget(paragraph, area);

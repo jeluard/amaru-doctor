@@ -7,13 +7,12 @@ use crate::{
 use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
-use std::cell::{Ref, RefCell};
 
 pub struct SearchComponent {
     title: String,
     input: String,
     cursor_position: usize,
-    query: RefCell<Option<String>>,
+    query: Option<String>,
     focus: FocusState,
 }
 
@@ -23,7 +22,7 @@ impl SearchComponent {
             title,
             input: String::new(),
             cursor_position: 0,
-            query: RefCell::new(None),
+            query: None,
             focus: FocusState::default(),
         }
     }
@@ -39,9 +38,9 @@ impl FocusableComponent for SearchComponent {
     }
 }
 
-impl Getter<String> for SearchComponent {
-    fn get(&self) -> Option<Ref<String>> {
-        Ref::filter_map(self.query.borrow(), |q| q.as_ref()).ok()
+impl Getter<Option<String>> for SearchComponent {
+    fn get(&self) -> &Option<String> {
+        &self.query
     }
 }
 
@@ -77,7 +76,7 @@ impl Component for SearchComponent {
                 }
             }
             KeyCode::Enter => {
-                self.query.borrow_mut().replace(self.input.to_owned());
+                self.query = Some(self.input.to_owned());
             }
             _ => {}
         }

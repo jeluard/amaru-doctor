@@ -2,7 +2,8 @@ use crate::{
     action::Action,
     components::{Component, r#static::search_types::SearchType},
     focus::{FocusState, FocusableComponent},
-    shared::SharedGetter,
+    shared::{Getter, Shared},
+    to_rich::utxo::TransactionInputDisplay,
 };
 use amaru_kernel::{Address, HasAddress, TransactionInput};
 use amaru_ledger::store::ReadOnlyStore;
@@ -15,8 +16,8 @@ where
     R: ReadOnlyStore,
 {
     db: Arc<R>,
-    search_type: SharedGetter<SearchType>,
-    query: SharedGetter<String>,
+    search_type: Shared<dyn Getter<SearchType>>,
+    query: Shared<dyn Getter<Option<String>>>,
     index: HashMap<Address, Vec<TransactionInput>>,
     results: Vec<TransactionInput>,
     focus: FocusState,
@@ -28,8 +29,8 @@ where
 {
     pub fn new(
         db: Arc<R>,
-        search_type: SharedGetter<SearchType>,
-        query: SharedGetter<String>,
+        search_type: Shared<dyn Getter<SearchType>>,
+        query: Shared<dyn Getter<Option<String>>>,
     ) -> Self {
         Self {
             db,
@@ -53,19 +54,13 @@ where
     }
 
     fn update_results(&mut self) {
-        let search_type = self.search_type.borrow().get().as_deref().copied();
-        let query = self.query.borrow().get().as_deref().map(|s| s.to_owned());
-
-        match (search_type, query) {
-            (Some(SearchType::UtxoByAddress), Some(address_str)) => {
-                self.ensure_index();
-                if let Ok(address) = Address::from_str(&address_str) {
-                    self.results = self.index.get(&address).cloned().unwrap_or_default();
-                } else {
-                    self.results.clear();
-                }
-            }
-            _ => {
+        let search = *self.search_type.borrow().get();
+        let query = self.query.borrow().get().clone();
+        if let (SearchType::UtxoByAddress, Some(query)) = (search, query) {
+            self.ensure_index();
+            if let Ok(address) = Address::from_str(&query) {
+                self.results = self.index.get(&address).cloned().unwrap_or_default();
+            } else {
                 self.results.clear();
             }
         }
@@ -103,17 +98,22 @@ where
         let items = self
             .results
             .iter()
-            .enumerate()
-            .map(|(i, tx)| ListItem::new(format!("{i}: {}", tx.transaction_id)))
+            .map(|txi| ListItem::new(TransactionInputDisplay(txi).to_string()))
             .collect::<Vec<_>>();
 
+        let mut block = Block::default()
+            .title("Search Results")
+            .borders(Borders::ALL);
+        if self.has_focus() {
+            block = block
+                .border_style(Style::default().fg(Color::Blue))
+                .title_style(Style::default().fg(Color::White));
+        }
+
         let list = List::new(items)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title("Search Results"),
-            )
-            .highlight_style(Style::default().add_modifier(Modifier::BOLD));
+            .highlight_symbol(">> ")
+            .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+            .block(block);
 
         frame.render_widget(list, area);
         Ok(())

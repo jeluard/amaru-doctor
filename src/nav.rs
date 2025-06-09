@@ -1,6 +1,6 @@
-use strum::Display;
+use strum::{Display, EnumIter};
 
-#[derive(Clone, Debug, Display, PartialEq, Eq)]
+#[derive(Clone, Debug, EnumIter, Display, PartialEq, Eq)]
 pub enum NavMode {
     Browse,
     Search,

@@ -2,55 +2,58 @@ use crate::{
     action::Action,
     components::Component,
     focus::{FocusState, FocusableComponent},
-    shared::{Shared, SharedGetter},
+    shared::{SharedFC, SharedGetter},
 };
 use color_eyre::Result;
-use crossterm::event::{KeyEvent, MouseEvent};
-use ratatui::{
-    Frame,
-    layout::{Rect, Size},
+use crossterm::event::KeyEvent;
+use ratatui::{Frame, layout::Rect};
+use std::{
+    cell::{Ref, RefMut},
+    fmt::Debug,
 };
-use std::fmt::Debug;
-use tokio::sync::mpsc::UnboundedSender;
 use tracing::trace;
 
-pub struct SwitchComponent<K> {
-    shared: SharedGetter<K>,
+pub struct SwitchComponent<K>
+where
+    K: Clone + Debug + Eq,
+{
+    key: SharedGetter<K>,
+    components: Vec<(K, SharedFC)>,
     focus: FocusState,
-    components: Vec<(K, Shared<dyn FocusableComponent>)>,
 }
 
 impl<K> SwitchComponent<K>
 where
     K: Clone + Debug + Eq,
 {
-    pub fn new(
-        shared: SharedGetter<K>,
-        components: Vec<(K, Shared<dyn FocusableComponent>)>,
-    ) -> Self {
-        let k = &components[0].0;
-        trace!("SwitchComponent init'ing, first selected: {:?}", k);
-        Self {
-            shared,
-            focus: FocusState::default(),
+    pub fn new(key: SharedGetter<K>, components: Vec<(K, SharedFC)>) -> Self {
+        SwitchComponent {
+            key,
             components,
+            focus: FocusState::default(),
         }
     }
 
-    fn current_key(&self) -> Option<K> {
-        self.shared.borrow().get().map(|r| r.clone())
+    pub fn current_key(&self) -> K {
+        self.key.borrow().get().clone()
     }
 
-    fn current(&self) -> Option<&Shared<dyn FocusableComponent>> {
-        self.current_key()
-            .and_then(|k| self.components.iter().find(|(key, _)| *key == k))
-            .map(|(_, c)| c)
+    pub fn current(&self) -> Ref<'_, dyn FocusableComponent> {
+        let (_, comp) = self
+            .components
+            .iter()
+            .find(|(k, _)| *k == self.current_key())
+            .expect("No matching key in components");
+        comp.borrow()
     }
 
-    fn current_mut(&mut self) -> Option<&Shared<dyn FocusableComponent>> {
-        self.current_key()
-            .and_then(|k| self.components.iter().find(|(key, _)| *key == k))
-            .map(|(_, c)| c)
+    pub fn current_mut(&self) -> RefMut<'_, dyn FocusableComponent> {
+        let (_, comp) = self
+            .components
+            .iter()
+            .find(|(k, _)| *k == self.current_key())
+            .expect("No matching key in components");
+        comp.borrow_mut()
     }
 }
 
@@ -67,16 +70,11 @@ where
     }
 
     fn has_focus(&self) -> bool {
-        self.current()
-            .map(|c| c.borrow().has_focus())
-            .unwrap_or(false)
+        self.current().has_focus()
     }
 
     fn set_focus(&mut self, b: bool) {
-        self.focus.set(b);
-        if let Some(c) = self.current_mut() {
-            c.borrow_mut().set_focus(b);
-        }
+        self.current_mut().set_focus(b);
     }
 }
 
@@ -92,68 +90,15 @@ where
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        if let Some(c) = self.current_mut() {
-            c.borrow_mut().draw(frame, area)
-        } else {
-            Ok(())
-        }
+        self.current_mut().draw(frame, area)
     }
 
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
-        let selected_key = self.shared.borrow().get().map(|r| r.clone());
-
         if !self.has_focus() {
-            trace!("{}: no focus", self.debug_name());
+            trace!("{}: No focus", self.debug_name());
             return Ok(vec![]);
         }
-
-        if let Some(c) = self.current() {
-            trace!(
-                "{}: forwarding key to component {:?}",
-                self.debug_name(),
-                selected_key
-            );
-            c.borrow_mut().handle_key_event(key)
-        } else {
-            trace!("{}: nothing selected", self.debug_name());
-            Ok(vec![])
-        }
-    }
-
-    fn handle_mouse_event(&mut self, mouse: MouseEvent) -> Result<Vec<Action>> {
-        if let Some(c) = self.current_mut() {
-            c.borrow_mut().handle_mouse_event(mouse)
-        } else {
-            Ok(vec![])
-        }
-    }
-
-    fn handle_events(&mut self, event: Option<crate::tui::Event>) -> Result<Vec<Action>> {
-        if let Some(c) = self.current_mut() {
-            c.borrow_mut().handle_events(event)
-        } else {
-            Ok(vec![])
-        }
-    }
-
-    fn init(&mut self, area: Size) -> Result<()> {
-        for (_, c) in &self.components {
-            c.borrow_mut().init(area)?;
-        }
-        Ok(())
-    }
-
-    fn register_action_handler(&mut self, tx: UnboundedSender<Action>) -> Result<()> {
-        for (_, c) in &self.components {
-            c.borrow_mut().register_action_handler(tx.clone())?;
-        }
-        Ok(())
-    }
-
-    fn register_config_handler(&mut self, config: crate::config::Config) -> Result<()> {
-        for (_, c) in &self.components {
-            c.borrow_mut().register_config_handler(config.clone())?;
-        }
-        Ok(())
+        trace!("{}: Have focus", self.debug_name());
+        self.current_mut().handle_key_event(key)
     }
 }

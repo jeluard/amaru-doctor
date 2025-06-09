@@ -4,30 +4,27 @@ use crate::{
         Component,
         fps::FpsCounter,
         group::{layout::LayoutComponent, switch::SwitchComponent},
+        list::ListComponent,
         list_and_details::new_list_detail_components,
         message::Message,
         search::SearchComponent,
         search_result::SearchResultComponent,
-        r#static::{
-            entity_types::{Entity, new_entity_types_list},
-            search_types::new_search_types_list,
-        },
+        r#static::{entity_types::Entity, search_types::SearchType},
         tab::TabComponent,
     },
-    focus::{FocusManager, FocusableComponent},
+    focus::FocusManager,
     iter::{
         OwnedAccountsIter, OwnedBlockIssuerIter, OwnedDRepIter, OwnedPoolIter, OwnedProposalIter,
         OwnedUtxoIter,
     },
     nav::NavMode,
-    shared::{Shared, shared},
+    shared::{Shared, SharedFC, shared},
 };
 use amaru_ledger::store::ReadOnlyStore;
 use color_eyre::Result;
 use ratatui::layout::{Constraint, Direction};
 use std::sync::Arc;
-
-type SharedFC = Shared<dyn FocusableComponent>;
+use strum::IntoEnumIterator;
 
 pub fn build_layout(
     ledger_path_str: &String,
@@ -66,11 +63,17 @@ impl From<BodyComponents> for Vec<SharedFC> {
 
 fn make_lists(db: Arc<impl ReadOnlyStore + Send + Sync + 'static>) -> BodyComponents {
     let nav_tabs = shared(TabComponent::new(
-        "Nav Mode",
-        vec![NavMode::Browse, NavMode::Search],
+        "Nav Mode".to_string(),
+        NavMode::iter().collect(),
     ));
-    let entity_types = shared(new_entity_types_list());
-    let search_types = shared(new_search_types_list());
+    let entity_types = shared(ListComponent::from_iter(
+        "Entity Types".to_string(),
+        Entity::iter(),
+    ));
+    let search_types = shared(ListComponent::from_iter(
+        "Search Types".to_string(),
+        SearchType::iter(),
+    ));
     let search_query = shared(SearchComponent::new("Search".to_string()));
     let search_components: Vec<(NavMode, SharedFC)> = vec![
         (
@@ -83,11 +86,6 @@ fn make_lists(db: Arc<impl ReadOnlyStore + Send + Sync + 'static>) -> BodyCompon
         (NavMode::Search, search_query.clone()),
     ];
     let search_switcher = shared(SwitchComponent::new(nav_tabs.clone(), search_components));
-    let nav_components: Vec<(NavMode, SharedFC)> = vec![
-        (NavMode::Browse, entity_types.clone()),
-        (NavMode::Search, search_types.clone()),
-    ];
-    let nav_types_switcher = shared(SwitchComponent::new(nav_tabs.clone(), nav_components));
 
     let (accounts, account_details) =
         new_list_detail_components("Account", OwnedAccountsIter::new(db.clone()));
@@ -99,7 +97,7 @@ fn make_lists(db: Arc<impl ReadOnlyStore + Send + Sync + 'static>) -> BodyCompon
         new_list_detail_components("Proposal", OwnedProposalIter::new(db.clone()));
     let (utxos, utxo_details) = new_list_detail_components("UTXO", OwnedUtxoIter::new(db.clone()));
 
-    let entity_id_components: Vec<(Entity, Shared<dyn FocusableComponent>)> = vec![
+    let entity_id_components: Vec<(Entity, SharedFC)> = vec![
         (Entity::Accounts, accounts),
         (Entity::BlockIssuers, block_issuers),
         (Entity::DReps, dreps),
@@ -116,13 +114,13 @@ fn make_lists(db: Arc<impl ReadOnlyStore + Send + Sync + 'static>) -> BodyCompon
         search_types.clone(),
         search_query.clone(),
     ));
-    let list_components: Vec<(NavMode, Shared<dyn FocusableComponent>)> = vec![
-        (NavMode::Browse, entity_ids_switcher.clone()),
-        (NavMode::Search, search_results.clone()),
+    let list_components: Vec<(NavMode, SharedFC)> = vec![
+        (NavMode::Browse, entity_ids_switcher),
+        (NavMode::Search, search_results),
     ];
     let nav_list_switcher = shared(SwitchComponent::new(nav_tabs.clone(), list_components));
 
-    let entity_detail_components: Vec<(Entity, Shared<dyn FocusableComponent>)> = vec![
+    let entity_detail_components: Vec<(Entity, SharedFC)> = vec![
         (Entity::Accounts, account_details),
         (Entity::BlockIssuers, block_issuer_details),
         (Entity::DReps, drep_details),
@@ -134,6 +132,12 @@ fn make_lists(db: Arc<impl ReadOnlyStore + Send + Sync + 'static>) -> BodyCompon
         entity_types.clone(),
         entity_detail_components,
     ));
+
+    let nav_components: Vec<(NavMode, SharedFC)> = vec![
+        (NavMode::Browse, entity_types),
+        (NavMode::Search, search_types),
+    ];
+    let nav_types_switcher = shared(SwitchComponent::new(nav_tabs.clone(), nav_components));
 
     BodyComponents {
         nav_tabs,

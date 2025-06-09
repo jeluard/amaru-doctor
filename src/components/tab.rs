@@ -1,5 +1,3 @@
-use std::cell::{Ref, RefCell};
-
 use crate::{
     action::Action,
     components::Component,
@@ -14,13 +12,47 @@ use ratatui::{
     widgets::{Block, Borders, Tabs},
 };
 
+pub struct Cursor<T> {
+    vec: Vec<T>,
+    idx: usize,
+}
+
+impl<T> Cursor<T> {
+    pub fn new(vec: Vec<T>) -> Self {
+        if vec.is_empty() {
+            panic!("Empty vec provided");
+        }
+        Self { vec, idx: 0 }
+    }
+
+    pub fn current(&self) -> &T {
+        self.vec.get(self.idx).unwrap()
+    }
+
+    pub fn index(&self) -> usize {
+        self.idx
+    }
+
+    pub fn next(&mut self) {
+        self.idx = (self.idx + 1) % self.vec.len();
+    }
+
+    pub fn next_back(&mut self) {
+        let len = self.vec.len();
+        self.idx = (len + self.idx - 1) % len;
+    }
+
+    pub fn iter(&self) -> std::slice::Iter<'_, T> {
+        self.vec.iter()
+    }
+}
+
 pub struct TabComponent<T>
 where
     T: ToLine,
 {
-    title: &'static str,
-    tabs: RefCell<Vec<T>>,
-    index: usize,
+    title: String,
+    tabs: Cursor<T>,
     focus: FocusState,
 }
 
@@ -28,37 +60,11 @@ impl<T> TabComponent<T>
 where
     T: ToLine,
 {
-    pub fn new(title: &'static str, tabs: Vec<T>) -> Self {
+    pub fn new(title: String, tabs: Vec<T>) -> Self {
         Self {
             title,
-            tabs: RefCell::new(tabs),
-            index: 0,
+            tabs: Cursor::new(tabs),
             focus: FocusState::default(),
-        }
-    }
-
-    fn next(&mut self) {
-        let len = self.tabs.borrow().len();
-        self.index = (self.index + 1) % len;
-    }
-
-    fn previous(&mut self) {
-        let len = self.tabs.borrow().len();
-        self.index = (self.index + len - 1) % len;
-    }
-}
-
-impl<T> Getter<T> for TabComponent<T>
-where
-    T: ToLine,
-{
-    fn get(&self) -> Option<Ref<T>> {
-        let tabs_ref = self.tabs.borrow();
-        let idx = self.index;
-        if idx < tabs_ref.len() {
-            Some(Ref::map(tabs_ref, |v| &v[idx]))
-        } else {
-            None
         }
     }
 }
@@ -76,6 +82,15 @@ where
     }
 }
 
+impl<T> Getter<T> for TabComponent<T>
+where
+    T: ToLine,
+{
+    fn get(&self) -> &T {
+        self.tabs.current()
+    }
+}
+
 impl<T> Component for TabComponent<T>
 where
     T: ToLine,
@@ -90,8 +105,8 @@ where
         }
 
         match key.code {
-            KeyCode::Up => self.previous(),
-            KeyCode::Down => self.next(),
+            KeyCode::Up => self.tabs.next_back(),
+            KeyCode::Down => self.tabs.next(),
             _ => {}
         }
 
@@ -99,7 +114,9 @@ where
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        let mut block = Block::default().borders(Borders::ALL).title(self.title);
+        let mut block = Block::default()
+            .borders(Borders::ALL)
+            .title(self.title.to_owned());
 
         if self.has_focus() {
             block = block
@@ -107,10 +124,9 @@ where
                 .title_style(Style::default().fg(Color::White));
         }
 
-        let tabs_ref = self.tabs.borrow();
-        let tab_lis: Vec<Line> = tabs_ref.iter().map(ToLine::to_line).collect();
+        let tab_lis: Vec<Line> = self.tabs.iter().map(ToLine::to_line).collect();
         let tabs = Tabs::new(tab_lis)
-            .select(self.index)
+            .select(self.tabs.index())
             .block(block)
             .highlight_style(Style::default().add_modifier(Modifier::BOLD));
 
