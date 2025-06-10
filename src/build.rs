@@ -14,13 +14,13 @@ use crate::{
         tab::TabComponent,
     },
     focus::FocusManager,
-    nav::NavMode,
-    owned_iter::{
+    shared::{Shared, SharedFC, shared},
+    states::NavMode,
+    store::owned_iter::{
         OwnedAccountsIter, OwnedBlockIssuerIter, OwnedDRepIter, OwnedPoolIter, OwnedProposalIter,
         OwnedUtxoIter,
     },
-    ros_ext::RocksDBSwitch,
-    shared::{Shared, SharedFC, shared},
+    store::rocks_db_switch::RocksDBSwitch,
 };
 use color_eyre::Result;
 use ratatui::layout::{Constraint, Direction};

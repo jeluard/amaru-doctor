@@ -1,6 +1,5 @@
-use tracing::trace;
-
 use crate::{components::Component, shared::Shared};
+use tracing::trace;
 
 #[derive(Default)]
 pub struct FocusState {

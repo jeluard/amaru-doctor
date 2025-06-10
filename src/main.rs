@@ -1,4 +1,4 @@
-use crate::{app::App, ros_ext::RocksDBSwitch};
+use crate::{app::App, store::rocks_db_switch::RocksDBSwitch};
 use amaru_kernel::network::NetworkName;
 use amaru_stores::rocksdb::{RocksDB, RocksDBHistoricalStores};
 use clap::Parser;
@@ -6,7 +6,6 @@ use cli::Cli;
 use color_eyre::Result;
 use std::{env, path::Path, sync::Arc};
 
-mod action;
 mod app;
 mod build;
 mod cli;
@@ -15,13 +14,11 @@ mod config;
 mod errors;
 mod focus;
 mod logging;
-mod nav;
-mod owned_iter;
-mod ros_ext;
 mod shared;
-mod to_list_item;
-mod to_rich;
+mod states;
+mod store;
 mod tui;
+mod ui;
 mod window;
 
 #[tokio::main]

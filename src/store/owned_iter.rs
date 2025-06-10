@@ -1,5 +1,5 @@
-use crate::ros_ext::RocksDBSwitch;
-use crate::to_list_item::{
+use crate::store::rocks_db_switch::RocksDBSwitch;
+use crate::ui::to_list_item::{
     AccountItem, BlockIssuerItem, DRepItem, PoolItem, ProposalItem, UtxoItem,
 };
 use amaru_ledger::store::ReadOnlyStore;

@@ -11,7 +11,7 @@ use ratatui::style::{Color, Modifier, Style};
 use serde::{Deserialize, de::Deserializer};
 use tracing::error;
 
-use crate::{action::Action, app::Mode};
+use crate::{app::Mode, states::Action};
 
 const CONFIG: &str = include_str!("../.config/config.json5");
 

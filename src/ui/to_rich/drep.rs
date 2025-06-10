@@ -1,6 +1,6 @@
 use crate::{
-    to_list_item::DRepItem,
-    to_rich::{
+    ui::to_list_item::DRepItem,
+    ui::to_rich::{
         RichText, ToRichText, account::StakeCredentialDisplay, labeled_default,
         labeled_default_opt, labeled_default_opt_single, labeled_default_single,
     },

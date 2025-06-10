@@ -2,8 +2,8 @@ use crate::{
     components::{details::DetailsComponent, list::ListComponent},
     focus::FocusableComponent,
     shared::{Shared, shared},
-    to_list_item::ToListItem,
-    to_rich::ToRichText,
+    ui::to_list_item::ToListItem,
+    ui::to_rich::ToRichText,
 };
 
 pub fn new_list_detail_components<T, I>(
