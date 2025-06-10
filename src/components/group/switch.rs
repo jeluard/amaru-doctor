@@ -1,5 +1,5 @@
 use crate::{
-    action::Action,
+    states::Action,
     components::Component,
     focus::{FocusState, FocusableComponent},
     shared::{SharedFC, SharedGetterOpt},

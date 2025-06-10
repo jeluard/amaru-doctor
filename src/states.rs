@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use strum::Display;
+use strum::{Display, EnumIter};
 
 #[derive(Debug, Clone, PartialEq, Eq, Display, Serialize, Deserialize)]
 pub enum Action {
@@ -15,4 +15,10 @@ pub enum Action {
     FocusPrev,
     FocusNext,
     SearchRequest,
+}
+
+#[derive(Clone, Debug, EnumIter, Display, PartialEq, Eq)]
+pub enum NavMode {
+    Browse,
+    Search,
 }

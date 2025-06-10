@@ -1,4 +1,4 @@
-use crate::to_list_item::{
+use crate::ui::to_list_item::{
     AccountItem, BlockIssuerItem, DRepItem, PoolItem, ProposalItem, UtxoItem,
 };
 use amaru_kernel::{PoolId, StakeCredential, TransactionInput, TransactionOutput};

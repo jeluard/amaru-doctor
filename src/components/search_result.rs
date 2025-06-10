@@ -1,11 +1,11 @@
 use crate::{
-    action::Action,
+    states::Action,
     components::{Component, list::ListComponent, r#static::search_types::SearchType},
     focus::{FocusState, FocusableComponent},
-    owned_iter::OwnedUtxoIter,
-    ros_ext::RocksDBSwitch,
     shared::{GetterOpt, SharedGetterOpt},
-    to_list_item::UtxoItem,
+    store::owned_iter::OwnedUtxoIter,
+    store::rocks_db_switch::RocksDBSwitch,
+    ui::to_list_item::UtxoItem,
 };
 use amaru_kernel::{Address, HasAddress};
 use color_eyre::Result;

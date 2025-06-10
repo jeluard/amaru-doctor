@@ -1,7 +1,7 @@
 use amaru_ledger::store::columns::{accounts, dreps, pools, proposals, slots, utxo};
 use ratatui::widgets::ListItem;
 
-use crate::to_rich::{
+use crate::ui::to_rich::{
     account::StakeCredentialDisplay, proposal::ProposalIdDisplay, utxo::TransactionInputDisplay,
 };
 

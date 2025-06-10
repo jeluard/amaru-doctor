@@ -1,9 +1,9 @@
 use super::Component;
 use crate::{
-    action::Action,
     focus::{FocusState, FocusableComponent},
     shared::SharedGetterOpt,
-    to_rich::{RichText, ToRichText},
+    states::Action,
+    ui::to_rich::{RichText, ToRichText},
 };
 use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent};

@@ -1,4 +1,4 @@
-use crate::to_rich::{RichText, ToRichText, labeled, labeled_default, labeled_default_single};
+use crate::ui::to_rich::{RichText, ToRichText, labeled, labeled_default, labeled_default_single};
 use amaru_kernel::{Epoch, Nullable, PoolId, PoolMetadata, PoolParams, Relay};
 use amaru_ledger::store::columns::pools::Row;
 use ratatui::style::Style;

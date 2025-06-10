@@ -1,5 +1,5 @@
 use crate::{
-    action::Action,
+    states::Action,
     components::{Component, Shared},
     config::Config,
     tui::Event,
