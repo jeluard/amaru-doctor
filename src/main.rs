@@ -1,12 +1,10 @@
-use std::{env, path::Path, sync::Arc};
-
+use crate::{app::App, ros_ext::RocksDBSwitch};
 use amaru_kernel::network::NetworkName;
 use amaru_stores::rocksdb::{RocksDB, RocksDBHistoricalStores};
 use clap::Parser;
 use cli::Cli;
 use color_eyre::Result;
-
-use crate::app::App;
+use std::{env, path::Path, sync::Arc};
 
 mod action;
 mod app;
@@ -16,9 +14,10 @@ mod components;
 mod config;
 mod errors;
 mod focus;
-mod iter;
 mod logging;
 mod nav;
+mod owned_iter;
+mod ros_ext;
 mod shared;
 mod to_list_item;
 mod to_rich;
@@ -37,15 +36,17 @@ async fn main() -> Result<()> {
     let path = Path::new(ledger_path_str);
     if let Ok(epoch) = env::var("AMARU_LEDGER_EPOCH") {
         eprintln!("Using epoch: {}", epoch);
-        let db_arc = Arc::new(RocksDBHistoricalStores::for_epoch_with(
-            path,
-            epoch.parse::<u64>()?,
-        )?);
-        let mut app = App::new(ledger_path_str, args.tick_rate, args.frame_rate, db_arc)?;
+        let db_arc = Arc::new(RocksDBSwitch::Snapshot(
+            RocksDBHistoricalStores::for_epoch_with(path, epoch.parse::<u64>()?)?,
+        ));
+        let mut app: App = App::new(ledger_path_str, args.tick_rate, args.frame_rate, db_arc)?;
         app.run().await?;
     } else {
-        let db_arc = Arc::new(RocksDB::new(path, NetworkName::Preprod.into())?);
-        let mut app = App::new(ledger_path_str, args.tick_rate, args.frame_rate, db_arc)?;
+        let db_arc = Arc::new(RocksDBSwitch::Store(RocksDB::new(
+            path,
+            NetworkName::Preprod.into(),
+        )?));
+        let mut app: App = App::new(ledger_path_str, args.tick_rate, args.frame_rate, db_arc)?;
         app.run().await?;
     };
     Ok(())

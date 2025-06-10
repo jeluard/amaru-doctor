@@ -14,4 +14,5 @@ pub enum Action {
     Help,
     FocusPrev,
     FocusNext,
+    SearchRequest,
 }

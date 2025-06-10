@@ -2,7 +2,7 @@ use crate::{
     action::Action,
     components::Component,
     focus::{FocusState, FocusableComponent},
-    shared::Getter,
+    shared::GetterOpt,
 };
 use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent};
@@ -25,8 +25,8 @@ impl<T> Cursor<T> {
         Self { vec, idx: 0 }
     }
 
-    pub fn current(&self) -> &T {
-        self.vec.get(self.idx).unwrap()
+    pub fn current(&self) -> Option<&T> {
+        self.vec.get(self.idx)
     }
 
     pub fn index(&self) -> usize {
@@ -82,11 +82,11 @@ where
     }
 }
 
-impl<T> Getter<T> for TabComponent<T>
+impl<T> GetterOpt<T> for TabComponent<T>
 where
     T: ToLine,
 {
-    fn get(&self) -> &T {
+    fn get(&self) -> Option<&T> {
         self.tabs.current()
     }
 }

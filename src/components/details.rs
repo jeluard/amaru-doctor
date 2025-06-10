@@ -2,8 +2,8 @@ use super::Component;
 use crate::{
     action::Action,
     focus::{FocusState, FocusableComponent},
-    shared::SharedGetter,
-    to_rich::ToRichText,
+    shared::SharedGetterOpt,
+    to_rich::{RichText, ToRichText},
 };
 use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent};
@@ -15,21 +15,21 @@ where
     K: Clone + ToRichText,
 {
     title: String,
-    shared: SharedGetter<K>,
-    focus: FocusState,
+    shared: SharedGetterOpt<K>,
     scroll_offset: u16,
+    focus: FocusState,
 }
 
 impl<K> DetailsComponent<K>
 where
     K: Clone + ToRichText,
 {
-    pub fn new(title: String, shared: SharedGetter<K>) -> Self {
+    pub fn new(title: String, shared: SharedGetterOpt<K>) -> Self {
         Self {
             title,
             shared,
-            focus: FocusState::default(),
             scroll_offset: 0,
+            focus: FocusState::default(),
         }
     }
 }
@@ -81,7 +81,14 @@ where
                 .border_style(Style::default().fg(Color::Blue));
         }
 
-        let lines = self.shared.borrow().get().to_rich_text().unwrap_lines();
+        let lines = self
+            .shared
+            .borrow()
+            .get()
+            .map_or(RichText::Single(Span::raw("None selected")), |t| {
+                t.to_rich_text()
+            })
+            .unwrap_lines();
         let paragraph = Paragraph::new(lines)
             .block(block)
             .wrap(Wrap { trim: true })

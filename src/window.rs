@@ -1,10 +1,7 @@
-use crate::shared::Getter;
+use crate::shared::GetterOpt;
 
-pub struct WindowState<T, I>
-where
-    I: Iterator<Item = T>,
-{
-    iter: I,
+pub struct WindowState<T> {
+    iter: Box<dyn Iterator<Item = T>>,
     buffer: Vec<T>,
     exhausted: bool,
     cursor: usize,
@@ -12,11 +9,8 @@ where
     window_size: usize,
 }
 
-impl<T, I> WindowState<T, I>
-where
-    I: Iterator<Item = T>,
-{
-    pub fn new(iter: I) -> Self {
+impl<T> WindowState<T> {
+    pub fn new(iter: Box<dyn Iterator<Item = T>>) -> Self {
         let mut s = Self {
             iter,
             buffer: Vec::new(),
@@ -110,11 +104,8 @@ where
     }
 }
 
-impl<T, I> Getter<T> for WindowState<T, I>
-where
-    I: Iterator<Item = T>,
-{
-    fn get(&self) -> &T {
-        self.selected().unwrap()
+impl<T> GetterOpt<T> for WindowState<T> {
+    fn get(&self) -> Option<&T> {
+        self.selected()
     }
 }

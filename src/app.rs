@@ -1,13 +1,13 @@
 use crate::{
     action::Action,
-    build,
+    build::{self, BodyComponents},
     components::Component,
     config::Config,
     focus::FocusManager,
-    shared::Shared,
+    ros_ext::RocksDBSwitch,
+    shared::{Shared, shared},
     tui::{Event, Tui},
 };
-use amaru_ledger::store::ReadOnlyStore;
 use color_eyre::Result;
 use crossterm::event::KeyEvent;
 use ratatui::{
@@ -24,11 +24,11 @@ pub struct AppComponents {
 }
 
 impl AppComponents {
-    pub fn new(all: Vec<Shared<dyn Component>>) -> Self {
+    pub fn new(_body_comps: Shared<BodyComponents>, all: Vec<Shared<dyn Component>>) -> Self {
         Self { all }
     }
 
-    fn iter(&self) -> impl Iterator<Item = &Shared<dyn Component>> {
+    pub fn iter(&self) -> impl Iterator<Item = &Shared<dyn Component>> {
         self.all.iter()
     }
 }
@@ -37,7 +37,7 @@ pub struct App {
     config: Config,
     tick_rate: f64,
     frame_rate: f64,
-    components: AppComponents,
+    components: Shared<AppComponents>,
     focus: FocusManager,
     should_quit: bool,
     should_suspend: bool,
@@ -58,14 +58,14 @@ impl App {
         ledger_path_str: &String,
         tick_rate: f64,
         frame_rate: f64,
-        db: Arc<impl ReadOnlyStore + Send + Sync + 'static>,
+        db: Arc<RocksDBSwitch>,
     ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
-        let (components, focus) = build::build_layout(ledger_path_str, db)?;
+        let (components, focus) = build::build_layout(ledger_path_str, db.clone())?;
         Ok(Self {
             tick_rate,
             frame_rate,
-            components,
+            components: shared(components),
             focus,
             should_quit: false,
             should_suspend: false,
@@ -85,14 +85,16 @@ impl App {
         tui.terminal.clear()?;
         tui.enter()?;
 
-        self.components.iter().try_for_each(|c| {
+        self.components.borrow().iter().try_for_each(|c| {
             c.borrow_mut()
                 .register_action_handler(self.action_tx.clone())
         })?;
         self.components
+            .borrow()
             .iter()
             .try_for_each(|c| c.borrow_mut().register_config_handler(self.config.clone()))?;
         self.components
+            .borrow()
             .iter()
             .try_for_each(|c| c.borrow_mut().init(tui.size()?))?;
 
@@ -128,7 +130,7 @@ impl App {
             Event::Key(key) => self.handle_key_event(key)?,
             _ => {}
         }
-        for component in self.components.iter() {
+        for component in self.components.borrow().iter() {
             for action in component.borrow_mut().handle_events(Some(event.clone()))? {
                 action_tx.send(action)?;
             }
@@ -181,7 +183,7 @@ impl App {
                 Action::FocusNext => self.focus.shift_next(),
                 _ => {}
             }
-            for component in self.components.iter() {
+            for component in self.components.borrow().iter() {
                 for action in component.borrow_mut().update(action.clone())? {
                     self.action_tx.send(action)?;
                 }
@@ -207,9 +209,15 @@ impl App {
                     Constraint::Length(1),
                 ])
                 .split(area);
-            let header = self.components.all[0].borrow_mut().draw(frame, chunks[0]);
-            let body = self.components.all[1].borrow_mut().draw(frame, chunks[1]);
-            let footer = self.components.all[2].borrow_mut().draw(frame, chunks[2]);
+            let header = self.components.borrow().all[0]
+                .borrow_mut()
+                .draw(frame, chunks[0]);
+            let body = self.components.borrow().all[1]
+                .borrow_mut()
+                .draw(frame, chunks[1]);
+            let footer = self.components.borrow().all[2]
+                .borrow_mut()
+                .draw(frame, chunks[2]);
 
             for result in [header, body, footer] {
                 if let Err(err) = result {

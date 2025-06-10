@@ -2,7 +2,7 @@ use crate::{
     action::Action,
     components::Component,
     focus::{FocusState, FocusableComponent},
-    shared::Getter,
+    shared::GetterOpt,
     to_list_item::ToListItem,
     window::WindowState,
 };
@@ -14,25 +14,20 @@ use ratatui::{
 };
 use tracing::trace;
 
-pub struct ListComponent<T, I>
+pub struct ListComponent<T>
 where
     T: ToListItem,
-    I: Iterator<Item = T>,
 {
     title: String,
-    state: WindowState<T, I>,
+    state: WindowState<T>,
     focus: FocusState,
 }
 
-impl<T, I> ListComponent<T, I>
+impl<T> ListComponent<T>
 where
     T: ToListItem,
-    I: Iterator<Item = T>,
 {
-    pub fn from_iter(title: String, iter: I) -> Self
-    where
-        I: Iterator<Item = T>,
-    {
+    pub fn from_iter(title: String, iter: Box<dyn Iterator<Item = T> + 'static>) -> Self {
         Self {
             title,
             state: WindowState::new(iter),
@@ -41,20 +36,18 @@ where
     }
 }
 
-impl<T, I> Getter<T> for ListComponent<T, I>
+impl<T> GetterOpt<T> for ListComponent<T>
 where
     T: ToListItem,
-    I: Iterator<Item = T>,
 {
-    fn get(&self) -> &T {
-        self.state.selected().unwrap()
+    fn get(&self) -> Option<&T> {
+        self.state.get()
     }
 }
 
-impl<T, I> FocusableComponent for ListComponent<T, I>
+impl<T> FocusableComponent for ListComponent<T>
 where
     T: ToListItem,
-    I: Iterator<Item = T>,
 {
     fn focus_state(&self) -> &FocusState {
         &self.focus
@@ -65,10 +58,9 @@ where
     }
 }
 
-impl<T, I> Component for ListComponent<T, I>
+impl<T> Component for ListComponent<T>
 where
     T: ToListItem,
-    I: Iterator<Item = T>,
 {
     fn debug_name(&self) -> String {
         format!("ListComponent:{}", self.title)
@@ -76,10 +68,14 @@ where
 
     fn handle_key_event(&mut self, evt: KeyEvent) -> Result<Vec<Action>> {
         if !self.has_focus() {
-            trace!("{}: No focus", self.debug_name());
+            trace!("{}: No focus, len {}", self.debug_name(), self.state.len());
             return Ok(vec![]);
         }
-        trace!("{}: Have focus", self.debug_name());
+        trace!(
+            "{}: Have focus, len {}",
+            self.debug_name(),
+            self.state.len()
+        );
         match evt.code {
             KeyCode::Up => self.state.scroll_up(),
             KeyCode::Down => self.state.scroll_down(),

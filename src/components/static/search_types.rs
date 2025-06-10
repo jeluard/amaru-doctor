@@ -5,8 +5,8 @@ use strum::EnumIter;
 
 #[derive(Clone, Copy, Debug, EnumIter, PartialEq, Eq, Serialize)]
 pub enum SearchType {
-    #[serde(rename = "utxo by address")]
-    UtxoByAddress,
+    #[serde(rename = "utxos by address")]
+    UtxosByAddress,
 }
 
 impl ToListItem for SearchType {

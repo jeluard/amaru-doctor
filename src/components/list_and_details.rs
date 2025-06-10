@@ -17,7 +17,10 @@ where
     T: Clone + ToListItem + ToRichText + 'static,
     I: Iterator<Item = T> + 'static,
 {
-    let list = shared(ListComponent::from_iter(format!("{}s", item_name), iter));
+    let list = shared(ListComponent::from_iter(
+        format!("{}s", item_name),
+        Box::new(iter),
+    ));
     let detail = shared(DetailsComponent::new(
         format!("{} Details", item_name),
         list.clone(),

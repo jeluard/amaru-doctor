@@ -1,76 +1,61 @@
 use crate::{
     action::Action,
-    components::{Component, r#static::search_types::SearchType},
+    components::{Component, list::ListComponent, r#static::search_types::SearchType},
     focus::{FocusState, FocusableComponent},
-    shared::{Getter, Shared},
-    to_rich::utxo::TransactionInputDisplay,
+    owned_iter::OwnedUtxoIter,
+    ros_ext::RocksDBSwitch,
+    shared::{GetterOpt, SharedGetterOpt},
+    to_list_item::UtxoItem,
 };
-use amaru_kernel::{Address, HasAddress, TransactionInput};
-use amaru_ledger::store::ReadOnlyStore;
+use amaru_kernel::{Address, HasAddress};
 use color_eyre::Result;
-use ratatui::{prelude::*, widgets::*};
-use std::{collections::HashMap, str::FromStr, sync::Arc};
+use crossterm::event::KeyEvent;
+use ratatui::prelude::*;
+use std::{
+    iter::{self},
+    str::FromStr,
+    sync::Arc,
+};
 
-pub struct SearchResultComponent<R>
-where
-    R: ReadOnlyStore,
-{
-    db: Arc<R>,
-    search_type: Shared<dyn Getter<SearchType>>,
-    query: Shared<dyn Getter<Option<String>>>,
-    index: HashMap<Address, Vec<TransactionInput>>,
-    results: Vec<TransactionInput>,
+pub struct SearchResultComponent {
+    db: Arc<RocksDBSwitch>,
+    search_type: SharedGetterOpt<SearchType>,
+    query: SharedGetterOpt<String>,
+    list: ListComponent<UtxoItem>,
     focus: FocusState,
 }
 
-impl<R> SearchResultComponent<R>
-where
-    R: ReadOnlyStore,
-{
+impl SearchResultComponent {
     pub fn new(
-        db: Arc<R>,
-        search_type: Shared<dyn Getter<SearchType>>,
-        query: Shared<dyn Getter<Option<String>>>,
+        db: Arc<RocksDBSwitch>,
+        search_type: SharedGetterOpt<SearchType>,
+        query: SharedGetterOpt<String>,
     ) -> Self {
         Self {
             db,
             search_type,
             query,
-            index: HashMap::new(),
-            results: Vec::new(),
+            list: ListComponent::from_iter("Search Results".to_string(), Box::new(iter::empty())),
             focus: FocusState::default(),
         }
     }
 
-    fn ensure_index(&mut self) {
-        if self.index.is_empty() {
-            for (input, output) in self.db.iter_utxos().unwrap() {
-                self.index
-                    .entry(output.address().unwrap())
-                    .or_default()
-                    .push(input);
-            }
-        }
-    }
+    fn search_result_iter(&self) -> Box<dyn Iterator<Item = UtxoItem> + 'static> {
+        let st_opt = self.search_type.borrow().get().cloned();
+        let q_opt = self.query.borrow().get().cloned();
 
-    fn update_results(&mut self) {
-        let search = *self.search_type.borrow().get();
-        let query = self.query.borrow().get().clone();
-        if let (SearchType::UtxoByAddress, Some(query)) = (search, query) {
-            self.ensure_index();
+        if let (Some(SearchType::UtxosByAddress), Some(query)) = (st_opt, q_opt) {
             if let Ok(address) = Address::from_str(&query) {
-                self.results = self.index.get(&address).cloned().unwrap_or_default();
-            } else {
-                self.results.clear();
+                let filter = Box::new(move |(_, out): &UtxoItem| out.address().unwrap() == address);
+                let iter = OwnedUtxoIter::new(self.db.clone()).filter(filter);
+                return Box::new(iter);
             }
         }
+        Box::new(iter::empty())
     }
 }
 
-impl<R> FocusableComponent for SearchResultComponent<R>
-where
-    R: ReadOnlyStore,
-{
+impl FocusableComponent for SearchResultComponent {
     fn focus_state(&self) -> &FocusState {
         &self.focus
     }
@@ -78,44 +63,43 @@ where
     fn focus_state_mut(&mut self) -> &mut FocusState {
         &mut self.focus
     }
+
+    fn has_focus(&self) -> bool {
+        self.list.has_focus()
+    }
+
+    fn set_focus(&mut self, b: bool) {
+        self.list.set_focus(b);
+    }
 }
 
-impl<R> Component for SearchResultComponent<R>
-where
-    R: ReadOnlyStore,
-{
+impl GetterOpt<UtxoItem> for SearchResultComponent {
+    fn get(&self) -> Option<&UtxoItem> {
+        self.list.get()
+    }
+}
+
+impl Component for SearchResultComponent {
     fn debug_name(&self) -> String {
         "SearchResultComponent".into()
     }
 
-    fn handle_key_event(&mut self, _key: crossterm::event::KeyEvent) -> Result<Vec<Action>> {
+    fn update(&mut self, action: Action) -> Result<Vec<Action>> {
+        if action == Action::SearchRequest {
+            self.list =
+                ListComponent::from_iter("Search Results".to_string(), self.search_result_iter());
+        }
+        Ok(vec![])
+    }
+
+    fn handle_key_event(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
+        if self.has_focus() {
+            return self.list.handle_key_event(key);
+        }
         Ok(vec![])
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        self.update_results();
-
-        let items = self
-            .results
-            .iter()
-            .map(|txi| ListItem::new(TransactionInputDisplay(txi).to_string()))
-            .collect::<Vec<_>>();
-
-        let mut block = Block::default()
-            .title("Search Results")
-            .borders(Borders::ALL);
-        if self.has_focus() {
-            block = block
-                .border_style(Style::default().fg(Color::Blue))
-                .title_style(Style::default().fg(Color::White));
-        }
-
-        let list = List::new(items)
-            .highlight_symbol(">> ")
-            .highlight_style(Style::default().add_modifier(Modifier::BOLD))
-            .block(block);
-
-        frame.render_widget(list, area);
-        Ok(())
+        self.list.draw(frame, area)
     }
 }

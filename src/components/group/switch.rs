@@ -2,7 +2,7 @@ use crate::{
     action::Action,
     components::Component,
     focus::{FocusState, FocusableComponent},
-    shared::{SharedFC, SharedGetter},
+    shared::{SharedFC, SharedGetterOpt},
 };
 use color_eyre::Result;
 use crossterm::event::KeyEvent;
@@ -17,7 +17,7 @@ pub struct SwitchComponent<K>
 where
     K: Clone + Debug + Eq,
 {
-    key: SharedGetter<K>,
+    key: SharedGetterOpt<K>,
     components: Vec<(K, SharedFC)>,
     focus: FocusState,
 }
@@ -26,7 +26,7 @@ impl<K> SwitchComponent<K>
 where
     K: Clone + Debug + Eq,
 {
-    pub fn new(key: SharedGetter<K>, components: Vec<(K, SharedFC)>) -> Self {
+    pub fn new(key: SharedGetterOpt<K>, components: Vec<(K, SharedFC)>) -> Self {
         SwitchComponent {
             key,
             components,
@@ -34,24 +34,26 @@ where
         }
     }
 
-    pub fn current_key(&self) -> K {
-        self.key.borrow().get().clone()
+    pub fn current_key(&self) -> Option<K> {
+        self.key.borrow().get().cloned()
     }
 
     pub fn current(&self) -> Ref<'_, dyn FocusableComponent> {
+        let key = self.current_key().expect("No matching key in components");
         let (_, comp) = self
             .components
             .iter()
-            .find(|(k, _)| *k == self.current_key())
+            .find(|(k, _)| k == &key)
             .expect("No matching key in components");
         comp.borrow()
     }
 
     pub fn current_mut(&self) -> RefMut<'_, dyn FocusableComponent> {
+        let key = self.current_key().expect("No matching key in components");
         let (_, comp) = self
             .components
             .iter()
-            .find(|(k, _)| *k == self.current_key())
+            .find(|(k, _)| k == &key)
             .expect("No matching key in components");
         comp.borrow_mut()
     }
@@ -100,5 +102,9 @@ where
         }
         trace!("{}: Have focus", self.debug_name());
         self.current_mut().handle_key_event(key)
+    }
+
+    fn update(&mut self, action: Action) -> Result<Vec<Action>> {
+        self.current_mut().update(action)
     }
 }

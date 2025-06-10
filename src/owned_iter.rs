@@ -1,3 +1,4 @@
+use crate::ros_ext::RocksDBSwitch;
 use crate::to_list_item::{
     AccountItem, BlockIssuerItem, DRepItem, PoolItem, ProposalItem, UtxoItem,
 };
@@ -155,9 +156,10 @@ pub struct OwnedUtxoIter {
 }
 
 impl OwnedUtxoIter {
-    pub fn new(db: Arc<impl ReadOnlyStore + Sync + Send + 'static>) -> Self {
+    pub fn new(db: Arc<RocksDBSwitch>) -> Self {
         let (tx, rx) = mpsc::sync_channel(1);
         let db_clone = db.clone();
+
         thread::spawn(move || {
             let iter = db_clone.iter_utxos().unwrap();
             for kv in iter {
@@ -166,6 +168,7 @@ impl OwnedUtxoIter {
                 }
             }
         });
+
         OwnedUtxoIter {
             inner: Box::new(rx.into_iter()),
         }

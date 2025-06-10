@@ -2,7 +2,7 @@ use crate::{
     action::Action,
     components::Component,
     focus::{FocusState, FocusableComponent},
-    shared::Getter,
+    shared::GetterOpt,
 };
 use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent};
@@ -38,9 +38,9 @@ impl FocusableComponent for SearchComponent {
     }
 }
 
-impl Getter<Option<String>> for SearchComponent {
-    fn get(&self) -> &Option<String> {
-        &self.query
+impl GetterOpt<String> for SearchComponent {
+    fn get(&self) -> Option<&String> {
+        self.query.as_ref()
     }
 }
 
@@ -77,6 +77,7 @@ impl Component for SearchComponent {
             }
             KeyCode::Enter => {
                 self.query = Some(self.input.to_owned());
+                return Ok(vec![Action::SearchRequest]);
             }
             _ => {}
         }
