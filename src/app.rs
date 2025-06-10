@@ -1,9 +1,10 @@
 use crate::{
-    build::{self, BodyComponents},
+    app_state::AppState,
+    build::{self},
     components::Component,
     config::Config,
     focus::FocusManager,
-    shared::{Shared, shared},
+    shared::Shared,
     states::Action,
     store::rocks_db_switch::RocksDBSwitch,
     tui::{Event, Tui},
@@ -21,11 +22,12 @@ use tracing::{debug, info, trace};
 
 pub struct AppComponents {
     all: Vec<Shared<dyn Component>>,
+    pub layout_rev: usize,
 }
 
 impl AppComponents {
-    pub fn new(_body_comps: Shared<BodyComponents>, all: Vec<Shared<dyn Component>>) -> Self {
-        Self { all }
+    pub fn new(all: Vec<Shared<dyn Component>>) -> Self {
+        Self { all, layout_rev: 0 }
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &Shared<dyn Component>> {
@@ -34,11 +36,13 @@ impl AppComponents {
 }
 
 pub struct App {
+    ledger_path_str: String,
     config: Config,
     tick_rate: f64,
     frame_rate: f64,
-    components: Shared<AppComponents>,
-    focus: FocusManager,
+    app_state: AppState,
+    components: AppComponents,
+    // focus: FocusManager<'a>, TODO: fix
     should_quit: bool,
     should_suspend: bool,
     mode: Mode,
@@ -61,12 +65,15 @@ impl App {
         db: Arc<RocksDBSwitch>,
     ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
-        let (components, focus) = build::build_layout(ledger_path_str, db.clone())?;
+        let app_state = AppState::new(db);
+        let (components, focus) = build::build_layout(ledger_path_str, &app_state);
         Ok(Self {
+            ledger_path_str: ledger_path_str.to_owned(),
             tick_rate,
             frame_rate,
-            components: shared(components),
-            focus,
+            app_state,
+            components,
+            // focus,
             should_quit: false,
             should_suspend: false,
             config: Config::new()?,
@@ -85,16 +92,14 @@ impl App {
         tui.terminal.clear()?;
         tui.enter()?;
 
-        self.components.borrow().iter().try_for_each(|c| {
+        self.components.iter().try_for_each(|c| {
             c.borrow_mut()
                 .register_action_handler(self.action_tx.clone())
         })?;
         self.components
-            .borrow()
             .iter()
             .try_for_each(|c| c.borrow_mut().register_config_handler(self.config.clone()))?;
         self.components
-            .borrow()
             .iter()
             .try_for_each(|c| c.borrow_mut().init(tui.size()?))?;
 
@@ -130,7 +135,7 @@ impl App {
             Event::Key(key) => self.handle_key_event(key)?,
             _ => {}
         }
-        for component in self.components.borrow().iter() {
+        for component in self.components.iter() {
             for action in component.borrow_mut().handle_events(Some(event.clone()))? {
                 action_tx.send(action)?;
             }
@@ -179,11 +184,11 @@ impl App {
                 Action::ClearScreen => tui.terminal.clear()?,
                 Action::Resize(w, h) => self.handle_resize(tui, w, h)?,
                 Action::Render => self.render(tui)?,
-                Action::FocusPrev => self.focus.shift_prev(),
-                Action::FocusNext => self.focus.shift_next(),
+                // Action::FocusPrev => self.focus.shift_prev(),
+                // Action::FocusNext => self.focus.shift_next(),
                 _ => {}
             }
-            for component in self.components.borrow().iter() {
+            for component in self.components.iter() {
                 for action in component.borrow_mut().update(action.clone())? {
                     self.action_tx.send(action)?;
                 }
@@ -199,6 +204,7 @@ impl App {
     }
 
     fn render(&mut self, tui: &mut Tui) -> Result<()> {
+        self.compute_layout();
         tui.draw(|frame| {
             let area = frame.area();
             let chunks = Layout::default()
@@ -209,15 +215,9 @@ impl App {
                     Constraint::Length(1),
                 ])
                 .split(area);
-            let header = self.components.borrow().all[0]
-                .borrow_mut()
-                .draw(frame, chunks[0]);
-            let body = self.components.borrow().all[1]
-                .borrow_mut()
-                .draw(frame, chunks[1]);
-            let footer = self.components.borrow().all[2]
-                .borrow_mut()
-                .draw(frame, chunks[2]);
+            let header = self.components.all[0].borrow_mut().draw(frame, chunks[0]);
+            let body = self.components.all[1].borrow_mut().draw(frame, chunks[1]);
+            let footer = self.components.all[2].borrow_mut().draw(frame, chunks[2]);
 
             for result in [header, body, footer] {
                 if let Err(err) = result {
@@ -228,5 +228,14 @@ impl App {
             }
         })?;
         Ok(())
+    }
+
+    /// Conditionally recomputes the layout given changes to the app's state
+    /// This is temporary while we centralize the state
+    fn compute_layout(&mut self) {
+        if self.components.layout_rev < self.app_state.layout_rev {
+            let (components, _) = build::build_layout(&self.ledger_path_str, &self.app_state);
+            self.components = components;
+        }
     }
 }

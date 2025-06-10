@@ -7,11 +7,12 @@ use color_eyre::Result;
 use std::{env, path::Path, sync::Arc};
 
 mod app;
-mod app_model;
+mod app_state;
 mod build;
 mod cli;
 mod components;
 mod config;
+mod cursor;
 mod errors;
 mod focus;
 mod logging;

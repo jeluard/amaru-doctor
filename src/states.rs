@@ -21,7 +21,15 @@ pub enum Action {
 }
 
 #[derive(Clone, Debug, EnumIter, Display, PartialEq, Eq)]
-pub enum NavMode {
+pub enum Nav {
     Browse,
     Search,
+}
+
+#[derive(Clone, Debug, EnumIter, Display, PartialEq, Eq)]
+pub enum BodySlot {
+    Nav,
+    NavType,
+    List,
+    Details,
 }

@@ -1,7 +1,8 @@
 use crate::{
-    components::Component,
+    components::{Component, r#static::entity_types::Entity},
+    cursor::Cursor,
     focus::{FocusState, FocusableComponent},
-    shared::GetterOpt,
+    shared::Shared,
     states::Action,
 };
 use color_eyre::Result;
@@ -12,47 +13,12 @@ use ratatui::{
     widgets::{Block, Borders, Tabs},
 };
 
-pub struct Cursor<T> {
-    vec: Vec<T>,
-    idx: usize,
-}
-
-impl<T> Cursor<T> {
-    pub fn new(vec: Vec<T>) -> Self {
-        if vec.is_empty() {
-            panic!("Empty vec provided");
-        }
-        Self { vec, idx: 0 }
-    }
-
-    pub fn current(&self) -> Option<&T> {
-        self.vec.get(self.idx)
-    }
-
-    pub fn index(&self) -> usize {
-        self.idx
-    }
-
-    pub fn next(&mut self) {
-        self.idx = (self.idx + 1) % self.vec.len();
-    }
-
-    pub fn next_back(&mut self) {
-        let len = self.vec.len();
-        self.idx = (len + self.idx - 1) % len;
-    }
-
-    pub fn iter(&self) -> std::slice::Iter<'_, T> {
-        self.vec.iter()
-    }
-}
-
 pub struct TabComponent<T>
 where
     T: ToLine,
 {
     title: String,
-    tabs: Cursor<T>,
+    tabs: Shared<Cursor<T>>,
     focus: FocusState,
 }
 
@@ -60,10 +26,10 @@ impl<T> TabComponent<T>
 where
     T: ToLine,
 {
-    pub fn new(title: String, tabs: Vec<T>) -> Self {
+    pub fn new(title: String, tabs: Shared<Cursor<T>>) -> Self {
         Self {
             title,
-            tabs: Cursor::new(tabs),
+            tabs,
             focus: FocusState::default(),
         }
     }
@@ -82,14 +48,14 @@ where
     }
 }
 
-impl<T> GetterOpt<T> for TabComponent<T>
-where
-    T: ToLine,
-{
-    fn get(&self) -> Option<&T> {
-        self.tabs.current()
-    }
-}
+// impl<T> GetterOpt<T> for TabComponent<T>
+// where
+//     T: ToLine,
+// {
+//     fn get(&self) -> Option<&T> {
+//         self.tabs.current()
+//     }
+// }
 
 impl<T> Component for TabComponent<T>
 where
@@ -104,13 +70,14 @@ where
             return Ok(vec![]);
         }
 
+        let mut actions = vec![];
         match key.code {
-            KeyCode::Up => self.tabs.next_back(),
-            KeyCode::Down => self.tabs.next(),
+            KeyCode::Up => actions.push(Action::ScrollUp(Entity::Nav)),
+            KeyCode::Down => actions.push(Action::ScrollDown(Entity::Nav)),
             _ => {}
         }
 
-        Ok(vec![])
+        Ok(actions)
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
@@ -123,10 +90,10 @@ where
                 .border_style(Style::default().fg(Color::Blue))
                 .title_style(Style::default().fg(Color::White));
         }
-
-        let tab_lis: Vec<Line> = self.tabs.iter().map(ToLine::to_line).collect();
+        let tabs = self.tabs.borrow();
+        let tab_lis: Vec<Line> = tabs.iter().map(ToLine::to_line).collect();
         let tabs = Tabs::new(tab_lis)
-            .select(self.tabs.index())
+            .select(tabs.index())
             .block(block)
             .highlight_style(Style::default().add_modifier(Modifier::BOLD));
 

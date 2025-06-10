@@ -1,6 +1,8 @@
 use crate::{
     components::r#static::{entity_types::Entity, search_types::Search},
+    cursor::Cursor,
     shared::{Shared, shared},
+    states::{BodySlot, Nav},
     store::{
         owned_iter::{
             OwnedAccountsIter, OwnedBlockIssuerIter, OwnedDRepIter, OwnedPoolIter,
@@ -14,7 +16,9 @@ use crate::{
 use std::sync::Arc;
 use strum::IntoEnumIterator;
 
-pub struct AppModel {
+pub struct AppState {
+    pub focus: Shared<Cursor<BodySlot>>,
+    pub nav: Shared<Cursor<Nav>>,
     pub entity_list: Shared<WindowState<Entity>>,
     pub search_list: Shared<WindowState<Search>>,
     pub account_list: Shared<WindowState<AccountItem>>,
@@ -23,11 +27,14 @@ pub struct AppModel {
     pub pool_list: Shared<WindowState<PoolItem>>,
     pub proposal_list: Shared<WindowState<ProposalItem>>,
     pub utxo_list: Shared<WindowState<UtxoItem>>,
+    pub layout_rev: usize,
 }
 
-impl AppModel {
+impl AppState {
     pub fn new(db: Arc<RocksDBSwitch>) -> Self {
         Self {
+            focus: shared(Cursor::new(BodySlot::iter().collect())),
+            nav: shared(Cursor::new(Nav::iter().collect())),
             entity_list: shared(WindowState::new(Box::new(Entity::iter()))),
             search_list: shared(WindowState::new(Box::new(Search::iter()))),
             account_list: shared(WindowState::new(Box::new(OwnedAccountsIter::new(
@@ -42,19 +49,7 @@ impl AppModel {
                 db.clone(),
             )))),
             utxo_list: shared(WindowState::new(Box::new(OwnedUtxoIter::new(db.clone())))),
+            layout_rev: 0,
         }
     }
-
-    // fn get_list<T>(&self, entity: Entity) -> WindowState<T> {
-    //     match entity {
-    //         Entity::Accounts => self.account_list,
-    //         Entity::BlockIssuers => self.block_issuers_list,
-    //         Entity::DReps => self.drep_list,
-    //         Entity::Pools => self.pool_list,
-    //         Entity::Proposals => self.proposal_list,
-    //         Entity::UTXOs => self.utxo_list,
-    //         Entity::Entites => panic!("DNE"),
-    //         Entity::SearchTypes => panic!("DNE"),
-    //     }
-    // }
 }

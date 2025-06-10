@@ -1,4 +1,4 @@
-use crate::{components::Component, shared::Shared};
+use crate::{app_state::AppState, components::Component, shared::Shared};
 use tracing::trace;
 
 #[derive(Default)]
@@ -30,34 +30,32 @@ pub trait FocusableComponent: Component {
     }
 }
 
-#[derive(Default)]
-pub struct FocusManager {
+pub struct FocusManager<'a> {
     index: usize,
-    components: Vec<Shared<dyn FocusableComponent>>,
+    app_state: &'a AppState,
 }
 
-impl FocusManager {
-    pub fn new(components: Vec<Shared<dyn FocusableComponent>>) -> Self {
-        if !components.is_empty() {
-            components[0].borrow_mut().set_focus(true);
-        }
+impl<'a> FocusManager<'a> {
+    pub fn new(app_state: &'a AppState) -> Self {
         Self {
             index: 0,
-            components,
+            app_state,
         }
     }
 
     pub fn shift_prev(&mut self) {
-        trace!("FocusManager:: Will shift focus prev");
-        self.components[self.index].borrow_mut().set_focus(false);
-        self.index = (self.index + self.components.len() - 1) % self.components.len();
-        self.components[self.index].borrow_mut().set_focus(true);
+        // TODO: fix
+        // trace!("FocusManager:: Will shift focus prev");
+        // self.components[self.index].borrow_mut().set_focus(false);
+        // self.index = (self.index + self.components.len() - 1) % self.components.len();
+        // self.components[self.index].borrow_mut().set_focus(true);
     }
 
     pub fn shift_next(&mut self) {
-        trace!("FocusManager:: Will shift focus next");
-        self.components[self.index].borrow_mut().set_focus(false);
-        self.index = (self.index + 1) % self.components.len();
-        self.components[self.index].borrow_mut().set_focus(true);
+        // TODO: fix
+        // trace!("FocusManager:: Will shift focus next");
+        // self.components[self.index].borrow_mut().set_focus(false);
+        // self.index = (self.index + 1) % self.components.len();
+        // self.components[self.index].borrow_mut().set_focus(true);
     }
 }

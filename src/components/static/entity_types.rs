@@ -13,8 +13,10 @@ pub enum Entity {
     Pools,
     Proposals,
     UTXOs,
+    // TODO: These need to be somewhere else
     Entites,
     SearchTypes,
+    Nav,
 }
 
 impl ToListItem for Entity {
