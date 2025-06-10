@@ -1,21 +1,24 @@
+use std::rc::Rc;
+
 use crate::{
-    components::{details::DetailsComponent, list::ListComponent, r#static::entity_types::Entity},
+    app_state::AppState,
+    components::{details::DetailsComponent, list::ListComponent},
     shared::Shared,
+    states::SlotSelection,
     ui::{to_list_item::ToListItem, to_rich::ToRichText},
     window::WindowState,
 };
 
 pub fn new_list_detail_components<T>(
-    entity: Entity,
-    state: Shared<WindowState<T>>,
+    comp_id_1: SlotSelection,
+    comp_id_2: SlotSelection,
+    window: Shared<WindowState<T>>,
+    app_state: Shared<AppState>,
 ) -> (ListComponent<T>, DetailsComponent<T>)
 where
     T: Clone + ToListItem + ToRichText,
 {
-    let list = ListComponent::from_iter(entity.clone(), state.clone());
-    let detail = DetailsComponent::new(
-        format!("{} Details", serde_plain::to_string(&entity).unwrap()),
-        state.clone(),
-    );
+    let list = ListComponent::from_iter(comp_id_1, window.clone(), app_state.clone());
+    let detail = DetailsComponent::new(comp_id_2, window.clone(), app_state.clone());
     (list, detail)
 }

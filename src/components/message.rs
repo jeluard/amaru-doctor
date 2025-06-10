@@ -1,5 +1,5 @@
 use super::Component;
-use crate::focus::{FocusState, FocusableComponent};
+use crate::focus::FocusState;
 use color_eyre::Result;
 use ratatui::{
     Frame,
@@ -26,15 +26,15 @@ impl Message {
     }
 }
 
-impl FocusableComponent for Message {
-    fn focus_state(&self) -> &FocusState {
-        &self.focus
-    }
+// impl FocusableComponent for Message {
+//     fn focus_state(&self) -> &FocusState {
+//         &self.focus
+//     }
 
-    fn focus_state_mut(&mut self) -> &mut FocusState {
-        &mut self.focus
-    }
-}
+//     fn focus_state_mut(&mut self) -> &mut FocusState {
+//         &mut self.focus
+//     }
+// }
 
 impl Component for Message {
     fn debug_name(&self) -> String {
@@ -50,11 +50,11 @@ impl Component for Message {
                 .title(title)
                 .title_style(Style::default().fg(Color::White))
                 .borders(Borders::ALL);
-            if self.has_focus() {
-                block = block
-                    .border_style(Style::default().fg(Color::Blue))
-                    .title_style(Style::default().fg(Color::White));
-            }
+            // if self.has_focus() {
+            //     block = block
+            //         .border_style(Style::default().fg(Color::Blue))
+            //         .title_style(Style::default().fg(Color::White));
+            // }
             paragraph = paragraph.block(block)
         }
 

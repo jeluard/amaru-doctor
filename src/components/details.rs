@@ -1,8 +1,11 @@
+use std::rc::Rc;
+
 use super::Component;
 use crate::{
-    focus::{FocusState, FocusableComponent},
+    app_state::AppState,
+    focus::FocusState,
     shared::{GetterOpt, Shared},
-    states::Action,
+    states::{Action, SlotSelection},
     ui::to_rich::{RichText, ToRichText},
     window::WindowState,
 };
@@ -15,8 +18,9 @@ pub struct DetailsComponent<K>
 where
     K: Clone + ToRichText,
 {
-    title: String,
+    comp_id: SlotSelection,
     shared: Shared<WindowState<K>>,
+    app_state: Shared<AppState>,
     scroll_offset: u16,
     focus: FocusState,
 }
@@ -25,26 +29,25 @@ impl<K> DetailsComponent<K>
 where
     K: Clone + ToRichText,
 {
-    pub fn new(title: String, shared: Shared<WindowState<K>>) -> Self {
+    pub fn new(
+        comp_id: SlotSelection,
+        shared: Shared<WindowState<K>>,
+        app_state: Shared<AppState>,
+    ) -> Self {
         Self {
-            title,
+            comp_id,
             shared,
+            app_state,
             scroll_offset: 0,
             focus: FocusState::default(),
         }
     }
-}
 
-impl<K> FocusableComponent for DetailsComponent<K>
-where
-    K: Clone + ToRichText,
-{
-    fn focus_state(&self) -> &FocusState {
-        &self.focus
-    }
-
-    fn focus_state_mut(&mut self) -> &mut FocusState {
-        &mut self.focus
+    fn has_focus(&self) -> bool {
+        match self.app_state.borrow().get_focused() {
+            Some(id) => self.comp_id == id,
+            _ => false,
+        }
     }
 }
 
@@ -53,15 +56,15 @@ where
     K: Clone + ToRichText,
 {
     fn debug_name(&self) -> String {
-        format!("DetailsComponent:{}", self.title)
+        format!("DetailsComponent:{}", self.comp_id)
     }
 
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
         if !self.has_focus() {
-            trace!("DetailsComponent::{}: no focus", self.title);
+            trace!("DetailsComponent::{}: no focus", self.comp_id);
             return Ok(vec![]);
         }
-        trace!("DetailsComponent::{}: has focus", self.title);
+        trace!("DetailsComponent::{}: has focus", self.comp_id);
 
         match key.code {
             KeyCode::Up => self.scroll_offset = self.scroll_offset.saturating_sub(1),
@@ -73,7 +76,7 @@ where
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         let mut block = Block::default()
-            .title(self.title.clone())
+            .title(self.comp_id.to_string())
             .borders(Borders::ALL);
 
         if self.has_focus() {

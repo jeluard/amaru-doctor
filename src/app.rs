@@ -3,8 +3,7 @@ use crate::{
     build::{self},
     components::Component,
     config::Config,
-    focus::FocusManager,
-    shared::Shared,
+    shared::{Shared, shared},
     states::Action,
     store::rocks_db_switch::RocksDBSwitch,
     tui::{Event, Tui},
@@ -16,7 +15,7 @@ use ratatui::{
     prelude::Rect,
 };
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::{rc::Rc, sync::Arc};
 use tokio::sync::mpsc;
 use tracing::{debug, info, trace};
 
@@ -40,9 +39,8 @@ pub struct App {
     config: Config,
     tick_rate: f64,
     frame_rate: f64,
-    app_state: AppState,
+    app_state: Shared<AppState>,
     components: AppComponents,
-    // focus: FocusManager<'a>, TODO: fix
     should_quit: bool,
     should_suspend: bool,
     mode: Mode,
@@ -65,8 +63,8 @@ impl App {
         db: Arc<RocksDBSwitch>,
     ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
-        let app_state = AppState::new(db);
-        let (components, focus) = build::build_layout(ledger_path_str, &app_state);
+        let app_state = shared(AppState::new(db));
+        let components = build::build_layout(ledger_path_str, app_state.clone());
         Ok(Self {
             ledger_path_str: ledger_path_str.to_owned(),
             tick_rate,
@@ -184,8 +182,8 @@ impl App {
                 Action::ClearScreen => tui.terminal.clear()?,
                 Action::Resize(w, h) => self.handle_resize(tui, w, h)?,
                 Action::Render => self.render(tui)?,
-                // Action::FocusPrev => self.focus.shift_prev(),
-                // Action::FocusNext => self.focus.shift_next(),
+                Action::FocusPrev => self.app_state.borrow_mut().shift_focus_prev(),
+                Action::FocusNext => self.app_state.borrow_mut().shift_focus_next(),
                 _ => {}
             }
             for component in self.components.iter() {
@@ -233,9 +231,8 @@ impl App {
     /// Conditionally recomputes the layout given changes to the app's state
     /// This is temporary while we centralize the state
     fn compute_layout(&mut self) {
-        if self.components.layout_rev < self.app_state.layout_rev {
-            let (components, _) = build::build_layout(&self.ledger_path_str, &self.app_state);
-            self.components = components;
+        if self.components.layout_rev < self.app_state.borrow().layout_rev {
+            self.components = build::build_layout(&self.ledger_path_str, self.app_state.clone());
         }
     }
 }

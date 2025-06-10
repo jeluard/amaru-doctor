@@ -2,70 +2,56 @@ use crate::{
     app::AppComponents,
     app_state::AppState,
     components::{
-        Component,
-        details::DetailsComponent,
-        empty::EmptyComponent,
-        fps::FpsCounter,
-        group::layout::LayoutComponent,
-        list::ListComponent,
-        list_and_details::new_list_detail_components,
-        message::Message,
-        r#static::{entity_types::Entity, search_types::Search},
+        Component, empty::EmptyComponent, fps::FpsCounter, group::layout::LayoutComponent,
+        list::ListComponent, list_and_details::new_list_detail_components, message::Message,
         tab::TabComponent,
     },
-    focus::FocusManager,
-    shared::{Shared, SharedFC, shared},
-    states::Nav,
+    shared::{Shared, SharedComp, shared},
+    states::{EntityOptions, Nav, SlotSelection},
     ui::to_list_item::UtxoItem,
     window::WindowState,
 };
 use ratatui::layout::{Constraint, Direction};
-use std::iter;
+use std::{iter, rc::Rc};
 
-pub fn build_layout<'a>(
-    ledger_path_str: &String,
-    app_state: &'a AppState,
-) -> (AppComponents, FocusManager<'a>) {
-    let body_components = make_lists(app_state);
+pub fn build_layout(ledger_path_str: &String, app_state: Shared<AppState>) -> AppComponents {
+    let body_components = make_lists(app_state.clone());
     let header = make_header(ledger_path_str);
-    let body = make_body(app_state, body_components);
+    let body = make_body(app_state.clone(), body_components);
     let footer = make_footer();
 
-    let layout = AppComponents::new(vec![header, body, footer]);
-    let focus = FocusManager::new(app_state);
-
-    (layout, focus)
+    AppComponents::new(vec![header, body, footer])
 }
 
 #[derive(Clone)]
 pub struct NavSlot {
-    pub nav: SharedFC,
+    pub nav: SharedComp,
 }
 
 #[derive(Clone)]
 pub struct NavTypesSlot {
-    pub browse: SharedFC,
-    pub searches: SharedFC,
+    pub browse: SharedComp,
+    pub searches: SharedComp,
 }
 
 #[derive(Clone)]
 pub struct ListSlot {
-    pub accounts: SharedFC,
-    pub block_issuers: SharedFC,
-    pub dreps: SharedFC,
-    pub pools: SharedFC,
-    pub proposals: SharedFC,
-    pub utxos: SharedFC,
+    pub accounts: SharedComp,
+    pub block_issuers: SharedComp,
+    pub dreps: SharedComp,
+    pub pools: SharedComp,
+    pub proposals: SharedComp,
+    pub utxos: SharedComp,
 }
 
 #[derive(Clone)]
 pub struct DetailsSlot {
-    pub account_details: SharedFC,
-    pub block_issuer_details: SharedFC,
-    pub drep_details: SharedFC,
-    pub pool_details: SharedFC,
-    pub proposal_details: SharedFC,
-    pub utxo_details: SharedFC,
+    pub account_details: SharedComp,
+    pub block_issuer_details: SharedComp,
+    pub drep_details: SharedComp,
+    pub pool_details: SharedComp,
+    pub proposal_details: SharedComp,
+    pub utxo_details: SharedComp,
 }
 
 #[derive(Clone)]
@@ -76,44 +62,74 @@ pub struct BodyComponents {
     pub details_slot: DetailsSlot,
 }
 
-fn make_lists(app_state: &AppState) -> Shared<BodyComponents> {
-    let nav = shared(TabComponent::new("Nav".to_string(), app_state.nav.clone()));
+fn make_lists(app_state: Shared<AppState>) -> Shared<BodyComponents> {
+    let nav = shared(TabComponent::new(
+        SlotSelection::Nav,
+        app_state.borrow().nav.clone(),
+        app_state.clone(),
+    ));
     let browse = shared(ListComponent::from_iter(
-        Entity::Entites,
-        app_state.entity_list.clone(),
+        SlotSelection::NavTypeBrowse,
+        app_state.borrow().entity_list.clone(),
+        app_state.clone(),
     ));
     let searches = shared(ListComponent::from_iter(
-        Entity::SearchTypes,
-        app_state.search_list.clone(),
+        SlotSelection::NavTypeSearch,
+        app_state.borrow().search_list.clone(),
+        app_state.clone(),
     ));
-    let search_query = shared(EmptyComponent::default()); //shared(SearchComponent::new("Search".to_string()));
-    let search_components: Vec<(Nav, SharedFC)> = vec![
-        (
-            Nav::Browse,
-            shared(Message::new(
-                Some("Note".to_string()),
-                "Search may take time while an index builds, please be patient.".to_string(),
-            )),
-        ),
-        (Nav::Search, search_query.clone()),
-    ];
+    // let search_query = shared(EmptyComponent::default()); //shared(SearchComponent::new("Search".to_string()));
+    // let search_components: Vec<(Nav, SharedFC)> = vec![
+    //     (
+    //         Nav::Browse,
+    //         shared(Message::new(
+    //             Some("Note".to_string()),
+    //             "Search may take time while an index builds, please be patient.".to_string(),
+    //         )),
+    //     ),
+    //     (Nav::Search, search_query.clone()),
+    // ];
     // let search_switcher = shared(SwitchComponent::new(
     //     app_state.nav.clone(),
     //     search_components,
     // ));
 
-    let (accounts, account_details) =
-        new_list_detail_components(Entity::Accounts, app_state.account_list.clone());
-    let (block_issuers, block_issuer_details) =
-        new_list_detail_components(Entity::BlockIssuers, app_state.block_issuer_list.clone());
-    let (dreps, drep_details) =
-        new_list_detail_components(Entity::DReps, app_state.drep_list.clone());
-    let (pools, pool_details) =
-        new_list_detail_components(Entity::Pools, app_state.pool_list.clone());
-    let (proposals, proposal_details) =
-        new_list_detail_components(Entity::Proposals, app_state.proposal_list.clone());
-    let (utxos, utxo_details) =
-        new_list_detail_components(Entity::UTXOs, app_state.utxo_list.clone());
+    let (accounts, account_details) = new_list_detail_components(
+        SlotSelection::BrowseAccounts,
+        SlotSelection::DetailAccount,
+        app_state.borrow().account_list.clone(),
+        app_state.clone(),
+    );
+    let (block_issuers, block_issuer_details) = new_list_detail_components(
+        SlotSelection::BrowseBlockIssuers,
+        SlotSelection::DetailBlockIssuer,
+        app_state.borrow().block_issuer_list.clone(),
+        app_state.clone(),
+    );
+    let (dreps, drep_details) = new_list_detail_components(
+        SlotSelection::BrowseDReps,
+        SlotSelection::DetailDRep,
+        app_state.borrow().drep_list.clone(),
+        app_state.clone(),
+    );
+    let (pools, pool_details) = new_list_detail_components(
+        SlotSelection::BrowsePools,
+        SlotSelection::DetailPool,
+        app_state.borrow().pool_list.clone(),
+        app_state.clone(),
+    );
+    let (proposals, proposal_details) = new_list_detail_components(
+        SlotSelection::BrowseProposals,
+        SlotSelection::DetailProposal,
+        app_state.borrow().proposal_list.clone(),
+        app_state.clone(),
+    );
+    let (utxos, utxo_details) = new_list_detail_components(
+        SlotSelection::BrowseUtxos,
+        SlotSelection::DetailUtxo,
+        app_state.borrow().utxo_list.clone(),
+        app_state.clone(),
+    );
 
     // let entity_ids_switcher = shared(SwitchComponent::new(
     //     app_state.entity_list.clone(),
@@ -153,10 +169,10 @@ fn make_lists(app_state: &AppState) -> Shared<BodyComponents> {
     // ));
 
     let empty_window_state = WindowState::new(Box::new(iter::empty::<UtxoItem>()));
-    let search_details = shared(DetailsComponent::new(
-        "Search Details".to_string(),
-        shared(empty_window_state),
-    ));
+    // let search_details = shared(DetailsComponent::new(
+    //     "Search Details".to_string(),
+    //     shared(empty_window_state),
+    // ));
     // let details_switcher = shared(SwitchComponent::new(
     //     app_state.nav.clone(),
     //     vec![
@@ -165,10 +181,10 @@ fn make_lists(app_state: &AppState) -> Shared<BodyComponents> {
     //     ],
     // ));
 
-    let nav_components: Vec<(Nav, SharedFC)> = vec![
-        (Nav::Browse, browse.clone()),
-        (Nav::Search, searches.clone()),
-    ];
+    // let nav_components: Vec<(Nav, SharedComp)> = vec![
+    //     (Nav::Browse, browse.clone()),
+    //     (Nav::Search, searches.clone()),
+    // ];
     // let nav_types_switcher = shared(SwitchComponent::new(app_state.nav.clone(), nav_components));
 
     shared(BodyComponents {
@@ -209,21 +225,24 @@ fn make_header(ledger_path_str: &String) -> Shared<dyn Component> {
     ))
 }
 
-fn make_body(app_state: &AppState, body_comps: Shared<BodyComponents>) -> Shared<dyn Component> {
+fn make_body(
+    app_state: Shared<AppState>,
+    body_comps: Shared<BodyComponents>,
+) -> Shared<dyn Component> {
     let body_brw = body_comps.borrow();
-    let nav_type_slot_comp = match app_state.nav.borrow().current() {
+    let nav_type_slot_comp = match app_state.borrow().nav.borrow().current() {
         Some(Nav::Browse) => body_brw.nav_types_slot.browse.clone(),
         Some(Nav::Search) => body_brw.nav_types_slot.searches.clone(),
         None => shared(EmptyComponent::default()),
     };
-    let list_slot_comp = match app_state.nav.borrow().current() {
-        Some(Nav::Browse) => match app_state.entity_list.borrow().selected() {
-            Some(Entity::Accounts) => body_brw.list_slot.accounts.clone(),
-            Some(Entity::BlockIssuers) => body_brw.list_slot.block_issuers.clone(),
-            Some(Entity::DReps) => body_brw.list_slot.block_issuers.clone(),
-            Some(Entity::Pools) => body_brw.list_slot.block_issuers.clone(),
-            Some(Entity::Proposals) => body_brw.list_slot.block_issuers.clone(),
-            Some(Entity::UTXOs) => body_brw.list_slot.block_issuers.clone(),
+    let list_slot_comp = match app_state.borrow().nav.borrow().current() {
+        Some(Nav::Browse) => match app_state.borrow().entity_list.borrow().selected() {
+            Some(EntityOptions::Accounts) => body_brw.list_slot.accounts.clone(),
+            Some(EntityOptions::BlockIssuers) => body_brw.list_slot.block_issuers.clone(),
+            Some(EntityOptions::DReps) => body_brw.list_slot.block_issuers.clone(),
+            Some(EntityOptions::Pools) => body_brw.list_slot.block_issuers.clone(),
+            Some(EntityOptions::Proposals) => body_brw.list_slot.block_issuers.clone(),
+            Some(EntityOptions::Utxos) => body_brw.list_slot.block_issuers.clone(),
             _ => shared(EmptyComponent::default()),
         },
         Some(Nav::Search) => body_comps.borrow().nav_types_slot.searches.clone(),
@@ -237,14 +256,14 @@ fn make_body(app_state: &AppState, body_comps: Shared<BodyComponents>) -> Shared
             (Constraint::Fill(1), list_slot_comp),
         ],
     ));
-    let details_slot_comp = match app_state.nav.borrow().current() {
-        Some(Nav::Browse) => match app_state.entity_list.borrow().selected() {
-            Some(Entity::Accounts) => body_brw.details_slot.account_details.clone(),
-            Some(Entity::BlockIssuers) => body_brw.details_slot.block_issuer_details.clone(),
-            Some(Entity::DReps) => body_brw.details_slot.drep_details.clone(),
-            Some(Entity::Pools) => body_brw.details_slot.pool_details.clone(),
-            Some(Entity::Proposals) => body_brw.details_slot.proposal_details.clone(),
-            Some(Entity::UTXOs) => body_brw.details_slot.utxo_details.clone(),
+    let details_slot_comp = match app_state.borrow().nav.borrow().current() {
+        Some(Nav::Browse) => match app_state.borrow().entity_list.borrow().selected() {
+            Some(EntityOptions::Accounts) => body_brw.details_slot.account_details.clone(),
+            Some(EntityOptions::BlockIssuers) => body_brw.details_slot.block_issuer_details.clone(),
+            Some(EntityOptions::DReps) => body_brw.details_slot.drep_details.clone(),
+            Some(EntityOptions::Pools) => body_brw.details_slot.pool_details.clone(),
+            Some(EntityOptions::Proposals) => body_brw.details_slot.proposal_details.clone(),
+            Some(EntityOptions::Utxos) => body_brw.details_slot.utxo_details.clone(),
             _ => shared(EmptyComponent::default()),
         },
         Some(Nav::Search) => body_comps.borrow().nav_types_slot.searches.clone(),

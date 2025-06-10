@@ -4,12 +4,12 @@ use serde::Serialize;
 use strum::EnumIter;
 
 #[derive(Clone, Copy, Debug, EnumIter, PartialEq, Eq, Serialize)]
-pub enum Search {
+pub enum SearchOptions {
     #[serde(rename = "utxos by address")]
     UtxosByAddress,
 }
 
-impl ToListItem for Search {
+impl ToListItem for SearchOptions {
     fn to_list_item(&self) -> ListItem<'static> {
         ListItem::new(serde_plain::to_string(self).unwrap())
     }

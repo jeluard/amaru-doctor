@@ -1,9 +1,11 @@
+use std::rc::Rc;
+
 use crate::{
-    components::{Component, r#static::entity_types::Entity},
+    app_state::AppState,
+    components::Component,
     cursor::Cursor,
-    focus::{FocusState, FocusableComponent},
     shared::Shared,
-    states::Action,
+    states::{Action, SlotSelection},
 };
 use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent};
@@ -17,45 +19,34 @@ pub struct TabComponent<T>
 where
     T: ToLine,
 {
-    title: String,
+    comp_id: SlotSelection,
     tabs: Shared<Cursor<T>>,
-    focus: FocusState,
+    app_state: Shared<AppState>,
 }
 
 impl<T> TabComponent<T>
 where
     T: ToLine,
 {
-    pub fn new(title: String, tabs: Shared<Cursor<T>>) -> Self {
+    pub fn new(
+        comp_id: SlotSelection,
+        tabs: Shared<Cursor<T>>,
+        app_state: Shared<AppState>,
+    ) -> Self {
         Self {
-            title,
+            comp_id,
             tabs,
-            focus: FocusState::default(),
+            app_state,
+        }
+    }
+
+    fn has_focus(&self) -> bool {
+        match self.app_state.borrow().get_focused() {
+            Some(id) => self.comp_id == id,
+            _ => false,
         }
     }
 }
-
-impl<T> FocusableComponent for TabComponent<T>
-where
-    T: ToLine,
-{
-    fn focus_state(&self) -> &FocusState {
-        &self.focus
-    }
-
-    fn focus_state_mut(&mut self) -> &mut FocusState {
-        &mut self.focus
-    }
-}
-
-// impl<T> GetterOpt<T> for TabComponent<T>
-// where
-//     T: ToLine,
-// {
-//     fn get(&self) -> Option<&T> {
-//         self.tabs.current()
-//     }
-// }
 
 impl<T> Component for TabComponent<T>
 where
@@ -72,8 +63,8 @@ where
 
         let mut actions = vec![];
         match key.code {
-            KeyCode::Up => actions.push(Action::ScrollUp(Entity::Nav)),
-            KeyCode::Down => actions.push(Action::ScrollDown(Entity::Nav)),
+            KeyCode::Up => actions.push(Action::ScrollUp(self.comp_id.clone())),
+            KeyCode::Down => actions.push(Action::ScrollDown(self.comp_id.clone())),
             _ => {}
         }
 
@@ -83,7 +74,7 @@ where
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         let mut block = Block::default()
             .borders(Borders::ALL)
-            .title(self.title.to_owned());
+            .title(self.comp_id.to_string());
 
         if self.has_focus() {
             block = block

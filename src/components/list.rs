@@ -1,8 +1,11 @@
+use std::rc::Rc;
+
 use crate::{
+    app_state::{self, AppState},
     components::{Component, r#static::entity_types::Entity},
-    focus::{FocusState, FocusableComponent},
+    focus::FocusState,
     shared::{GetterOpt, Shared},
-    states::Action,
+    states::{Action, SlotSelection},
     ui::to_list_item::ToListItem,
     window::WindowState,
 };
@@ -18,44 +21,32 @@ pub struct ListComponent<T>
 where
     T: Clone + ToListItem,
 {
-    entity: Entity,
+    comp_id: SlotSelection,
     state: Shared<WindowState<T>>,
-    focus: FocusState,
+    app_state: Shared<AppState>,
 }
 
 impl<T> ListComponent<T>
 where
     T: Clone + ToListItem,
 {
-    pub fn from_iter(entity: Entity, state: Shared<WindowState<T>>) -> Self {
+    pub fn from_iter(
+        comp_id: SlotSelection,
+        state: Shared<WindowState<T>>,
+        app_state: Shared<AppState>,
+    ) -> Self {
         Self {
-            entity,
+            comp_id,
             state,
-            focus: FocusState::default(),
+            app_state,
         }
     }
-}
 
-// impl<T> GetterOpt<T> for ListComponent<T>
-// where
-//     T: Clone + ToListItem,
-// {
-//     fn get(&self) -> Option<&T> {
-//         let borrowed = self.state.borrow();
-//         std::cell::Ref::filter_map(borrowed, |b| b.get()).ok()
-//     }
-// }
-
-impl<T> FocusableComponent for ListComponent<T>
-where
-    T: Clone + ToListItem,
-{
-    fn focus_state(&self) -> &FocusState {
-        &self.focus
-    }
-
-    fn focus_state_mut(&mut self) -> &mut FocusState {
-        &mut self.focus
+    fn has_focus(&self) -> bool {
+        match self.app_state.borrow().get_focused() {
+            Some(id) => self.comp_id == id,
+            _ => false,
+        }
     }
 }
 
@@ -64,7 +55,7 @@ where
     T: Clone + ToListItem,
 {
     fn debug_name(&self) -> String {
-        format!("ListComponent:{}", self.entity)
+        format!("ListComponent:{}", self.comp_id)
     }
 
     fn handle_key_event(&mut self, evt: KeyEvent) -> Result<Vec<Action>> {
@@ -75,8 +66,8 @@ where
         trace!("{}: Have focus", self.debug_name());
         let mut actions = vec![];
         match evt.code {
-            KeyCode::Up => actions.push(Action::ScrollUp(self.entity.clone())),
-            KeyCode::Down => actions.push(Action::ScrollDown(self.entity.clone())),
+            KeyCode::Up => actions.push(Action::ScrollUp(self.comp_id.clone())),
+            KeyCode::Down => actions.push(Action::ScrollDown(self.comp_id.clone())),
             _ => {}
         }
         Ok(actions)
@@ -84,8 +75,8 @@ where
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         self.state.borrow_mut().set_window_size(area.rows().count());
-        let binding = self.state.borrow();
 
+        let binding = self.state.borrow();
         let (view, selected) = binding.window_view();
         let items = view
             .iter()
@@ -93,7 +84,7 @@ where
             .collect::<Vec<ListItem>>();
 
         let mut block = Block::default()
-            .title(serde_plain::to_string(&self.entity)?)
+            .title(serde_plain::to_string(&self.comp_id)?)
             .borders(Borders::ALL);
         if self.has_focus() {
             block = block
