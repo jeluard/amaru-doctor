@@ -1,9 +1,10 @@
 use super::Component;
 use crate::{
     focus::{FocusState, FocusableComponent},
-    shared::SharedGetterOpt,
+    shared::{GetterOpt, Shared},
     states::Action,
     ui::to_rich::{RichText, ToRichText},
+    window::WindowState,
 };
 use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent};
@@ -15,7 +16,7 @@ where
     K: Clone + ToRichText,
 {
     title: String,
-    shared: SharedGetterOpt<K>,
+    shared: Shared<WindowState<K>>,
     scroll_offset: u16,
     focus: FocusState,
 }
@@ -24,7 +25,7 @@ impl<K> DetailsComponent<K>
 where
     K: Clone + ToRichText,
 {
-    pub fn new(title: String, shared: SharedGetterOpt<K>) -> Self {
+    pub fn new(title: String, shared: Shared<WindowState<K>>) -> Self {
         Self {
             title,
             shared,

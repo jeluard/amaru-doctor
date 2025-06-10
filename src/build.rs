@@ -1,30 +1,29 @@
 use crate::{
-    app::AppComponents,
+    app::{self, AppComponents},
+    app_model::AppModel,
     components::{
         Component,
         details::DetailsComponent,
+        empty::EmptyComponent,
         fps::FpsCounter,
         group::{layout::LayoutComponent, switch::SwitchComponent},
         list::ListComponent,
         list_and_details::new_list_detail_components,
         message::Message,
         search::SearchComponent,
-        search_result::SearchResultComponent,
-        r#static::{entity_types::Entity, search_types::SearchType},
+        r#static::{entity_types::Entity, search_types::Search},
         tab::TabComponent,
     },
     focus::FocusManager,
     shared::{Shared, SharedFC, shared},
     states::NavMode,
-    store::owned_iter::{
-        OwnedAccountsIter, OwnedBlockIssuerIter, OwnedDRepIter, OwnedPoolIter, OwnedProposalIter,
-        OwnedUtxoIter,
-    },
     store::rocks_db_switch::RocksDBSwitch,
+    ui::to_list_item::UtxoItem,
+    window::WindowState,
 };
 use color_eyre::Result;
 use ratatui::layout::{Constraint, Direction};
-use std::sync::Arc;
+use std::{iter, sync::Arc};
 use strum::IntoEnumIterator;
 
 pub fn build_layout(
@@ -64,17 +63,18 @@ impl From<BodyComponents> for Vec<SharedFC> {
 }
 
 fn make_lists(db: Arc<RocksDBSwitch>) -> Shared<BodyComponents> {
+    let app_model = AppModel::new(db);
     let nav_tabs = shared(TabComponent::new(
         "Nav Mode".to_string(),
         NavMode::iter().collect(),
     ));
     let entity_types = shared(ListComponent::from_iter(
-        "Entity Types".to_string(),
-        Box::new(Entity::iter()),
+        Entity::Entites,
+        app_model.entity_list.clone(),
     ));
     let search_types = shared(ListComponent::from_iter(
-        "Search Types".to_string(),
-        Box::new(SearchType::iter()),
+        Entity::SearchTypes,
+        app_model.search_list,
     ));
     let search_query = shared(SearchComponent::new("Search".to_string()));
     let search_components: Vec<(NavMode, SharedFC)> = vec![
@@ -90,31 +90,31 @@ fn make_lists(db: Arc<RocksDBSwitch>) -> Shared<BodyComponents> {
     let search_switcher = shared(SwitchComponent::new(nav_tabs.clone(), search_components));
 
     let (accounts, account_details) =
-        new_list_detail_components("Account", OwnedAccountsIter::new(db.clone()));
+        new_list_detail_components(Entity::Accounts, app_model.account_list);
     let (block_issuers, block_issuer_details) =
-        new_list_detail_components("Block Issuer", OwnedBlockIssuerIter::new(db.clone()));
-    let (dreps, drep_details) = new_list_detail_components("DRep", OwnedDRepIter::new(db.clone()));
-    let (pools, pool_details) = new_list_detail_components("Pool", OwnedPoolIter::new(db.clone()));
+        new_list_detail_components(Entity::BlockIssuers, app_model.block_issuer_list);
+    let (dreps, drep_details) = new_list_detail_components(Entity::DReps, app_model.drep_list);
+    let (pools, pool_details) = new_list_detail_components(Entity::Pools, app_model.pool_list);
     let (proposals, proposal_details) =
-        new_list_detail_components("Proposal", OwnedProposalIter::new(db.clone()));
-    let (utxos, utxo_details) = new_list_detail_components("UTXO", OwnedUtxoIter::new(db.clone()));
+        new_list_detail_components(Entity::Proposals, app_model.proposal_list);
+    let (utxos, utxo_details) = new_list_detail_components(Entity::UTXOs, app_model.utxo_list);
 
     let entity_ids_switcher = shared(SwitchComponent::new(
-        entity_types.clone(),
+        app_model.entity_list.clone(),
         vec![
-            (Entity::Accounts, accounts),
-            (Entity::BlockIssuers, block_issuers),
-            (Entity::DReps, dreps),
-            (Entity::Pools, pools),
-            (Entity::Proposals, proposals),
-            (Entity::UTXOs, utxos),
+            (Entity::Accounts, shared(accounts)),
+            (Entity::BlockIssuers, shared(block_issuers)),
+            (Entity::DReps, shared(dreps)),
+            (Entity::Pools, shared(pools)),
+            (Entity::Proposals, shared(proposals)),
+            (Entity::UTXOs, shared(utxos)),
         ],
     ));
-    let search_results = shared(SearchResultComponent::new(
-        db.clone(),
-        search_types.clone(),
-        search_query.clone(),
-    ));
+    let search_results = shared(EmptyComponent::default()); // shared(SearchResultComponent::new(
+    //     db.clone(),
+    //     search_types.clone(),
+    //     search_query.clone(),
+    // ));
 
     let nav_list_switcher = shared(SwitchComponent::new(
         nav_tabs.clone(),
@@ -125,20 +125,21 @@ fn make_lists(db: Arc<RocksDBSwitch>) -> Shared<BodyComponents> {
     ));
 
     let entity_details_switcher = shared(SwitchComponent::new(
-        entity_types.clone(),
+        app_model.entity_list,
         vec![
-            (Entity::Accounts, account_details),
-            (Entity::BlockIssuers, block_issuer_details),
-            (Entity::DReps, drep_details),
-            (Entity::Pools, pool_details),
-            (Entity::Proposals, proposal_details),
-            (Entity::UTXOs, utxo_details),
+            (Entity::Accounts, shared(account_details)),
+            (Entity::BlockIssuers, shared(block_issuer_details)),
+            (Entity::DReps, shared(drep_details)),
+            (Entity::Pools, shared(pool_details)),
+            (Entity::Proposals, shared(proposal_details)),
+            (Entity::UTXOs, shared(utxo_details)),
         ],
     ));
 
+    let empty_window_state = WindowState::new(Box::new(iter::empty::<UtxoItem>()));
     let search_details = shared(DetailsComponent::new(
         "Search Details".to_string(),
-        search_results.clone(),
+        shared(empty_window_state),
     ));
     let details_switcher = shared(SwitchComponent::new(
         nav_tabs.clone(),

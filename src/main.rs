@@ -7,6 +7,7 @@ use color_eyre::Result;
 use std::{env, path::Path, sync::Arc};
 
 mod app;
+mod app_model;
 mod build;
 mod cli;
 mod components;

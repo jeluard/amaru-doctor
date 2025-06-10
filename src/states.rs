@@ -1,3 +1,4 @@
+use crate::components::r#static::entity_types::Entity;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter};
 
@@ -15,6 +16,8 @@ pub enum Action {
     FocusPrev,
     FocusNext,
     SearchRequest,
+    ScrollUp(Entity),
+    ScrollDown(Entity),
 }
 
 #[derive(Clone, Debug, EnumIter, Display, PartialEq, Eq)]

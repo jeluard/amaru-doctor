@@ -1,7 +1,7 @@
 use crate::{
-    components::Component,
+    components::{Component, r#static::entity_types::Entity},
     focus::{FocusState, FocusableComponent},
-    shared::GetterOpt,
+    shared::{GetterOpt, Shared},
     states::Action,
     ui::to_list_item::ToListItem,
     window::WindowState,
@@ -16,38 +16,39 @@ use tracing::trace;
 
 pub struct ListComponent<T>
 where
-    T: ToListItem,
+    T: Clone + ToListItem,
 {
-    title: String,
-    state: WindowState<T>,
+    entity: Entity,
+    state: Shared<WindowState<T>>,
     focus: FocusState,
 }
 
 impl<T> ListComponent<T>
 where
-    T: ToListItem,
+    T: Clone + ToListItem,
 {
-    pub fn from_iter(title: String, iter: Box<dyn Iterator<Item = T> + 'static>) -> Self {
+    pub fn from_iter(entity: Entity, state: Shared<WindowState<T>>) -> Self {
         Self {
-            title,
-            state: WindowState::new(iter),
+            entity,
+            state,
             focus: FocusState::default(),
         }
     }
 }
 
-impl<T> GetterOpt<T> for ListComponent<T>
-where
-    T: ToListItem,
-{
-    fn get(&self) -> Option<&T> {
-        self.state.get()
-    }
-}
+// impl<T> GetterOpt<T> for ListComponent<T>
+// where
+//     T: Clone + ToListItem,
+// {
+//     fn get(&self) -> Option<&T> {
+//         let borrowed = self.state.borrow();
+//         std::cell::Ref::filter_map(borrowed, |b| b.get()).ok()
+//     }
+// }
 
 impl<T> FocusableComponent for ListComponent<T>
 where
-    T: ToListItem,
+    T: Clone + ToListItem,
 {
     fn focus_state(&self) -> &FocusState {
         &self.focus
@@ -60,41 +61,39 @@ where
 
 impl<T> Component for ListComponent<T>
 where
-    T: ToListItem,
+    T: Clone + ToListItem,
 {
     fn debug_name(&self) -> String {
-        format!("ListComponent:{}", self.title)
+        format!("ListComponent:{}", self.entity)
     }
 
     fn handle_key_event(&mut self, evt: KeyEvent) -> Result<Vec<Action>> {
         if !self.has_focus() {
-            trace!("{}: No focus, len {}", self.debug_name(), self.state.len());
+            trace!("{}: No focus", self.debug_name());
             return Ok(vec![]);
         }
-        trace!(
-            "{}: Have focus, len {}",
-            self.debug_name(),
-            self.state.len()
-        );
+        trace!("{}: Have focus", self.debug_name());
+        let mut actions = vec![];
         match evt.code {
-            KeyCode::Up => self.state.scroll_up(),
-            KeyCode::Down => self.state.scroll_down(),
+            KeyCode::Up => actions.push(Action::ScrollUp(self.entity.clone())),
+            KeyCode::Down => actions.push(Action::ScrollDown(self.entity.clone())),
             _ => {}
         }
-        Ok(vec![])
+        Ok(actions)
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        self.state.set_window_size(area.rows().count());
+        self.state.borrow_mut().set_window_size(area.rows().count());
+        let binding = self.state.borrow();
 
-        let (view, selected) = self.state.window_view();
+        let (view, selected) = binding.window_view();
         let items = view
             .iter()
             .map(|i| i.to_list_item())
             .collect::<Vec<ListItem>>();
 
         let mut block = Block::default()
-            .title(self.title.clone())
+            .title(serde_plain::to_string(&self.entity)?)
             .borders(Borders::ALL);
         if self.has_focus() {
             block = block

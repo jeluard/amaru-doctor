@@ -1,29 +1,21 @@
 use crate::{
-    components::{details::DetailsComponent, list::ListComponent},
-    focus::FocusableComponent,
-    shared::{Shared, shared},
-    ui::to_list_item::ToListItem,
-    ui::to_rich::ToRichText,
+    components::{details::DetailsComponent, list::ListComponent, r#static::entity_types::Entity},
+    shared::Shared,
+    ui::{to_list_item::ToListItem, to_rich::ToRichText},
+    window::WindowState,
 };
 
-pub fn new_list_detail_components<T, I>(
-    item_name: &'static str,
-    iter: I,
-) -> (
-    Shared<dyn FocusableComponent>,
-    Shared<dyn FocusableComponent>,
-)
+pub fn new_list_detail_components<T>(
+    entity: Entity,
+    state: Shared<WindowState<T>>,
+) -> (ListComponent<T>, DetailsComponent<T>)
 where
-    T: Clone + ToListItem + ToRichText + 'static,
-    I: Iterator<Item = T> + 'static,
+    T: Clone + ToListItem + ToRichText,
 {
-    let list = shared(ListComponent::from_iter(
-        format!("{}s", item_name),
-        Box::new(iter),
-    ));
-    let detail = shared(DetailsComponent::new(
-        format!("{} Details", item_name),
-        list.clone(),
-    ));
+    let list = ListComponent::from_iter(entity.clone(), state.clone());
+    let detail = DetailsComponent::new(
+        format!("{} Details", serde_plain::to_string(&entity).unwrap()),
+        state.clone(),
+    );
     (list, detail)
 }
