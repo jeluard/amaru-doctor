@@ -33,7 +33,7 @@ impl ToListItem for DRepItem {
     }
 }
 
-type PoolItem = (pools::Key, pools::Row);
+pub type PoolItem = (pools::Key, pools::Row);
 
 impl ToListItem for PoolItem {
     fn to_list_item(&self) -> ListItem<'static> {
@@ -49,7 +49,7 @@ impl ToListItem for ProposalItem {
     }
 }
 
-type UtxoItem = (utxo::Key, utxo::Value);
+pub type UtxoItem = (utxo::Key, utxo::Value);
 
 impl ToListItem for UtxoItem {
     fn to_list_item(&self) -> ListItem<'static> {

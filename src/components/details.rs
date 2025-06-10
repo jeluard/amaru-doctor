@@ -2,39 +2,39 @@ use super::Component;
 use crate::{
     action::Action,
     focus::{FocusState, FocusableComponent},
-    shared::SharedGetter,
-    to_rich::ToRichText,
+    shared::SharedGetterOpt,
+    to_rich::{RichText, ToRichText},
 };
 use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
 use tracing::trace;
 
-pub struct DetailsComponent<'a, K>
+pub struct DetailsComponent<K>
 where
     K: Clone + ToRichText,
 {
     title: String,
-    shared: SharedGetter<'a, K>,
-    focus: FocusState,
+    shared: SharedGetterOpt<K>,
     scroll_offset: u16,
+    focus: FocusState,
 }
 
-impl<'a, K> DetailsComponent<'a, K>
+impl<K> DetailsComponent<K>
 where
     K: Clone + ToRichText,
 {
-    pub fn new(title: String, shared: SharedGetter<'a, K>) -> Self {
+    pub fn new(title: String, shared: SharedGetterOpt<K>) -> Self {
         Self {
             title,
             shared,
-            focus: FocusState::default(),
             scroll_offset: 0,
+            focus: FocusState::default(),
         }
     }
 }
 
-impl<'a, K> FocusableComponent for DetailsComponent<'a, K>
+impl<K> FocusableComponent for DetailsComponent<K>
 where
     K: Clone + ToRichText,
 {
@@ -47,7 +47,7 @@ where
     }
 }
 
-impl<'a, K> Component for DetailsComponent<'a, K>
+impl<K> Component for DetailsComponent<K>
 where
     K: Clone + ToRichText,
 {
@@ -73,18 +73,22 @@ where
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         let mut block = Block::default()
             .title(self.title.clone())
-            .title_style(Style::default().fg(Color::White))
             .borders(Borders::ALL);
 
         if self.has_focus() {
-            block = block.border_style(Style::default().fg(Color::Blue));
+            block = block
+                .title_style(Style::default().fg(Color::White))
+                .border_style(Style::default().fg(Color::Blue));
         }
 
-        let lines = match self.shared.borrow_mut().get_mut() {
-            Some(val) => val.to_rich_text().unwrap_lines(),
-            None => vec![Line::from("None selected")],
-        };
-
+        let lines = self
+            .shared
+            .borrow()
+            .get()
+            .map_or(RichText::Single(Span::raw("None selected")), |t| {
+                t.to_rich_text()
+            })
+            .unwrap_lines();
         let paragraph = Paragraph::new(lines)
             .block(block)
             .wrap(Wrap { trim: true })

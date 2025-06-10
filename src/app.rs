@@ -1,26 +1,44 @@
 use crate::{
     action::Action,
-    build,
-    components::{Component, group::layout::RootLayout},
+    build::{self, BodyComponents},
+    components::Component,
     config::Config,
     focus::FocusManager,
+    ros_ext::RocksDBSwitch,
+    shared::{Shared, shared},
     tui::{Event, Tui},
 };
-use amaru_ledger::store::ReadOnlyStore;
 use color_eyre::Result;
 use crossterm::event::KeyEvent;
-use ratatui::prelude::Rect;
+use ratatui::{
+    layout::{Constraint, Direction, Layout},
+    prelude::Rect,
+};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::{debug, info, trace};
 
-pub struct App<'a> {
+pub struct AppComponents {
+    all: Vec<Shared<dyn Component>>,
+}
+
+impl AppComponents {
+    pub fn new(_body_comps: Shared<BodyComponents>, all: Vec<Shared<dyn Component>>) -> Self {
+        Self { all }
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &Shared<dyn Component>> {
+        self.all.iter()
+    }
+}
+
+pub struct App {
     config: Config,
     tick_rate: f64,
     frame_rate: f64,
-    components: RootLayout<'a>,
-    focus: FocusManager<'a>,
+    components: Shared<AppComponents>,
+    focus: FocusManager,
     should_quit: bool,
     should_suspend: bool,
     mode: Mode,
@@ -35,19 +53,19 @@ pub enum Mode {
     Home,
 }
 
-impl<'a> App<'a> {
+impl App {
     pub fn new(
         ledger_path_str: &String,
         tick_rate: f64,
         frame_rate: f64,
-        db: &'a Arc<impl ReadOnlyStore>,
+        db: Arc<RocksDBSwitch>,
     ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
-        let (layout, focus) = build::build_layout(ledger_path_str, db)?;
+        let (components, focus) = build::build_layout(ledger_path_str, db.clone())?;
         Ok(Self {
             tick_rate,
             frame_rate,
-            components: layout,
+            components: shared(components),
             focus,
             should_quit: false,
             should_suspend: false,
@@ -67,11 +85,18 @@ impl<'a> App<'a> {
         tui.terminal.clear()?;
         tui.enter()?;
 
+        self.components.borrow().iter().try_for_each(|c| {
+            c.borrow_mut()
+                .register_action_handler(self.action_tx.clone())
+        })?;
         self.components
-            .register_action_handler(self.action_tx.clone())?;
+            .borrow()
+            .iter()
+            .try_for_each(|c| c.borrow_mut().register_config_handler(self.config.clone()))?;
         self.components
-            .register_config_handler(self.config.clone())?;
-        self.components.init(tui.size()?)?;
+            .borrow()
+            .iter()
+            .try_for_each(|c| c.borrow_mut().init(tui.size()?))?;
 
         let action_tx = self.action_tx.clone();
         loop {
@@ -105,8 +130,10 @@ impl<'a> App<'a> {
             Event::Key(key) => self.handle_key_event(key)?,
             _ => {}
         }
-        for action in self.components.handle_events(Some(event.clone()))? {
-            action_tx.send(action)?;
+        for component in self.components.borrow().iter() {
+            for action in component.borrow_mut().handle_events(Some(event.clone()))? {
+                action_tx.send(action)?;
+            }
         }
         Ok(())
     }
@@ -156,8 +183,10 @@ impl<'a> App<'a> {
                 Action::FocusNext => self.focus.shift_next(),
                 _ => {}
             }
-            for action in self.components.update(action.clone())? {
-                self.action_tx.send(action)?;
+            for component in self.components.borrow().iter() {
+                for action in component.borrow_mut().update(action.clone())? {
+                    self.action_tx.send(action)?;
+                }
             }
         }
         Ok(())
@@ -171,10 +200,31 @@ impl<'a> App<'a> {
 
     fn render(&mut self, tui: &mut Tui) -> Result<()> {
         tui.draw(|frame| {
-            if let Err(err) = self.components.draw(frame, frame.area()) {
-                let _ = self
-                    .action_tx
-                    .send(Action::Error(format!("Failed to draw: {:?}", err)));
+            let area = frame.area();
+            let chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints(vec![
+                    Constraint::Length(1),
+                    Constraint::Min(1),
+                    Constraint::Length(1),
+                ])
+                .split(area);
+            let header = self.components.borrow().all[0]
+                .borrow_mut()
+                .draw(frame, chunks[0]);
+            let body = self.components.borrow().all[1]
+                .borrow_mut()
+                .draw(frame, chunks[1]);
+            let footer = self.components.borrow().all[2]
+                .borrow_mut()
+                .draw(frame, chunks[2]);
+
+            for result in [header, body, footer] {
+                if let Err(err) = result {
+                    let _ = self
+                        .action_tx
+                        .send(Action::Error(format!("Failed to draw: {:?}", err)));
+                }
             }
         })?;
         Ok(())

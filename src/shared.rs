@@ -1,15 +1,17 @@
-use std::cell::{Ref, RefCell, RefMut};
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 
-pub type Shared<'a, T> = Rc<RefCell<T>>;
+use crate::focus::FocusableComponent;
 
-pub fn shared<'a, T: 'a>(t: T) -> Shared<'a, T> {
+pub type Shared<T> = Rc<RefCell<T>>;
+
+pub type SharedFC = Shared<dyn FocusableComponent>;
+
+pub fn shared<T>(t: T) -> Shared<T> {
     Rc::new(RefCell::new(t))
 }
 
-pub trait Getter<T> {
-    fn get(&self) -> Option<Ref<T>>;
-    fn get_mut(&self) -> Option<RefMut<T>>;
+pub trait GetterOpt<T> {
+    fn get(&self) -> Option<&T>;
 }
 
-pub type SharedGetter<'a, T> = Shared<'a, dyn Getter<T> + 'a>;
+pub type SharedGetterOpt<T> = Shared<dyn GetterOpt<T>>;

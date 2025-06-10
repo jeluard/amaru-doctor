@@ -1,75 +1,92 @@
-use crate::components::Component;
-use crate::config::Config;
-use crate::tui::Event;
-use crate::{action::Action, shared::Shared};
-
+use crate::{
+    action::Action,
+    components::{Component, Shared},
+    config::Config,
+    tui::Event,
+};
 use color_eyre::Result;
-use crossterm::event::{KeyEvent, MouseEvent};
-use delegate::delegate;
+use crossterm::event::KeyEvent;
 use ratatui::{
     Frame,
-    layout::{Constraint, Layout, Rect, Size},
+    layout::{Constraint, Direction, Layout, Rect},
+    prelude::Size,
 };
 use tokio::sync::mpsc::UnboundedSender;
-use tracing::trace;
 
-use super::ComponentGroup;
-
-pub struct RootLayout<'a> {
-    group: ComponentGroup<'a>, // holds header, body, footer
+pub struct LayoutComponent {
+    direction: Direction,
+    children: Vec<(Constraint, Shared<dyn Component>)>,
 }
 
-impl<'a> RootLayout<'a> {
-    pub fn new(
-        header: Shared<dyn Component + 'a>,
-        body: Shared<dyn Component + 'a>,
-        footer: Shared<dyn Component + 'a>,
-    ) -> Self {
+impl LayoutComponent {
+    pub fn new(direction: Direction, children: Vec<(Constraint, Shared<dyn Component>)>) -> Self {
         Self {
-            group: ComponentGroup::new(vec![header, body, footer]),
+            direction,
+            children,
         }
     }
 }
-
-impl<'a> Component for RootLayout<'a> {
+impl Component for LayoutComponent {
     fn debug_name(&self) -> String {
-        "RootLayout".to_string()
+        "LayoutComponent".to_string()
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        let [header_area, body_area, footer_area] = Layout::vertical([
-            Constraint::Length(1),
-            Constraint::Min(0),
-            Constraint::Length(1),
-        ])
-        .areas(area);
+        let (constraints, widgets): (Vec<_>, Vec<_>) = self.children.iter().cloned().unzip();
+        let chunks = Layout::default()
+            .direction(self.direction)
+            .constraints(constraints)
+            .split(area);
 
-        let components = &mut self.group.components_mut();
-        components[0].borrow_mut().draw(frame, header_area)?;
-        components[1].borrow_mut().draw(frame, body_area)?;
-        components[2].borrow_mut().draw(frame, footer_area)?;
+        for (child, rect) in widgets.iter().zip(chunks.iter()) {
+            child.borrow_mut().draw(frame, *rect)?;
+        }
+
         Ok(())
     }
 
-    fn handle_key_event(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
-        trace!("RootLayout::handle_key_event(key={:?})", key);
-        let components = &mut self.group.components_mut();
-
-        let mut results = Vec::new();
-        results.extend(components[0].borrow_mut().handle_key_event(key)?);
-        results.extend(components[1].borrow_mut().handle_key_event(key)?);
-        results.extend(components[2].borrow_mut().handle_key_event(key)?);
-        Ok(results)
+    fn init(&mut self, area: Size) -> Result<()> {
+        for (_, c) in &self.children {
+            c.borrow_mut().init(area)?;
+        }
+        Ok(())
     }
 
-    delegate! {
-        to self.group {
-            fn update(&mut self, action: Action) -> Result<Vec<Action>>;
-            fn register_action_handler(&mut self, tx: UnboundedSender<Action>) -> Result<()>;
-            fn register_config_handler(&mut self, config: Config) -> Result<()>;
-            fn init(&mut self, area: Size) -> Result<()>;
-            fn handle_events(&mut self, event: Option<Event>) -> Result<Vec<Action>>;
-            fn handle_mouse_event(&mut self, mouse: MouseEvent) -> Result<Vec<Action>>;
+    fn register_action_handler(&mut self, tx: UnboundedSender<Action>) -> Result<()> {
+        for (_, c) in &self.children {
+            c.borrow_mut().register_action_handler(tx.clone())?;
         }
+        Ok(())
+    }
+
+    fn register_config_handler(&mut self, config: Config) -> Result<()> {
+        for (_, c) in &self.children {
+            c.borrow_mut().register_config_handler(config.clone())?;
+        }
+        Ok(())
+    }
+
+    fn handle_events(&mut self, event: Option<Event>) -> Result<Vec<Action>> {
+        let mut actions = vec![];
+        for (_, c) in &self.children {
+            actions.extend(c.borrow_mut().handle_events(event.clone())?);
+        }
+        Ok(actions)
+    }
+
+    fn handle_key_event(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
+        let mut actions = vec![];
+        for (_, c) in &self.children {
+            actions.extend(c.borrow_mut().handle_key_event(key)?);
+        }
+        Ok(actions)
+    }
+
+    fn update(&mut self, action: Action) -> Result<Vec<Action>> {
+        let mut actions = vec![];
+        for (_, c) in &self.children {
+            actions.extend(c.borrow_mut().update(action.clone())?);
+        }
+        Ok(actions)
     }
 }

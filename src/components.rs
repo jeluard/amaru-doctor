@@ -1,4 +1,4 @@
-use crate::{action::Action, config::Config, tui::Event};
+use crate::{action::Action, config::Config, shared::Shared, tui::Event};
 use color_eyre::Result;
 use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{
@@ -9,12 +9,16 @@ use tokio::sync::mpsc::UnboundedSender;
 
 pub mod details;
 pub mod empty;
-pub mod entity_types;
 pub mod fps;
 pub mod group;
 pub mod home;
+pub mod list;
 pub mod list_and_details;
 pub mod message;
+pub mod search;
+pub mod search_result;
+pub mod r#static;
+pub mod tab;
 
 /// `Component` is a trait that represents a visual and interactive element of the user interface.
 ///
