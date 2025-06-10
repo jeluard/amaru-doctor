@@ -1,8 +1,8 @@
 use crate::{
-    states::Action,
     components::{Component, list::ListComponent, r#static::search_types::SearchType},
     focus::{FocusState, FocusableComponent},
     shared::{GetterOpt, SharedGetterOpt},
+    states::Action,
     store::owned_iter::OwnedUtxoIter,
     store::rocks_db_switch::RocksDBSwitch,
     ui::to_list_item::UtxoItem,

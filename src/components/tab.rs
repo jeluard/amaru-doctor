@@ -1,8 +1,8 @@
 use crate::{
-    states::Action,
     components::Component,
     focus::{FocusState, FocusableComponent},
     shared::GetterOpt,
+    states::Action,
 };
 use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent};

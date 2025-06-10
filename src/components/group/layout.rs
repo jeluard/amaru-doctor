@@ -1,7 +1,7 @@
 use crate::{
-    states::Action,
     components::{Component, Shared},
     config::Config,
+    states::Action,
     tui::Event,
 };
 use color_eyre::Result;

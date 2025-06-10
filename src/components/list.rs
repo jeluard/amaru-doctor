@@ -1,8 +1,8 @@
 use crate::{
-    states::Action,
     components::Component,
     focus::{FocusState, FocusableComponent},
     shared::GetterOpt,
+    states::Action,
     ui::to_list_item::ToListItem,
     window::WindowState,
 };
