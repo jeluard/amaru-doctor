@@ -1,11 +1,9 @@
-use std::rc::Rc;
-
 use crate::{
-    app_state::{self, AppState},
-    components::{Component, r#static::entity_types::Entity},
-    focus::FocusState,
-    shared::{GetterOpt, Shared},
-    states::{Action, SlotSelection},
+    app_state::AppState,
+    components::Component,
+    focus,
+    shared::Shared,
+    states::{Action, WidgetId},
     ui::to_list_item::ToListItem,
     window::WindowState,
 };
@@ -21,7 +19,7 @@ pub struct ListComponent<T>
 where
     T: Clone + ToListItem,
 {
-    comp_id: SlotSelection,
+    comp_id: WidgetId,
     state: Shared<WindowState<T>>,
     app_state: Shared<AppState>,
 }
@@ -31,7 +29,7 @@ where
     T: Clone + ToListItem,
 {
     pub fn from_iter(
-        comp_id: SlotSelection,
+        comp_id: WidgetId,
         state: Shared<WindowState<T>>,
         app_state: Shared<AppState>,
     ) -> Self {
@@ -43,7 +41,7 @@ where
     }
 
     fn has_focus(&self) -> bool {
-        match self.app_state.borrow().get_focused() {
+        match focus::get_focused(self.app_state.clone()) {
             Some(id) => self.comp_id == id,
             _ => false,
         }
@@ -74,14 +72,12 @@ where
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
+        // TODO: Capture somewhere else
         self.state.borrow_mut().set_window_size(area.rows().count());
 
         let binding = self.state.borrow();
         let (view, selected) = binding.window_view();
-        let items = view
-            .iter()
-            .map(|i| i.to_list_item())
-            .collect::<Vec<ListItem>>();
+        let items: Vec<ListItem> = view.iter().map(|i| i.to_list_item()).collect();
 
         let mut block = Block::default()
             .title(serde_plain::to_string(&self.comp_id)?)

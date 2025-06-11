@@ -1,6 +1,5 @@
 use crate::components::Component;
 use std::{cell::RefCell, rc::Rc};
-// use crate::focus::FocusableComponent;
 
 pub type Shared<T> = Rc<RefCell<T>>;
 
@@ -13,5 +12,3 @@ pub fn shared<T>(t: T) -> Shared<T> {
 pub trait GetterOpt<T> {
     fn get(&self) -> Option<&T>;
 }
-
-pub type SharedGetterOpt<T> = Shared<dyn GetterOpt<T>>;

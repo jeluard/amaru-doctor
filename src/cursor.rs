@@ -1,6 +1,5 @@
-use std::slice::Iter;
-
 use crate::shared::GetterOpt;
+use std::slice::Iter;
 
 pub struct Cursor<T> {
     vec: Vec<T>,

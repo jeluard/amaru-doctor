@@ -1,11 +1,9 @@
-use std::rc::Rc;
-
 use super::Component;
 use crate::{
     app_state::AppState,
-    focus::FocusState,
+    focus,
     shared::{GetterOpt, Shared},
-    states::{Action, SlotSelection},
+    states::{Action, WidgetId},
     ui::to_rich::{RichText, ToRichText},
     window::WindowState,
 };
@@ -18,11 +16,10 @@ pub struct DetailsComponent<K>
 where
     K: Clone + ToRichText,
 {
-    comp_id: SlotSelection,
+    comp_id: WidgetId,
     shared: Shared<WindowState<K>>,
     app_state: Shared<AppState>,
     scroll_offset: u16,
-    focus: FocusState,
 }
 
 impl<K> DetailsComponent<K>
@@ -30,7 +27,7 @@ where
     K: Clone + ToRichText,
 {
     pub fn new(
-        comp_id: SlotSelection,
+        comp_id: WidgetId,
         shared: Shared<WindowState<K>>,
         app_state: Shared<AppState>,
     ) -> Self {
@@ -39,12 +36,11 @@ where
             shared,
             app_state,
             scroll_offset: 0,
-            focus: FocusState::default(),
         }
     }
 
     fn has_focus(&self) -> bool {
-        match self.app_state.borrow().get_focused() {
+        match focus::get_focused(self.app_state.clone()) {
             Some(id) => self.comp_id == id,
             _ => false,
         }

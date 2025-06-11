@@ -16,6 +16,7 @@ mod cursor;
 mod errors;
 mod focus;
 mod logging;
+mod mutator;
 mod shared;
 mod states;
 mod store;

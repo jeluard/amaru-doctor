@@ -1,11 +1,10 @@
-use std::rc::Rc;
-
 use crate::{
     app_state::AppState,
     components::Component,
     cursor::Cursor,
+    focus,
     shared::Shared,
-    states::{Action, SlotSelection},
+    states::{Action, WidgetId},
 };
 use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent};
@@ -19,7 +18,7 @@ pub struct TabComponent<T>
 where
     T: ToLine,
 {
-    comp_id: SlotSelection,
+    comp_id: WidgetId,
     tabs: Shared<Cursor<T>>,
     app_state: Shared<AppState>,
 }
@@ -28,11 +27,7 @@ impl<T> TabComponent<T>
 where
     T: ToLine,
 {
-    pub fn new(
-        comp_id: SlotSelection,
-        tabs: Shared<Cursor<T>>,
-        app_state: Shared<AppState>,
-    ) -> Self {
+    pub fn new(comp_id: WidgetId, tabs: Shared<Cursor<T>>, app_state: Shared<AppState>) -> Self {
         Self {
             comp_id,
             tabs,
@@ -41,7 +36,7 @@ where
     }
 
     fn has_focus(&self) -> bool {
-        match self.app_state.borrow().get_focused() {
+        match focus::get_focused(self.app_state.clone()) {
             Some(id) => self.comp_id == id,
             _ => false,
         }

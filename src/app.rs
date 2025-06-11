@@ -1,10 +1,10 @@
 use crate::{
     app_state::AppState,
-    build::{self},
-    components::Component,
+    build::{self, build_widget_map, make_body, make_footer},
     config::Config,
-    shared::{Shared, shared},
-    states::Action,
+    mutator::Mutator,
+    shared::{Shared, SharedComp, shared},
+    states::{Action, WidgetId},
     store::rocks_db_switch::RocksDBSwitch,
     tui::{Event, Tui},
 };
@@ -15,24 +15,9 @@ use ratatui::{
     prelude::Rect,
 };
 use serde::{Deserialize, Serialize};
-use std::{rc::Rc, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 use tokio::sync::mpsc;
 use tracing::{debug, info, trace};
-
-pub struct AppComponents {
-    all: Vec<Shared<dyn Component>>,
-    pub layout_rev: usize,
-}
-
-impl AppComponents {
-    pub fn new(all: Vec<Shared<dyn Component>>) -> Self {
-        Self { all, layout_rev: 0 }
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = &Shared<dyn Component>> {
-        self.all.iter()
-    }
-}
 
 pub struct App {
     ledger_path_str: String,
@@ -40,7 +25,7 @@ pub struct App {
     tick_rate: f64,
     frame_rate: f64,
     app_state: Shared<AppState>,
-    components: AppComponents,
+    widget_map: HashMap<WidgetId, SharedComp>,
     should_quit: bool,
     should_suspend: bool,
     mode: Mode,
@@ -64,14 +49,13 @@ impl App {
     ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
         let app_state = shared(AppState::new(db));
-        let components = build::build_layout(ledger_path_str, app_state.clone());
+        let widget_map = build_widget_map(app_state.clone());
         Ok(Self {
             ledger_path_str: ledger_path_str.to_owned(),
             tick_rate,
             frame_rate,
             app_state,
-            components,
-            // focus,
+            widget_map,
             should_quit: false,
             should_suspend: false,
             config: Config::new()?,
@@ -90,15 +74,15 @@ impl App {
         tui.terminal.clear()?;
         tui.enter()?;
 
-        self.components.iter().try_for_each(|c| {
+        self.widget_map.values().try_for_each(|c| {
             c.borrow_mut()
                 .register_action_handler(self.action_tx.clone())
         })?;
-        self.components
-            .iter()
+        self.widget_map
+            .values()
             .try_for_each(|c| c.borrow_mut().register_config_handler(self.config.clone()))?;
-        self.components
-            .iter()
+        self.widget_map
+            .values()
             .try_for_each(|c| c.borrow_mut().init(tui.size()?))?;
 
         let action_tx = self.action_tx.clone();
@@ -133,7 +117,7 @@ impl App {
             Event::Key(key) => self.handle_key_event(key)?,
             _ => {}
         }
-        for component in self.components.iter() {
+        for component in self.widget_map.values() {
             for action in component.borrow_mut().handle_events(Some(event.clone()))? {
                 action_tx.send(action)?;
             }
@@ -172,6 +156,7 @@ impl App {
             if action != Action::Tick && action != Action::Render {
                 debug!("{action:?}");
             }
+            let action_clone = action.clone();
             match action {
                 Action::Tick => {
                     self.last_tick_key_events.drain(..);
@@ -182,12 +167,12 @@ impl App {
                 Action::ClearScreen => tui.terminal.clear()?,
                 Action::Resize(w, h) => self.handle_resize(tui, w, h)?,
                 Action::Render => self.render(tui)?,
-                Action::FocusPrev => self.app_state.borrow_mut().shift_focus_prev(),
-                Action::FocusNext => self.app_state.borrow_mut().shift_focus_next(),
                 _ => {}
             }
-            for component in self.components.iter() {
-                for action in component.borrow_mut().update(action.clone())? {
+            // TODO: Move all actions (the above) in mutate
+            action.mutate(self.app_state.clone());
+            for component in self.widget_map.values() {
+                for action in component.borrow_mut().update(action_clone.clone())? {
                     self.action_tx.send(action)?;
                 }
             }
@@ -202,7 +187,6 @@ impl App {
     }
 
     fn render(&mut self, tui: &mut Tui) -> Result<()> {
-        self.compute_layout();
         tui.draw(|frame| {
             let area = frame.area();
             let chunks = Layout::default()
@@ -213,11 +197,22 @@ impl App {
                     Constraint::Length(1),
                 ])
                 .split(area);
-            let header = self.components.all[0].borrow_mut().draw(frame, chunks[0]);
-            let body = self.components.all[1].borrow_mut().draw(frame, chunks[1]);
-            let footer = self.components.all[2].borrow_mut().draw(frame, chunks[2]);
 
-            for result in [header, body, footer] {
+            let (nav, options, list, details) =
+                build::resolve_layout_widgets(self.app_state.clone());
+            let (header, body, footer) = (
+                build::make_header(&self.ledger_path_str),
+                make_body(nav, options, list, details, &self.widget_map),
+                make_footer(),
+            );
+
+            let (header_res, body_res, footer_res) = (
+                header.borrow_mut().draw(frame, chunks[0]),
+                body.borrow_mut().draw(frame, chunks[1]),
+                footer.borrow_mut().draw(frame, chunks[2]),
+            );
+
+            for result in [header_res, body_res, footer_res] {
                 if let Err(err) = result {
                     let _ = self
                         .action_tx
@@ -226,13 +221,5 @@ impl App {
             }
         })?;
         Ok(())
-    }
-
-    /// Conditionally recomputes the layout given changes to the app's state
-    /// This is temporary while we centralize the state
-    fn compute_layout(&mut self) {
-        if self.components.layout_rev < self.app_state.borrow().layout_rev {
-            self.components = build::build_layout(&self.ledger_path_str, self.app_state.clone());
-        }
     }
 }

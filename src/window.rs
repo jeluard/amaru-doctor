@@ -1,6 +1,7 @@
 use crate::shared::GetterOpt;
 
 pub struct WindowState<T> {
+    // TODO: Check if we can just use Iter, search below
     iter: Box<dyn Iterator<Item = T>>,
     buffer: Vec<T>,
     exhausted: bool,

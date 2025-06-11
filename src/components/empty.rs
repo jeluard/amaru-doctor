@@ -1,22 +1,9 @@
 use super::Component;
-use crate::focus::FocusState;
 use color_eyre::Result;
 use ratatui::{prelude::*, widgets::*};
 
 #[derive(Default)]
-pub struct EmptyComponent {
-    focus: FocusState,
-}
-
-// impl FocusableComponent for EmptyComponent {
-//     fn focus_state(&self) -> &FocusState {
-//         &self.focus
-//     }
-
-//     fn focus_state_mut(&mut self) -> &mut FocusState {
-//         &mut self.focus
-//     }
-// }
+pub struct EmptyComponent {}
 
 impl Component for EmptyComponent {
     fn debug_name(&self) -> String {
@@ -24,7 +11,7 @@ impl Component for EmptyComponent {
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        let mut block = Block::default()
+        let block = Block::default()
             .title("Empty")
             .title_style(Style::default().fg(Color::White))
             .borders(Borders::ALL);

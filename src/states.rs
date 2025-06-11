@@ -1,4 +1,4 @@
-use crate::{components::r#static::entity_types::Entity, ui::to_list_item::ToListItem};
+use crate::ui::to_list_item::ToListItem;
 use ratatui::widgets::ListItem;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter};
@@ -17,13 +17,13 @@ pub enum Action {
     FocusPrev,
     FocusNext,
     SearchRequest,
-    ScrollUp(SlotSelection),
-    ScrollDown(SlotSelection),
+    ScrollUp(WidgetId),
+    ScrollDown(WidgetId),
 }
 
 #[derive(Clone, Debug, Default, EnumIter, Display, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum EntityOptions {
+pub enum BrowseOptions {
     #[default]
     Accounts,
     #[serde(rename = "block issuers")]
@@ -34,14 +34,14 @@ pub enum EntityOptions {
     Utxos,
 }
 
-impl ToListItem for EntityOptions {
+impl ToListItem for BrowseOptions {
     fn to_list_item(&self) -> ListItem<'static> {
         ListItem::new(serde_plain::to_string(self).unwrap())
     }
 }
 
 #[derive(Clone, Debug, EnumIter, Display, PartialEq, Eq)]
-pub enum Nav {
+pub enum Tab {
     Browse,
     Search,
 }
@@ -54,23 +54,24 @@ pub enum Slot {
     Details,
 }
 
-#[derive(Clone, Debug, Display, EnumIter, PartialEq, Eq, Serialize, Deserialize)]
-pub enum SlotSelection {
-    Nav,
-    NavTypeBrowse,
-    NavTypeSearch,
-    BrowseAccounts,
-    BrowseBlockIssuers,
-    BrowseDReps,
-    BrowsePools,
-    BrowseProposals,
-    BrowseUtxos,
-    SearchAccounts,
-    SearchBlockIssuers,
-    SearchDReps,
-    SearchPools,
-    SearchProposals,
-    SearchUTXOs,
+#[derive(Clone, Debug, Display, EnumIter, Hash, PartialEq, Eq, Serialize, Deserialize)]
+pub enum WidgetId {
+    Empty,
+    ListTabs,
+    ListBrowseOptions,
+    ListSearchOptions,
+    ListAccounts,
+    ListBlockIssuers,
+    ListDReps,
+    ListPools,
+    ListProposals,
+    ListUtxos,
+    // SearchAccounts,
+    // SearchBlockIssuers,
+    // SearchDReps,
+    // SearchPools,
+    // SearchProposals,
+    // SearchUTXOs,
     DetailAccount,
     DetailBlockIssuer,
     DetailDRep,
