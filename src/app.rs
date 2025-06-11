@@ -1,8 +1,8 @@
 use crate::{
     app_state::AppState,
     config::Config,
+    layout::compute_slot_layout,
     mutator::Mutator,
-    render::compute_slot_layout,
     shared::{Shared, shared},
     states::Action,
     store::rocks_db_switch::RocksDBSwitch,
