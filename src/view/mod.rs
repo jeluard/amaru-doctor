@@ -1,7 +1,6 @@
 use crate::{
     app_state::AppState,
-    shared::Shared,
-    states::WidgetId,
+    states::WidgetId::{self, *},
     view::{details::DetailsView, empty::EmptyView, list::ListView, tabs::TabsView},
 };
 use color_eyre::Result;
@@ -15,12 +14,10 @@ pub mod tabs;
 
 pub type ViewMap = HashMap<WidgetId, Box<dyn View>>;
 pub trait View {
-    fn render(&self, frame: &mut Frame, area: Rect, app_state: Shared<AppState>) -> Result<()>;
+    fn render(&self, frame: &mut Frame, area: Rect, app_state: &AppState) -> Result<()>;
 }
 
-pub fn get_views(app_state: Shared<AppState>) -> ViewMap {
-    use WidgetId::*;
-
+pub fn get_views() -> ViewMap {
     let mut views: ViewMap = HashMap::new();
 
     views.insert(Empty, Box::new(EmptyView {}));
@@ -29,7 +26,7 @@ pub fn get_views(app_state: Shared<AppState>) -> ViewMap {
         CursorTabs,
         Box::new(TabsView {
             widget_id: CursorTabs,
-            tabs: app_state.borrow().tabs.clone(),
+            get_tabs: |s: &AppState| &s.tabs,
         }),
     );
 
@@ -37,7 +34,7 @@ pub fn get_views(app_state: Shared<AppState>) -> ViewMap {
         ListBrowseOptions,
         Box::new(ListView {
             widget_id: ListBrowseOptions,
-            list: app_state.borrow().browse_options.clone(),
+            get_list: |s: &AppState| &s.browse_options,
         }),
     );
 
@@ -45,7 +42,7 @@ pub fn get_views(app_state: Shared<AppState>) -> ViewMap {
         ListSearchOptions,
         Box::new(ListView {
             widget_id: ListSearchOptions,
-            list: app_state.borrow().search_options.clone(),
+            get_list: |s: &AppState| &s.search_options,
         }),
     );
 
@@ -53,7 +50,7 @@ pub fn get_views(app_state: Shared<AppState>) -> ViewMap {
         ListAccounts,
         Box::new(ListView {
             widget_id: ListAccounts,
-            list: app_state.borrow().accounts.clone(),
+            get_list: |s: &AppState| &s.accounts,
         }),
     );
 
@@ -61,7 +58,7 @@ pub fn get_views(app_state: Shared<AppState>) -> ViewMap {
         ListBlockIssuers,
         Box::new(ListView {
             widget_id: ListBlockIssuers,
-            list: app_state.borrow().block_issuers.clone(),
+            get_list: |s: &AppState| &s.block_issuers,
         }),
     );
 
@@ -69,7 +66,7 @@ pub fn get_views(app_state: Shared<AppState>) -> ViewMap {
         ListDReps,
         Box::new(ListView {
             widget_id: ListDReps,
-            list: app_state.borrow().dreps.clone(),
+            get_list: |s: &AppState| &s.dreps,
         }),
     );
 
@@ -77,7 +74,7 @@ pub fn get_views(app_state: Shared<AppState>) -> ViewMap {
         ListPools,
         Box::new(ListView {
             widget_id: ListPools,
-            list: app_state.borrow().pools.clone(),
+            get_list: |s: &AppState| &s.pools,
         }),
     );
 
@@ -85,7 +82,7 @@ pub fn get_views(app_state: Shared<AppState>) -> ViewMap {
         ListProposals,
         Box::new(ListView {
             widget_id: ListProposals,
-            list: app_state.borrow().proposals.clone(),
+            get_list: |s: &AppState| &s.proposals,
         }),
     );
 
@@ -93,7 +90,7 @@ pub fn get_views(app_state: Shared<AppState>) -> ViewMap {
         ListUtxos,
         Box::new(ListView {
             widget_id: ListUtxos,
-            list: app_state.borrow().utxos.clone(),
+            get_list: |s: &AppState| &s.utxos,
         }),
     );
 
@@ -101,7 +98,7 @@ pub fn get_views(app_state: Shared<AppState>) -> ViewMap {
         DetailsAccount,
         Box::new(DetailsView {
             widget_id: DetailsAccount,
-            list: app_state.borrow().accounts.clone(),
+            get_list: |s: &AppState| &s.accounts,
         }),
     );
 
@@ -109,7 +106,7 @@ pub fn get_views(app_state: Shared<AppState>) -> ViewMap {
         DetailsBlockIssuer,
         Box::new(DetailsView {
             widget_id: DetailsBlockIssuer,
-            list: app_state.borrow().block_issuers.clone(),
+            get_list: |s: &AppState| &s.block_issuers,
         }),
     );
 
@@ -117,7 +114,7 @@ pub fn get_views(app_state: Shared<AppState>) -> ViewMap {
         DetailsDRep,
         Box::new(DetailsView {
             widget_id: DetailsDRep,
-            list: app_state.borrow().dreps.clone(),
+            get_list: |s: &AppState| &s.dreps,
         }),
     );
 
@@ -125,7 +122,7 @@ pub fn get_views(app_state: Shared<AppState>) -> ViewMap {
         DetailsPool,
         Box::new(DetailsView {
             widget_id: DetailsPool,
-            list: app_state.borrow().pools.clone(),
+            get_list: |s: &AppState| &s.pools,
         }),
     );
 
@@ -133,7 +130,7 @@ pub fn get_views(app_state: Shared<AppState>) -> ViewMap {
         DetailsProposal,
         Box::new(DetailsView {
             widget_id: DetailsProposal,
-            list: app_state.borrow().proposals.clone(),
+            get_list: |s: &AppState| &s.proposals,
         }),
     );
 
@@ -141,7 +138,7 @@ pub fn get_views(app_state: Shared<AppState>) -> ViewMap {
         DetailsUtxo,
         Box::new(DetailsView {
             widget_id: DetailsUtxo,
-            list: app_state.borrow().utxos.clone(),
+            get_list: |s: &AppState| &s.utxos,
         }),
     );
 

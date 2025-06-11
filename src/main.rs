@@ -15,7 +15,6 @@ mod layout;
 mod logging;
 mod model;
 mod mutator;
-mod shared;
 mod states;
 mod store;
 mod tui;

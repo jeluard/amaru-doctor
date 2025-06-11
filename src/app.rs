@@ -3,7 +3,6 @@ use crate::{
     config::Config,
     layout::compute_slot_layout,
     mutator::Mutator,
-    shared::{Shared, shared},
     states::Action,
     store::rocks_db_switch::RocksDBSwitch,
     tui::{Event, Tui},
@@ -22,9 +21,8 @@ pub struct App {
     config: Config,
     tick_rate: f64,
     frame_rate: f64,
-    app_state: Shared<AppState>,
+    app_state: AppState,
     views: ViewMap,
-    // widget_map: HashMap<WidgetId, SharedComp>,
     should_quit: bool,
     should_suspend: bool,
     mode: Mode,
@@ -47,15 +45,13 @@ impl App {
         db: Arc<RocksDBSwitch>,
     ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
-        let app_state = shared(AppState::new(db));
-        // let widget_map = build_widget_map(app_state.clone());
+        let app_state = AppState::new(db);
         Ok(Self {
             ledger_path_str: ledger_path_str.to_owned(),
             tick_rate,
             frame_rate,
-            app_state: app_state.clone(),
-            // widget_map,
-            views: get_views(app_state.clone()),
+            app_state,
+            views: get_views(),
             should_quit: false,
             should_suspend: false,
             config: Config::new()?,
@@ -172,7 +168,7 @@ impl App {
                 _ => {}
             }
             // TODO: Move all actions (the above) in mutate
-            action.mutate(self.app_state.clone());
+            action.mutate(&mut self.app_state);
             // for component in self.widget_map.values() {
             //     for action in component.borrow_mut().update(action_clone.clone())? {
             //         self.action_tx.send(action)?;
@@ -226,19 +222,18 @@ impl App {
     // }
 
     fn render(&mut self, tui: &mut Tui) -> Result<()> {
-        let app_state = self.app_state.clone();
         let views = &self.views;
         let action_tx = self.action_tx.clone();
 
         tui.draw(|f| {
             for (slot, area) in compute_slot_layout(f.area()) {
-                let Some(widget_id) = app_state.borrow().get_selected_widget(slot) else {
+                let Some(widget_id) = self.app_state.get_selected_widget(slot) else {
                     continue;
                 };
                 let Some(view) = views.get(&widget_id) else {
                     continue;
                 };
-                if let Err(e) = view.render(f, area, app_state.clone()) {
+                if let Err(e) = view.render(f, area, &self.app_state) {
                     let _ = action_tx.send(Action::Error(format!("Failed to draw: {:?}", e)));
                 }
             }

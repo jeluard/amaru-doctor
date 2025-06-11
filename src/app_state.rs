@@ -1,6 +1,5 @@
 use crate::{
     model::{cursor::Cursor, window::WindowState},
-    shared::{Shared, shared},
     states::{BrowseOptions, SearchOptions, Tab, WidgetId, WidgetSlot},
     store::{
         owned_iter::{
@@ -11,44 +10,44 @@ use crate::{
     },
     ui::to_list_item::{AccountItem, BlockIssuerItem, DRepItem, PoolItem, ProposalItem, UtxoItem},
 };
-use std::sync::Arc;
+use std::{cell::RefCell, sync::Arc};
 use strum::IntoEnumIterator;
 
 /// Holds ALL the state for the app. Does not self-mutate.
 /// Does provide readers / helper calcs
 pub struct AppState {
-    pub slot_focus: Shared<Cursor<WidgetSlot>>,
-    pub tabs: Shared<Cursor<Tab>>,
+    pub slot_focus: RefCell<Cursor<WidgetSlot>>,
+    pub tabs: RefCell<Cursor<Tab>>,
     // Don't put these in Map, however tempting--it will cause pain with generics and ultimately increases complexity
-    pub browse_options: Shared<WindowState<BrowseOptions>>,
-    pub search_options: Shared<WindowState<SearchOptions>>,
-    pub accounts: Shared<WindowState<AccountItem>>,
-    pub block_issuers: Shared<WindowState<BlockIssuerItem>>,
-    pub dreps: Shared<WindowState<DRepItem>>,
-    pub pools: Shared<WindowState<PoolItem>>,
-    pub proposals: Shared<WindowState<ProposalItem>>,
-    pub utxos: Shared<WindowState<UtxoItem>>,
+    pub browse_options: RefCell<WindowState<BrowseOptions>>,
+    pub search_options: RefCell<WindowState<SearchOptions>>,
+    pub accounts: RefCell<WindowState<AccountItem>>,
+    pub block_issuers: RefCell<WindowState<BlockIssuerItem>>,
+    pub dreps: RefCell<WindowState<DRepItem>>,
+    pub pools: RefCell<WindowState<PoolItem>>,
+    pub proposals: RefCell<WindowState<ProposalItem>>,
+    pub utxos: RefCell<WindowState<UtxoItem>>,
 }
 
 impl AppState {
     pub fn new(db: Arc<RocksDBSwitch>) -> Self {
         Self {
-            slot_focus: shared(Cursor::new(WidgetSlot::iter().collect())),
-            tabs: shared(Cursor::new(Tab::iter().collect())),
-            browse_options: shared(WindowState::new(Box::new(BrowseOptions::iter()))),
-            search_options: shared(WindowState::new(Box::new(SearchOptions::iter()))),
-            accounts: shared(WindowState::new(Box::new(OwnedAccountsIter::new(
+            slot_focus: RefCell::new(Cursor::new(WidgetSlot::iter().collect())),
+            tabs: RefCell::new(Cursor::new(Tab::iter().collect())),
+            browse_options: RefCell::new(WindowState::new(Box::new(BrowseOptions::iter()))),
+            search_options: RefCell::new(WindowState::new(Box::new(SearchOptions::iter()))),
+            accounts: RefCell::new(WindowState::new(Box::new(OwnedAccountsIter::new(
                 db.clone(),
             )))),
-            block_issuers: shared(WindowState::new(Box::new(OwnedBlockIssuerIter::new(
+            block_issuers: RefCell::new(WindowState::new(Box::new(OwnedBlockIssuerIter::new(
                 db.clone(),
             )))),
-            dreps: shared(WindowState::new(Box::new(OwnedDRepIter::new(db.clone())))),
-            pools: shared(WindowState::new(Box::new(OwnedPoolIter::new(db.clone())))),
-            proposals: shared(WindowState::new(Box::new(OwnedProposalIter::new(
+            dreps: RefCell::new(WindowState::new(Box::new(OwnedDRepIter::new(db.clone())))),
+            pools: RefCell::new(WindowState::new(Box::new(OwnedPoolIter::new(db.clone())))),
+            proposals: RefCell::new(WindowState::new(Box::new(OwnedProposalIter::new(
                 db.clone(),
             )))),
-            utxos: shared(WindowState::new(Box::new(OwnedUtxoIter::new(db.clone())))),
+            utxos: RefCell::new(WindowState::new(Box::new(OwnedUtxoIter::new(db.clone())))),
         }
     }
 
