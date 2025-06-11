@@ -2,7 +2,6 @@ use crate::{
     app_state::AppState,
     components::Component,
     cursor::Cursor,
-    focus,
     shared::Shared,
     states::{Action, WidgetId},
 };
@@ -36,10 +35,9 @@ where
     }
 
     fn has_focus(&self) -> bool {
-        match focus::get_focused(self.app_state.clone()) {
-            Some(id) => self.comp_id == id,
-            _ => false,
-        }
+        self.app_state
+            .borrow()
+            .is_widget_focused(self.comp_id.clone())
     }
 }
 

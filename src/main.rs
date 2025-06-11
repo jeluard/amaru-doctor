@@ -14,7 +14,6 @@ mod components;
 mod config;
 mod cursor;
 mod errors;
-mod focus;
 mod logging;
 mod mutator;
 mod shared;
