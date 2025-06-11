@@ -2,11 +2,12 @@ use crate::{
     app_state::AppState,
     config::Config,
     mutator::Mutator,
-    render::render_app,
+    render::compute_slot_layout,
     shared::{Shared, shared},
     states::Action,
     store::rocks_db_switch::RocksDBSwitch,
     tui::{Event, Tui},
+    view::{ViewMap, get_views},
 };
 use color_eyre::Result;
 use crossterm::event::KeyEvent;
@@ -22,6 +23,7 @@ pub struct App {
     tick_rate: f64,
     frame_rate: f64,
     app_state: Shared<AppState>,
+    views: ViewMap,
     // widget_map: HashMap<WidgetId, SharedComp>,
     should_quit: bool,
     should_suspend: bool,
@@ -51,8 +53,9 @@ impl App {
             ledger_path_str: ledger_path_str.to_owned(),
             tick_rate,
             frame_rate,
-            app_state,
+            app_state: app_state.clone(),
             // widget_map,
+            views: get_views(app_state.clone()),
             should_quit: false,
             should_suspend: false,
             config: Config::new()?,
@@ -223,11 +226,21 @@ impl App {
     // }
 
     fn render(&mut self, tui: &mut Tui) -> Result<()> {
-        tui.draw(|frame| {
-            if let Err(err) = render_app(frame, self.app_state.clone()) {
-                let _ = self
-                    .action_tx
-                    .send(Action::Error(format!("Failed to draw: {:?}", err)));
+        let app_state = self.app_state.clone();
+        let views = &self.views;
+        let action_tx = self.action_tx.clone();
+
+        tui.draw(|f| {
+            for (slot, area) in compute_slot_layout(f.area()) {
+                let Some(widget_id) = app_state.borrow().get_selected_widget(slot) else {
+                    continue;
+                };
+                let Some(view) = views.get(&widget_id) else {
+                    continue;
+                };
+                if let Err(e) = view.render(f, area, app_state.clone()) {
+                    let _ = action_tx.send(Action::Error(format!("Failed to draw: {:?}", e)));
+                }
             }
         })?;
         Ok(())

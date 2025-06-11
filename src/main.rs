@@ -10,9 +10,9 @@ mod app;
 mod app_state;
 mod cli;
 mod config;
-mod cursor;
 mod errors;
 mod logging;
+mod model;
 mod mutator;
 mod render;
 mod shared;
@@ -20,7 +20,7 @@ mod states;
 mod store;
 mod tui;
 mod ui;
-mod window;
+mod view;
 
 #[tokio::main]
 async fn main() -> Result<()> {

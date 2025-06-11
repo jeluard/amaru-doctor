@@ -72,12 +72,12 @@ pub enum WidgetId {
     // SearchPools,
     // SearchProposals,
     // SearchUTXOs,
-    DetailAccount,
-    DetailBlockIssuer,
-    DetailDRep,
-    DetailPool,
-    DetailProposal,
-    DetailUtxo,
+    DetailsAccount,
+    DetailsBlockIssuer,
+    DetailsDRep,
+    DetailsPool,
+    DetailsProposal,
+    DetailsUtxo,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, Display, Serialize, Deserialize, Hash)]

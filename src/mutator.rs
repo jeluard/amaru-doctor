@@ -39,12 +39,12 @@ fn scroll_up(app_state: Shared<AppState>) {
         WidgetId::ListProposals => app_state.borrow().proposals.borrow_mut().scroll_up(),
         WidgetId::ListUtxos => app_state.borrow().utxos.borrow_mut().scroll_up(),
         // TODO: Need to add a scroll offset state
-        WidgetId::DetailAccount => todo!(),
-        WidgetId::DetailBlockIssuer => todo!(),
-        WidgetId::DetailDRep => todo!(),
-        WidgetId::DetailPool => todo!(),
-        WidgetId::DetailProposal => todo!(),
-        WidgetId::DetailUtxo => todo!(),
+        WidgetId::DetailsAccount => todo!(),
+        WidgetId::DetailsBlockIssuer => todo!(),
+        WidgetId::DetailsDRep => todo!(),
+        WidgetId::DetailsPool => todo!(),
+        WidgetId::DetailsProposal => todo!(),
+        WidgetId::DetailsUtxo => todo!(),
     }
 }
 
@@ -61,12 +61,12 @@ fn scroll_down(app_state: Shared<AppState>) {
         WidgetId::ListPools => app_state.borrow().pools.borrow_mut().scroll_down(),
         WidgetId::ListProposals => app_state.borrow().proposals.borrow_mut().scroll_down(),
         WidgetId::ListUtxos => app_state.borrow().utxos.borrow_mut().scroll_down(),
-        WidgetId::DetailAccount => todo!(),
-        WidgetId::DetailBlockIssuer => todo!(),
-        WidgetId::DetailDRep => todo!(),
-        WidgetId::DetailPool => todo!(),
-        WidgetId::DetailProposal => todo!(),
-        WidgetId::DetailUtxo => todo!(),
+        WidgetId::DetailsAccount => todo!(),
+        WidgetId::DetailsBlockIssuer => todo!(),
+        WidgetId::DetailsDRep => todo!(),
+        WidgetId::DetailsPool => todo!(),
+        WidgetId::DetailsProposal => todo!(),
+        WidgetId::DetailsUtxo => todo!(),
     }
 }
 

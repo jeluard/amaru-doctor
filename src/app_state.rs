@@ -1,5 +1,5 @@
 use crate::{
-    cursor::Cursor,
+    model::{cursor::Cursor, window::WindowState},
     shared::{Shared, shared},
     states::{BrowseOptions, SearchOptions, Tab, WidgetId, WidgetSlot},
     store::{
@@ -10,7 +10,6 @@ use crate::{
         rocks_db_switch::RocksDBSwitch,
     },
     ui::to_list_item::{AccountItem, BlockIssuerItem, DRepItem, PoolItem, ProposalItem, UtxoItem},
-    window::WindowState,
 };
 use std::sync::Arc;
 use strum::IntoEnumIterator;
@@ -82,12 +81,12 @@ impl AppState {
                 None => None,
             },
             WidgetSlot::Details => match self.browse_options.borrow().selected() {
-                Some(BrowseOptions::Accounts) => Some(WidgetId::DetailAccount),
-                Some(BrowseOptions::BlockIssuers) => Some(WidgetId::DetailBlockIssuer),
-                Some(BrowseOptions::DReps) => Some(WidgetId::DetailDRep),
-                Some(BrowseOptions::Pools) => Some(WidgetId::DetailPool),
-                Some(BrowseOptions::Proposals) => Some(WidgetId::DetailProposal),
-                Some(BrowseOptions::Utxos) => Some(WidgetId::DetailUtxo),
+                Some(BrowseOptions::Accounts) => Some(WidgetId::DetailsAccount),
+                Some(BrowseOptions::BlockIssuers) => Some(WidgetId::DetailsBlockIssuer),
+                Some(BrowseOptions::DReps) => Some(WidgetId::DetailsDRep),
+                Some(BrowseOptions::Pools) => Some(WidgetId::DetailsPool),
+                Some(BrowseOptions::Proposals) => Some(WidgetId::DetailsProposal),
+                Some(BrowseOptions::Utxos) => Some(WidgetId::DetailsUtxo),
                 None => None,
             },
         }
