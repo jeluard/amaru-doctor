@@ -17,8 +17,8 @@ pub enum Action {
     FocusPrev,
     FocusNext,
     SearchRequest,
-    ScrollUp(WidgetId),
-    ScrollDown(WidgetId),
+    ScrollUp,
+    ScrollDown,
 }
 
 #[derive(Clone, Debug, Default, EnumIter, Display, PartialEq, Eq, Serialize, Deserialize)]
@@ -47,7 +47,7 @@ pub enum Tab {
 }
 
 #[derive(Clone, Debug, Display, EnumIter, PartialEq, Eq)]
-pub enum Slot {
+pub enum WidgetSlot {
     Nav,
     NavType,
     List,
@@ -57,7 +57,7 @@ pub enum Slot {
 #[derive(Clone, Debug, Display, EnumIter, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum WidgetId {
     Empty,
-    ListTabs,
+    CursorTabs,
     ListBrowseOptions,
     ListSearchOptions,
     ListAccounts,
@@ -78,4 +78,38 @@ pub enum WidgetId {
     DetailPool,
     DetailProposal,
     DetailUtxo,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, Display, Serialize, Deserialize, Hash)]
+#[serde(rename_all = "lowercase")]
+pub enum Entity {
+    Accounts,
+    #[serde(rename = "block issuers")]
+    BlockIssuers,
+    DReps,
+    Pools,
+    Proposals,
+    UTXOs,
+    // TODO: These need to be somewhere else
+    Entites,
+    SearchTypes,
+    Nav,
+}
+
+impl ToListItem for Entity {
+    fn to_list_item(&self) -> ListItem<'static> {
+        ListItem::new(serde_plain::to_string(self).unwrap())
+    }
+}
+
+#[derive(Clone, Copy, Debug, EnumIter, PartialEq, Eq, Serialize)]
+pub enum SearchOptions {
+    #[serde(rename = "utxos by address")]
+    UtxosByAddress,
+}
+
+impl ToListItem for SearchOptions {
+    fn to_list_item(&self) -> ListItem<'static> {
+        ListItem::new(serde_plain::to_string(self).unwrap())
+    }
 }

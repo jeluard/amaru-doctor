@@ -1,4 +1,3 @@
-use crate::shared::GetterOpt;
 use std::slice::Iter;
 
 pub struct Cursor<T> {
@@ -33,11 +32,5 @@ impl<T> Cursor<T> {
 
     pub fn iter(&self) -> Iter<'_, T> {
         self.vec.iter()
-    }
-}
-
-impl<T> GetterOpt<T> for Cursor<T> {
-    fn get(&self) -> Option<&T> {
-        self.current()
     }
 }

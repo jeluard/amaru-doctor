@@ -1,8 +1,7 @@
 use crate::{
-    components::r#static::search_types::SearchOptions,
     cursor::Cursor,
     shared::{Shared, shared},
-    states::{BrowseOptions, Slot, Tab, WidgetId},
+    states::{BrowseOptions, SearchOptions, Tab, WidgetId, WidgetSlot},
     store::{
         owned_iter::{
             OwnedAccountsIter, OwnedBlockIssuerIter, OwnedDRepIter, OwnedPoolIter,
@@ -19,7 +18,7 @@ use strum::IntoEnumIterator;
 /// Holds ALL the state for the app. Does not self-mutate.
 /// Does provide readers / helper calcs
 pub struct AppState {
-    pub slot_focus: Shared<Cursor<Slot>>,
+    pub slot_focus: Shared<Cursor<WidgetSlot>>,
     pub tabs: Shared<Cursor<Tab>>,
     // Don't put these in Map, however tempting--it will cause pain with generics and ultimately increases complexity
     pub browse_options: Shared<WindowState<BrowseOptions>>,
@@ -35,7 +34,7 @@ pub struct AppState {
 impl AppState {
     pub fn new(db: Arc<RocksDBSwitch>) -> Self {
         Self {
-            slot_focus: shared(Cursor::new(Slot::iter().collect())),
+            slot_focus: shared(Cursor::new(WidgetSlot::iter().collect())),
             tabs: shared(Cursor::new(Tab::iter().collect())),
             browse_options: shared(WindowState::new(Box::new(BrowseOptions::iter()))),
             search_options: shared(WindowState::new(Box::new(SearchOptions::iter()))),
@@ -65,15 +64,15 @@ impl AppState {
             .and_then(|s| self.get_selected_widget(s.clone()))
     }
 
-    pub fn get_selected_widget(&self, slot: Slot) -> Option<WidgetId> {
+    pub fn get_selected_widget(&self, slot: WidgetSlot) -> Option<WidgetId> {
         match slot {
-            Slot::Nav => Some(WidgetId::ListTabs),
-            Slot::NavType => match self.tabs.borrow().current() {
+            WidgetSlot::Nav => Some(WidgetId::CursorTabs),
+            WidgetSlot::NavType => match self.tabs.borrow().current() {
                 Some(Tab::Browse) => Some(WidgetId::ListBrowseOptions),
                 Some(Tab::Search) => Some(WidgetId::ListSearchOptions),
                 None => None,
             },
-            Slot::List => match self.browse_options.borrow().selected() {
+            WidgetSlot::List => match self.browse_options.borrow().selected() {
                 Some(BrowseOptions::Accounts) => Some(WidgetId::ListAccounts),
                 Some(BrowseOptions::BlockIssuers) => Some(WidgetId::ListBlockIssuers),
                 Some(BrowseOptions::DReps) => Some(WidgetId::ListDReps),
@@ -82,7 +81,7 @@ impl AppState {
                 Some(BrowseOptions::Utxos) => Some(WidgetId::ListUtxos),
                 None => None,
             },
-            Slot::Details => match self.browse_options.borrow().selected() {
+            WidgetSlot::Details => match self.browse_options.borrow().selected() {
                 Some(BrowseOptions::Accounts) => Some(WidgetId::DetailAccount),
                 Some(BrowseOptions::BlockIssuers) => Some(WidgetId::DetailBlockIssuer),
                 Some(BrowseOptions::DReps) => Some(WidgetId::DetailDRep),

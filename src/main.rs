@@ -8,14 +8,13 @@ use std::{env, path::Path, sync::Arc};
 
 mod app;
 mod app_state;
-mod build;
 mod cli;
-mod components;
 mod config;
 mod cursor;
 mod errors;
 mod logging;
 mod mutator;
+mod render;
 mod shared;
 mod states;
 mod store;

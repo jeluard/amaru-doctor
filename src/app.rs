@@ -1,21 +1,18 @@
 use crate::{
     app_state::AppState,
-    build::{self, build_widget_map, make_body, make_footer},
     config::Config,
     mutator::Mutator,
-    shared::{Shared, SharedComp, shared},
-    states::{Action, WidgetId},
+    render::render_app,
+    shared::{Shared, shared},
+    states::Action,
     store::rocks_db_switch::RocksDBSwitch,
     tui::{Event, Tui},
 };
 use color_eyre::Result;
 use crossterm::event::KeyEvent;
-use ratatui::{
-    layout::{Constraint, Direction, Layout},
-    prelude::Rect,
-};
+use ratatui::prelude::Rect;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::{debug, info, trace};
 
@@ -25,7 +22,7 @@ pub struct App {
     tick_rate: f64,
     frame_rate: f64,
     app_state: Shared<AppState>,
-    widget_map: HashMap<WidgetId, SharedComp>,
+    // widget_map: HashMap<WidgetId, SharedComp>,
     should_quit: bool,
     should_suspend: bool,
     mode: Mode,
@@ -49,13 +46,13 @@ impl App {
     ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
         let app_state = shared(AppState::new(db));
-        let widget_map = build_widget_map(app_state.clone());
+        // let widget_map = build_widget_map(app_state.clone());
         Ok(Self {
             ledger_path_str: ledger_path_str.to_owned(),
             tick_rate,
             frame_rate,
             app_state,
-            widget_map,
+            // widget_map,
             should_quit: false,
             should_suspend: false,
             config: Config::new()?,
@@ -74,16 +71,16 @@ impl App {
         tui.terminal.clear()?;
         tui.enter()?;
 
-        self.widget_map.values().try_for_each(|c| {
-            c.borrow_mut()
-                .register_action_handler(self.action_tx.clone())
-        })?;
-        self.widget_map
-            .values()
-            .try_for_each(|c| c.borrow_mut().register_config_handler(self.config.clone()))?;
-        self.widget_map
-            .values()
-            .try_for_each(|c| c.borrow_mut().init(tui.size()?))?;
+        // self.widget_map.values().try_for_each(|c| {
+        //     c.borrow_mut()
+        //         .register_action_handler(self.action_tx.clone())
+        // })?;
+        // self.widget_map
+        //     .values()
+        //     .try_for_each(|c| c.borrow_mut().register_config_handler(self.config.clone()))?;
+        // self.widget_map
+        //     .values()
+        //     .try_for_each(|c| c.borrow_mut().init(tui.size()?))?;
 
         let action_tx = self.action_tx.clone();
         loop {
@@ -117,11 +114,11 @@ impl App {
             Event::Key(key) => self.handle_key_event(key)?,
             _ => {}
         }
-        for component in self.widget_map.values() {
-            for action in component.borrow_mut().handle_events(Some(event.clone()))? {
-                action_tx.send(action)?;
-            }
-        }
+        // for component in self.widget_map.values() {
+        //     for action in component.borrow_mut().handle_events(Some(event.clone()))? {
+        //         action_tx.send(action)?;
+        //     }
+        // }
         Ok(())
     }
 
@@ -129,14 +126,17 @@ impl App {
         trace!("App::handle_key_event - received: {:?}", key);
         let action_tx = self.action_tx.clone();
         let Some(keymap) = self.config.keybindings.get(&self.mode) else {
+            trace!("App::handle_key_event - no keymap: {:?}", key);
             return Ok(());
         };
+        trace!("App::handle_key_event - keymap: {:?}", keymap);
         match keymap.get(&vec![key]) {
             Some(action) => {
                 info!("Key to action: {action:?}. Will broadcast.");
                 action_tx.send(action.clone())?;
             }
             _ => {
+                trace!("App::handle_key_event - no single-key action: {:?}", key);
                 // If the key was not handled as a single key action,
                 // then consider it for multi-key combinations.
                 self.last_tick_key_events.push(key);
@@ -156,7 +156,6 @@ impl App {
             if action != Action::Tick && action != Action::Render {
                 debug!("{action:?}");
             }
-            let action_clone = action.clone();
             match action {
                 Action::Tick => {
                     self.last_tick_key_events.drain(..);
@@ -171,11 +170,11 @@ impl App {
             }
             // TODO: Move all actions (the above) in mutate
             action.mutate(self.app_state.clone());
-            for component in self.widget_map.values() {
-                for action in component.borrow_mut().update(action_clone.clone())? {
-                    self.action_tx.send(action)?;
-                }
-            }
+            // for component in self.widget_map.values() {
+            //     for action in component.borrow_mut().update(action_clone.clone())? {
+            //         self.action_tx.send(action)?;
+            //     }
+            // }
         }
         Ok(())
     }
@@ -186,38 +185,49 @@ impl App {
         Ok(())
     }
 
+    // fn render(&mut self, tui: &mut Tui) -> Result<()> {
+    //     tui.draw(|frame| {
+    //         let area = frame.area();
+    //         let chunks = Layout::default()
+    //             .direction(Direction::Vertical)
+    //             .constraints(vec![
+    //                 Constraint::Length(1),
+    //                 Constraint::Min(1),
+    //                 Constraint::Length(1),
+    //             ])
+    //             .split(area);
+
+    //         let (nav, options, list, details) =
+    //             build::resolve_layout_widgets(self.app_state.clone());
+    //         let (header, body, footer) = (
+    //             build::make_header(&self.ledger_path_str),
+    //             make_body(nav, options, list, details, &self.widget_map),
+    //             make_footer(),
+    //         );
+
+    //         let (header_res, body_res, footer_res) = (
+    //             header.borrow_mut().draw(frame, chunks[0]),
+    //             body.borrow_mut().draw(frame, chunks[1]),
+    //             footer.borrow_mut().draw(frame, chunks[2]),
+    //         );
+
+    //         for result in [header_res, body_res, footer_res] {
+    //             if let Err(err) = result {
+    //                 let _ = self
+    //                     .action_tx
+    //                     .send(Action::Error(format!("Failed to draw: {:?}", err)));
+    //             }
+    //         }
+    //     })?;
+    //     Ok(())
+    // }
+
     fn render(&mut self, tui: &mut Tui) -> Result<()> {
         tui.draw(|frame| {
-            let area = frame.area();
-            let chunks = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints(vec![
-                    Constraint::Length(1),
-                    Constraint::Min(1),
-                    Constraint::Length(1),
-                ])
-                .split(area);
-
-            let (nav, options, list, details) =
-                build::resolve_layout_widgets(self.app_state.clone());
-            let (header, body, footer) = (
-                build::make_header(&self.ledger_path_str),
-                make_body(nav, options, list, details, &self.widget_map),
-                make_footer(),
-            );
-
-            let (header_res, body_res, footer_res) = (
-                header.borrow_mut().draw(frame, chunks[0]),
-                body.borrow_mut().draw(frame, chunks[1]),
-                footer.borrow_mut().draw(frame, chunks[2]),
-            );
-
-            for result in [header_res, body_res, footer_res] {
-                if let Err(err) = result {
-                    let _ = self
-                        .action_tx
-                        .send(Action::Error(format!("Failed to draw: {:?}", err)));
-                }
+            if let Err(err) = render_app(frame, self.app_state.clone()) {
+                let _ = self
+                    .action_tx
+                    .send(Action::Error(format!("Failed to draw: {:?}", err)));
             }
         })?;
         Ok(())

@@ -1,4 +1,4 @@
-use crate::shared::GetterOpt;
+use tracing::trace;
 
 pub struct WindowState<T> {
     // TODO: Check if we can just use Iter, search below
@@ -54,6 +54,7 @@ impl<T> WindowState<T> {
     }
 
     pub fn scroll_up(&mut self) {
+        trace!("Scrolling up");
         if self.cursor > 0 {
             self.cursor -= 1;
             if self.cursor < self.window_start {
@@ -63,6 +64,7 @@ impl<T> WindowState<T> {
     }
 
     pub fn scroll_down(&mut self) {
+        trace!("Scrolling down");
         let len = self.len();
         if self.cursor + 1 < len {
             self.cursor += 1;
@@ -102,11 +104,5 @@ impl<T> WindowState<T> {
     pub fn selected(&self) -> Option<&T> {
         let (view, idx) = self.window_view();
         view.get(idx)
-    }
-}
-
-impl<T> GetterOpt<T> for WindowState<T> {
-    fn get(&self) -> Option<&T> {
-        self.selected()
     }
 }

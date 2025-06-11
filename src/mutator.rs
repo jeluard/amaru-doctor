@@ -1,3 +1,5 @@
+use tracing::trace;
+
 use crate::{
     app_state::AppState,
     shared::Shared,
@@ -10,20 +12,24 @@ pub trait Mutator<T> {
 
 impl Mutator<AppState> for Action {
     fn mutate(&self, app_state: Shared<AppState>) {
+        if !matches!(self, Action::Render | Action::Tick) {
+            trace!("Handling action {}", self);
+        }
         match self {
             Action::FocusPrev => app_state.borrow().slot_focus.borrow_mut().next_back(),
             Action::FocusNext => app_state.borrow().slot_focus.borrow_mut().next(),
-            Action::ScrollUp(comp_id) => scroll_up(comp_id, app_state),
-            Action::ScrollDown(comp_id) => scroll_down(comp_id, app_state),
+            Action::ScrollUp => scroll_up(app_state),
+            Action::ScrollDown => scroll_down(app_state),
             _ => {}
         }
     }
 }
 
-fn scroll_up(comp_id: &WidgetId, app_state: Shared<AppState>) {
-    match comp_id {
+fn scroll_up(app_state: Shared<AppState>) {
+    let widget_id = app_state.borrow().get_focused_widget().unwrap();
+    match widget_id {
         WidgetId::Empty => {} // Nothing to scroll
-        WidgetId::ListTabs => app_state.borrow().tabs.borrow_mut().next_back(),
+        WidgetId::CursorTabs => app_state.borrow().tabs.borrow_mut().next_back(),
         WidgetId::ListBrowseOptions => app_state.borrow().browse_options.borrow_mut().scroll_up(),
         WidgetId::ListSearchOptions => app_state.borrow().search_options.borrow_mut().scroll_up(),
         WidgetId::ListAccounts => app_state.borrow().accounts.borrow_mut().scroll_up(),
@@ -42,10 +48,11 @@ fn scroll_up(comp_id: &WidgetId, app_state: Shared<AppState>) {
     }
 }
 
-fn scroll_down(comp_id: &WidgetId, app_state: Shared<AppState>) {
-    match comp_id {
+fn scroll_down(app_state: Shared<AppState>) {
+    let widget_id = app_state.borrow().get_focused_widget().unwrap();
+    match widget_id {
         WidgetId::Empty => {} // Nothing to scroll
-        WidgetId::ListTabs => app_state.borrow().tabs.borrow_mut().next_back(),
+        WidgetId::CursorTabs => app_state.borrow().tabs.borrow_mut().next_back(),
         WidgetId::ListBrowseOptions => app_state.borrow().browse_options.borrow_mut().scroll_down(),
         WidgetId::ListSearchOptions => app_state.borrow().search_options.borrow_mut().scroll_down(),
         WidgetId::ListAccounts => app_state.borrow().accounts.borrow_mut().scroll_down(),
