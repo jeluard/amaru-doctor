@@ -1,5 +1,6 @@
 use crate::{
     app_state::AppState,
+    controller::is_widget_focused,
     model::window::WindowState,
     states::WidgetId,
     ui::to_rich::{RichText, ToRichText},
@@ -13,11 +14,10 @@ use ratatui::{
     text::Span,
     widgets::{Block, Borders, Paragraph, Wrap},
 };
-use std::cell::RefCell;
 
 pub struct DetailsView<T> {
     pub widget_id: WidgetId,
-    pub get_list: fn(&AppState) -> &RefCell<WindowState<T>>,
+    pub get_list: fn(&AppState) -> &WindowState<T>,
 }
 
 impl<T: ToRichText> View for DetailsView<T> {
@@ -26,15 +26,14 @@ impl<T: ToRichText> View for DetailsView<T> {
             .title(serde_plain::to_string(&self.widget_id)?)
             .borders(Borders::ALL);
 
-        if app_state.is_widget_focused(self.widget_id.clone()) {
+        if is_widget_focused(app_state, &self.widget_id) {
             block = block
                 .title_style(Style::default().fg(Color::White))
                 .border_style(Style::default().fg(Color::Blue));
         }
 
         let list = (self.get_list)(app_state);
-        let binding = list.borrow();
-        let lines = binding
+        let lines = list
             .selected()
             .map_or(RichText::Single(Span::raw("None selected")), |t| {
                 t.to_rich_text()

@@ -46,7 +46,7 @@ pub enum Tab {
     Search,
 }
 
-#[derive(Clone, Debug, Display, EnumIter, PartialEq, Eq)]
+#[derive(Clone, Debug, Display, EnumIter, Hash, PartialEq, Eq)]
 pub enum WidgetSlot {
     Nav,
     NavType,

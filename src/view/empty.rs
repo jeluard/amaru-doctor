@@ -1,4 +1,4 @@
-use crate::{app_state::AppState, states::WidgetId, view::View};
+use crate::{app_state::AppState, controller::is_widget_focused, states::WidgetId, view::View};
 use color_eyre::Result;
 use ratatui::{
     Frame,
@@ -16,7 +16,7 @@ impl View for EmptyView {
             .title_style(Style::default().fg(Color::White))
             .borders(Borders::ALL);
 
-        if app_state.is_widget_focused(WidgetId::Empty) {
+        if is_widget_focused(app_state, &WidgetId::Empty) {
             block = block.border_style(Style::default().fg(Color::Blue));
         }
 

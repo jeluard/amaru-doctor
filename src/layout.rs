@@ -1,7 +1,14 @@
-use crate::states::WidgetSlot;
+use crate::{
+    app_state::AppState,
+    controller::get_selected_widget,
+    states::{WidgetId, WidgetSlot},
+};
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use std::collections::HashMap;
+use strum::IntoEnumIterator;
 
 pub type SlotLayout = Vec<(WidgetSlot, Rect)>;
+pub type SlotMap = HashMap<WidgetSlot, WidgetId>;
 
 pub fn compute_slot_layout(area: Rect) -> SlotLayout {
     let columns = Layout::default()
@@ -32,4 +39,14 @@ pub fn compute_slot_layout(area: Rect) -> SlotLayout {
         (WidgetSlot::List, list),
         (WidgetSlot::Details, details),
     ]
+}
+
+pub fn compute_slot_map(app_state: &AppState) -> SlotMap {
+    let mut widgets = HashMap::new();
+    WidgetSlot::iter().for_each(|s| {
+        if let Some(wid) = get_selected_widget(app_state, &s) {
+            widgets.insert(s, wid);
+        }
+    });
+    widgets
 }

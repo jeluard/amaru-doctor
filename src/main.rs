@@ -10,15 +10,16 @@ mod app;
 mod app_state;
 mod cli;
 mod config;
+mod controller;
 mod errors;
 mod layout;
 mod logging;
 mod model;
-mod mutator;
 mod states;
 mod store;
 mod tui;
 mod ui;
+mod update;
 mod view;
 
 #[tokio::main]
