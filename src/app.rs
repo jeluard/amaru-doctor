@@ -1,8 +1,7 @@
 use crate::{
     app_state::AppState,
     config::Config,
-    controller::get_selected_widget,
-    layout::{SlotLayout, compute_slot_layout, compute_slot_map},
+    controller::layout::{SlotLayout, compute_slot_layout, compute_slot_map},
     states::{Action, WidgetId, WidgetSlot},
     store::rocks_db_switch::RocksDBSwitch,
     tui::{Event, Tui},
@@ -176,8 +175,9 @@ impl App {
 
     fn handle_resize(&mut self, tui: &mut Tui, w: u16, h: u16) -> Result<()> {
         tui.resize(Rect::new(0, 0, w, h))?;
-        self.render(tui)?;
-        Ok(())
+        // Recompute the layout in render
+        self.layout = None;
+        self.render(tui)
     }
 
     fn render(&mut self, tui: &mut Tui) -> Result<()> {
@@ -186,10 +186,16 @@ impl App {
         let action_tx = self.action_tx.clone();
 
         tui.draw(|f| {
-            let layout = self
-                .layout
-                .get_or_insert_with(|| compute_slot_layout(f.area()));
+            if self.layout.is_none() {
+                let layout = compute_slot_layout(f.area());
+                for (slot, rect) in &layout {
+                    let _ =
+                        action_tx.send(Action::SetWindowSize(slot.clone(), rect.height as usize));
+                }
+                self.layout = Some(layout);
+            }
 
+            let layout = self.layout.as_ref().unwrap();
             for (slot, area) in layout {
                 let Some(widget_id) = self.slot_map.get(slot) else {
                     continue;

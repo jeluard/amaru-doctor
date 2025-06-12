@@ -1,12 +1,14 @@
 use crate::{
     app_state::AppState,
     states::{
-        BrowseOptions::*,
-        Tab::*,
+        BrowseOption::*,
+        TabOption::*,
         WidgetId::{self, *},
         WidgetSlot::{self, *},
     },
 };
+
+pub mod layout;
 
 pub fn is_widget_focused(app_state: &AppState, widget_id: &WidgetId) -> bool {
     get_focused_widget(app_state) == Some(widget_id.clone())
@@ -16,13 +18,13 @@ pub fn get_focused_widget(app_state: &AppState) -> Option<WidgetId> {
     app_state
         .slot_focus
         .current()
-        .and_then(|s| get_selected_widget(app_state, s))
+        .and_then(|s| get_selected_widget_id(app_state, s))
 }
 
-pub fn get_selected_widget(app_state: &AppState, slot: &WidgetSlot) -> Option<WidgetId> {
+pub fn get_selected_widget_id(app_state: &AppState, slot: &WidgetSlot) -> Option<WidgetId> {
     match slot {
-        Nav => Some(WidgetId::CursorTabs),
-        NavType => match app_state.tabs.current() {
+        Tabs => Some(WidgetId::CursorTabs),
+        Options => match app_state.tabs.current() {
             Some(Browse) => Some(ListBrowseOptions),
             Some(Search) => Some(ListSearchOptions),
             None => None,

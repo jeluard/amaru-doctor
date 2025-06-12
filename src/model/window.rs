@@ -48,6 +48,7 @@ impl<T> WindowState<T> {
     }
 
     pub fn set_window_size(&mut self, new_size: usize) {
+        trace!("Setting window size to {}", new_size);
         self.window_size = new_size;
         self.clamp_all();
         self.fill_buffer(self.window_start + self.window_size);

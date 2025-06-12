@@ -1,6 +1,6 @@
 use crate::{
     app_state::AppState,
-    controller::get_selected_widget,
+    controller::get_selected_widget_id,
     states::{WidgetId, WidgetSlot},
 };
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
@@ -34,8 +34,8 @@ pub fn compute_slot_layout(area: Rect) -> SlotLayout {
     let (_search_query, details) = (right_regions[0], right_regions[1]);
 
     vec![
-        (WidgetSlot::Nav, nav),
-        (WidgetSlot::NavType, options),
+        (WidgetSlot::Tabs, nav),
+        (WidgetSlot::Options, options),
         (WidgetSlot::List, list),
         (WidgetSlot::Details, details),
     ]
@@ -44,7 +44,7 @@ pub fn compute_slot_layout(area: Rect) -> SlotLayout {
 pub fn compute_slot_map(app_state: &AppState) -> SlotMap {
     let mut widgets = HashMap::new();
     WidgetSlot::iter().for_each(|s| {
-        if let Some(wid) = get_selected_widget(app_state, &s) {
+        if let Some(wid) = get_selected_widget_id(app_state, &s) {
             widgets.insert(s, wid);
         }
     });

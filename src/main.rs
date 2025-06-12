@@ -12,7 +12,6 @@ mod cli;
 mod config;
 mod controller;
 mod errors;
-mod layout;
 mod logging;
 mod model;
 mod states;

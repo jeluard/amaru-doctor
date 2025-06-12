@@ -1,6 +1,6 @@
 use crate::{
     model::{cursor::Cursor, window::WindowState},
-    states::{BrowseOptions, SearchOptions, Tab, WidgetSlot},
+    states::{BrowseOption, SearchOption, TabOption, WidgetSlot},
     store::{
         owned_iter::{
             OwnedAccountsIter, OwnedBlockIssuerIter, OwnedDRepIter, OwnedPoolIter,
@@ -17,10 +17,10 @@ use strum::IntoEnumIterator;
 /// Does provide readers / helper calcs
 pub struct AppState {
     pub slot_focus: Cursor<WidgetSlot>,
-    pub tabs: Cursor<Tab>,
+    pub tabs: Cursor<TabOption>,
     // Don't put these in Map, however tempting--it will cause pain with generics and ultimately increases complexity
-    pub browse_options: WindowState<BrowseOptions>,
-    pub search_options: WindowState<SearchOptions>,
+    pub browse_options: WindowState<BrowseOption>,
+    pub search_options: WindowState<SearchOption>,
     pub accounts: WindowState<AccountItem>,
     pub block_issuers: WindowState<BlockIssuerItem>,
     pub dreps: WindowState<DRepItem>,
@@ -31,12 +31,12 @@ pub struct AppState {
 
 impl AppState {
     pub fn new(db: Arc<RocksDBSwitch>) -> Self {
-        let browse_options = WindowState::new(Box::new(BrowseOptions::iter()));
+        let browse_options = WindowState::new(Box::new(BrowseOption::iter()));
         Self {
             slot_focus: Cursor::new(WidgetSlot::iter().collect()),
-            tabs: Cursor::new(Tab::iter().collect()),
+            tabs: Cursor::new(TabOption::iter().collect()),
             browse_options,
-            search_options: WindowState::new(Box::new(SearchOptions::iter())),
+            search_options: WindowState::new(Box::new(SearchOption::iter())),
             accounts: WindowState::new(Box::new(OwnedAccountsIter::new(db.clone()))),
             block_issuers: WindowState::new(Box::new(OwnedBlockIssuerIter::new(db.clone()))),
             dreps: WindowState::new(Box::new(OwnedDRepIter::new(db.clone()))),

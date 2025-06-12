@@ -2,7 +2,7 @@ use crate::{
     app_state::AppState,
     controller::is_widget_focused,
     model::cursor::Cursor,
-    states::{Tab, WidgetId},
+    states::{TabOption, WidgetId},
     view::View,
 };
 use color_eyre::Result;
@@ -16,7 +16,7 @@ use ratatui::{
 
 pub struct TabsView {
     pub widget_id: WidgetId,
-    pub get_tabs: fn(&AppState) -> &Cursor<Tab>,
+    pub get_tabs: fn(&AppState) -> &Cursor<TabOption>,
 }
 
 impl View for TabsView {
