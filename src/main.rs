@@ -7,19 +7,19 @@ use color_eyre::Result;
 use std::{env, path::Path, sync::Arc};
 
 mod app;
-mod build;
+mod app_state;
 mod cli;
-mod components;
 mod config;
+mod controller;
 mod errors;
-mod focus;
 mod logging;
-mod shared;
+mod model;
 mod states;
 mod store;
 mod tui;
 mod ui;
-mod window;
+mod update;
+mod view;
 
 #[tokio::main]
 async fn main() -> Result<()> {

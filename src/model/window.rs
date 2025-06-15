@@ -1,4 +1,4 @@
-use crate::shared::GetterOpt;
+use tracing::trace;
 
 pub struct WindowState<T> {
     iter: Box<dyn Iterator<Item = T>>,
@@ -10,7 +10,7 @@ pub struct WindowState<T> {
 }
 
 impl<T> WindowState<T> {
-    pub fn new(iter: Box<dyn Iterator<Item = T>>) -> Self {
+    pub fn from_box(iter: Box<dyn Iterator<Item = T>>) -> Self {
         let mut s = Self {
             iter,
             buffer: Vec::new(),
@@ -21,6 +21,10 @@ impl<T> WindowState<T> {
         };
         s.fill_buffer(s.window_size);
         s
+    }
+
+    pub fn from_iter<I: Iterator<Item = T> + 'static>(iter: I) -> Self {
+        WindowState::from_box(Box::new(iter))
     }
 
     fn fill_buffer(&mut self, up_to: usize) {
@@ -47,12 +51,14 @@ impl<T> WindowState<T> {
     }
 
     pub fn set_window_size(&mut self, new_size: usize) {
+        trace!("Setting window size to {}", new_size);
         self.window_size = new_size;
         self.clamp_all();
         self.fill_buffer(self.window_start + self.window_size);
     }
 
     pub fn scroll_up(&mut self) {
+        trace!("Scrolling up");
         if self.cursor > 0 {
             self.cursor -= 1;
             if self.cursor < self.window_start {
@@ -62,6 +68,7 @@ impl<T> WindowState<T> {
     }
 
     pub fn scroll_down(&mut self) {
+        trace!("Scrolling down");
         let len = self.len();
         if self.cursor + 1 < len {
             self.cursor += 1;
@@ -98,14 +105,8 @@ impl<T> WindowState<T> {
         (slice, idx)
     }
 
-    pub fn selected(&self) -> Option<&T> {
+    pub fn selected(&self) -> &T {
         let (view, idx) = self.window_view();
-        view.get(idx)
-    }
-}
-
-impl<T> GetterOpt<T> for WindowState<T> {
-    fn get(&self) -> Option<&T> {
-        self.selected()
+        &view[idx]
     }
 }

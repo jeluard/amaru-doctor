@@ -1,44 +1,29 @@
 use crate::{
-    build::{self, BodyComponents},
-    components::Component,
+    app_state::AppState,
     config::Config,
-    focus::FocusManager,
-    shared::{Shared, shared},
+    controller::layout::{SlotLayout, SlotWidgets, compute_slot_layout, compute_slot_widgets},
     states::Action,
     store::rocks_db_switch::RocksDBSwitch,
     tui::{Event, Tui},
+    update::{UpdateList, get_updates},
+    view::view_for,
 };
-use color_eyre::Result;
+use color_eyre::{Result, eyre::eyre};
 use crossterm::event::KeyEvent;
-use ratatui::{
-    layout::{Constraint, Direction, Layout},
-    prelude::Rect,
-};
+use ratatui::{Frame, prelude::Rect};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::{io::Error, sync::Arc};
 use tokio::sync::mpsc;
 use tracing::{debug, info, trace};
-
-pub struct AppComponents {
-    all: Vec<Shared<dyn Component>>,
-}
-
-impl AppComponents {
-    pub fn new(_body_comps: Shared<BodyComponents>, all: Vec<Shared<dyn Component>>) -> Self {
-        Self { all }
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = &Shared<dyn Component>> {
-        self.all.iter()
-    }
-}
 
 pub struct App {
     config: Config,
     tick_rate: f64,
     frame_rate: f64,
-    components: Shared<AppComponents>,
-    focus: FocusManager,
+    app_state: AppState, // Model
+    updates: UpdateList, // Update
+    layout: Option<SlotLayout>,
+    slot_widgets: SlotWidgets,
     should_quit: bool,
     should_suspend: bool,
     mode: Mode,
@@ -61,12 +46,15 @@ impl App {
         db: Arc<RocksDBSwitch>,
     ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
-        let (components, focus) = build::build_layout(ledger_path_str, db.clone())?;
+        let app_state = AppState::new(ledger_path_str.to_owned(), db)?;
+        let slot_widgets = compute_slot_widgets(&app_state);
         Ok(Self {
             tick_rate,
             frame_rate,
-            components: shared(components),
-            focus,
+            app_state,
+            updates: get_updates(),
+            layout: None,
+            slot_widgets,
             should_quit: false,
             should_suspend: false,
             config: Config::new()?,
@@ -84,19 +72,6 @@ impl App {
             .frame_rate(self.frame_rate);
         tui.terminal.clear()?;
         tui.enter()?;
-
-        self.components.borrow().iter().try_for_each(|c| {
-            c.borrow_mut()
-                .register_action_handler(self.action_tx.clone())
-        })?;
-        self.components
-            .borrow()
-            .iter()
-            .try_for_each(|c| c.borrow_mut().register_config_handler(self.config.clone()))?;
-        self.components
-            .borrow()
-            .iter()
-            .try_for_each(|c| c.borrow_mut().init(tui.size()?))?;
 
         let action_tx = self.action_tx.clone();
         loop {
@@ -127,13 +102,11 @@ impl App {
             Event::Tick => action_tx.send(Action::Tick)?,
             Event::Render => action_tx.send(Action::Render)?,
             Event::Resize(x, y) => action_tx.send(Action::Resize(x, y))?,
-            Event::Key(key) => self.handle_key_event(key)?,
-            _ => {}
-        }
-        for component in self.components.borrow().iter() {
-            for action in component.borrow_mut().handle_events(Some(event.clone()))? {
-                action_tx.send(action)?;
+            Event::Key(key) => {
+                action_tx.send(Action::Key(key.code))?;
+                self.handle_key_event(key)?
             }
+            _ => {}
         }
         Ok(())
     }
@@ -142,6 +115,7 @@ impl App {
         trace!("App::handle_key_event - received: {:?}", key);
         let action_tx = self.action_tx.clone();
         let Some(keymap) = self.config.keybindings.get(&self.mode) else {
+            trace!("App::handle_key_event - no keymap: {:?}", key);
             return Ok(());
         };
         match keymap.get(&vec![key]) {
@@ -150,6 +124,7 @@ impl App {
                 action_tx.send(action.clone())?;
             }
             _ => {
+                trace!("App::handle_key_event - no single-key action: {:?}", key);
                 // If the key was not handled as a single key action,
                 // then consider it for multi-key combinations.
                 self.last_tick_key_events.push(key);
@@ -166,12 +141,15 @@ impl App {
 
     fn handle_actions(&mut self, tui: &mut Tui) -> Result<()> {
         while let Ok(action) = self.action_rx.try_recv() {
-            if action != Action::Tick && action != Action::Render {
+            if !matches!(action, Action::Tick | Action::Render) {
                 debug!("{action:?}");
             }
+
+            let recompute_slot_widgets = matches!(action, Action::ScrollUp | Action::ScrollDown);
+
             match action {
                 Action::Tick => {
-                    self.last_tick_key_events.drain(..);
+                    self.last_tick_key_events.clear();
                 }
                 Action::Quit => self.should_quit = true,
                 Action::Suspend => self.should_suspend = true,
@@ -179,54 +157,75 @@ impl App {
                 Action::ClearScreen => tui.terminal.clear()?,
                 Action::Resize(w, h) => self.handle_resize(tui, w, h)?,
                 Action::Render => self.render(tui)?,
-                Action::FocusPrev => self.focus.shift_prev(),
-                Action::FocusNext => self.focus.shift_next(),
                 _ => {}
             }
-            for component in self.components.borrow().iter() {
-                for action in component.borrow_mut().update(action.clone())? {
-                    self.action_tx.send(action)?;
+
+            for updater in &self.updates {
+                if let Some(action) = updater.update(&action, &mut self.app_state) {
+                    self.action_tx.send(action)?
                 }
             }
+
+            if recompute_slot_widgets {
+                self.slot_widgets = compute_slot_widgets(&self.app_state);
+            }
         }
+
         Ok(())
     }
 
     fn handle_resize(&mut self, tui: &mut Tui, w: u16, h: u16) -> Result<()> {
         tui.resize(Rect::new(0, 0, w, h))?;
-        self.render(tui)?;
-        Ok(())
+        // Recompute the layout in render
+        // TODO: Check if tui.get_frame could work to compute layout here
+        self.layout = None;
+        self.render(tui)
     }
 
     fn render(&mut self, tui: &mut Tui) -> Result<()> {
-        tui.draw(|frame| {
-            let area = frame.area();
-            let chunks = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints(vec![
-                    Constraint::Length(1),
-                    Constraint::Min(1),
-                    Constraint::Length(1),
-                ])
-                .split(area);
-            let header = self.components.borrow().all[0]
-                .borrow_mut()
-                .draw(frame, chunks[0]);
-            let body = self.components.borrow().all[1]
-                .borrow_mut()
-                .draw(frame, chunks[1]);
-            let footer = self.components.borrow().all[2]
-                .borrow_mut()
-                .draw(frame, chunks[2]);
+        tui.try_draw(|f| -> Result<(), Error> {
+            self.ensure_layout(f).map_err(Error::other)?;
+            self.draw_frame(f).map_err(Error::other)?;
+            Ok(())
+        })
+        .map(|_| ())
+        .map_err(Into::into)
+    }
 
-            for result in [header, body, footer] {
-                if let Err(err) = result {
-                    let _ = self
-                        .action_tx
-                        .send(Action::Error(format!("Failed to draw: {:?}", err)));
+    fn ensure_layout(&mut self, f: &mut Frame<'_>) -> Result<()> {
+        let layout = match self.layout.take() {
+            Some(l) => l,
+            None => {
+                let new_layout = compute_slot_layout(f.area()).map_err(Error::other)?;
+                for (slot, rect) in &new_layout {
+                    self.action_tx
+                        .send(Action::SetWindowSize(*slot, rect.height as usize))
+                        .map_err(Error::other)?;
                 }
+                new_layout
             }
-        })?;
+        };
+        self.layout = Some(layout);
+        Ok(())
+    }
+
+    fn draw_frame(&mut self, f: &mut Frame<'_>) -> Result<()> {
+        let layout = self
+            .layout
+            .as_ref()
+            .ok_or_else(|| eyre!("Layout is none"))?;
+        for (slot, area) in layout {
+            let Some(widget_id) = self.slot_widgets.get(slot) else {
+                trace!("Widget id");
+                continue;
+            };
+            let view = view_for(widget_id.clone());
+            if let Err(e) = view.render(f, *area, &self.app_state) {
+                let _ = self
+                    .action_tx
+                    .send(Action::Error(format!("Failed to draw: {e:?}")));
+            }
+        }
         Ok(())
     }
 }
