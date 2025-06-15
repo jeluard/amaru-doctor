@@ -7,7 +7,15 @@ use ratatui::{
     widgets::{Block, Borders},
 };
 
-pub struct EmptyView {}
+pub struct EmptyView {
+    widget_id: WidgetId,
+}
+
+impl EmptyView {
+    pub fn new(widget_id: WidgetId) -> Self {
+        Self { widget_id }
+    }
+}
 
 impl View for EmptyView {
     fn render(&self, frame: &mut Frame, area: Rect, app_state: &AppState) -> Result<()> {
@@ -16,7 +24,7 @@ impl View for EmptyView {
             .title_style(Style::default().fg(Color::White))
             .borders(Borders::ALL);
 
-        if is_widget_focused(app_state, &WidgetId::Empty) {
+        if is_widget_focused(app_state, &self.widget_id) {
             block = block.border_style(Style::default().fg(Color::Blue));
         }
 

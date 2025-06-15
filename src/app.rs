@@ -1,31 +1,29 @@
 use crate::{
     app_state::AppState,
     config::Config,
-    controller::layout::{SlotLayout, compute_slot_layout, compute_slot_map},
-    states::{Action, WidgetId, WidgetSlot},
+    controller::layout::{SlotLayout, SlotWidgets, compute_slot_layout, compute_slot_widgets},
+    states::Action,
     store::rocks_db_switch::RocksDBSwitch,
     tui::{Event, Tui},
     update::{UpdateList, get_updates},
-    view::{ViewMap, get_views},
+    view::view_for,
 };
-use color_eyre::Result;
+use color_eyre::{Result, eyre::eyre};
 use crossterm::event::KeyEvent;
-use ratatui::prelude::Rect;
+use ratatui::{Frame, prelude::Rect};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, sync::Arc};
+use std::{io::Error, sync::Arc};
 use tokio::sync::mpsc;
 use tracing::{debug, info, trace};
 
 pub struct App {
-    ledger_path_str: String,
     config: Config,
     tick_rate: f64,
     frame_rate: f64,
     app_state: AppState, // Model
-    views: ViewMap,      // View
     updates: UpdateList, // Update
     layout: Option<SlotLayout>,
-    slot_map: HashMap<WidgetSlot, WidgetId>,
+    slot_widgets: SlotWidgets,
     should_quit: bool,
     should_suspend: bool,
     mode: Mode,
@@ -48,17 +46,15 @@ impl App {
         db: Arc<RocksDBSwitch>,
     ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
-        let app_state = AppState::new(db);
-        let slot_map = compute_slot_map(&app_state);
+        let app_state = AppState::new(ledger_path_str.to_owned(), db)?;
+        let slot_widgets = compute_slot_widgets(&app_state);
         Ok(Self {
-            ledger_path_str: ledger_path_str.to_owned(),
             tick_rate,
             frame_rate,
             app_state,
-            views: get_views(),
             updates: get_updates(),
             layout: None,
-            slot_map,
+            slot_widgets,
             should_quit: false,
             should_suspend: false,
             config: Config::new()?,
@@ -106,7 +102,10 @@ impl App {
             Event::Tick => action_tx.send(Action::Tick)?,
             Event::Render => action_tx.send(Action::Render)?,
             Event::Resize(x, y) => action_tx.send(Action::Resize(x, y))?,
-            Event::Key(key) => self.handle_key_event(key)?,
+            Event::Key(key) => {
+                action_tx.send(Action::Key(key.code))?;
+                self.handle_key_event(key)?
+            }
             _ => {}
         }
         Ok(())
@@ -146,7 +145,7 @@ impl App {
                 debug!("{action:?}");
             }
 
-            let recompute_slot_map = matches!(action, Action::ScrollUp | Action::ScrollDown);
+            let recompute_slot_widgets = matches!(action, Action::ScrollUp | Action::ScrollDown);
 
             match action {
                 Action::Tick => {
@@ -162,11 +161,13 @@ impl App {
             }
 
             for updater in &self.updates {
-                updater.update(&action, &mut self.app_state);
+                if let Some(action) = updater.update(&action, &mut self.app_state) {
+                    self.action_tx.send(action)?
+                }
             }
 
-            if recompute_slot_map {
-                self.slot_map = compute_slot_map(&self.app_state);
+            if recompute_slot_widgets {
+                self.slot_widgets = compute_slot_widgets(&self.app_state);
             }
         }
 
@@ -176,39 +177,55 @@ impl App {
     fn handle_resize(&mut self, tui: &mut Tui, w: u16, h: u16) -> Result<()> {
         tui.resize(Rect::new(0, 0, w, h))?;
         // Recompute the layout in render
+        // TODO: Check if tui.get_frame could work to compute layout here
         self.layout = None;
         self.render(tui)
     }
 
     fn render(&mut self, tui: &mut Tui) -> Result<()> {
-        let views = &self.views;
-        let app_state = &self.app_state;
-        let action_tx = self.action_tx.clone();
+        tui.try_draw(|f| -> Result<(), Error> {
+            self.ensure_layout(f).map_err(Error::other)?;
+            self.draw_frame(f).map_err(Error::other)?;
+            Ok(())
+        })
+        .map(|_| ())
+        .map_err(Into::into)
+    }
 
-        tui.draw(|f| {
-            if self.layout.is_none() {
-                let layout = compute_slot_layout(f.area());
-                for (slot, rect) in &layout {
-                    let _ =
-                        action_tx.send(Action::SetWindowSize(slot.clone(), rect.height as usize));
+    fn ensure_layout(&mut self, f: &mut Frame<'_>) -> Result<()> {
+        let layout = match self.layout.take() {
+            Some(l) => l,
+            None => {
+                let new_layout = compute_slot_layout(f.area()).map_err(Error::other)?;
+                for (slot, rect) in &new_layout {
+                    self.action_tx
+                        .send(Action::SetWindowSize(*slot, rect.height as usize))
+                        .map_err(Error::other)?;
                 }
-                self.layout = Some(layout);
+                new_layout
             }
+        };
+        self.layout = Some(layout);
+        Ok(())
+    }
 
-            let layout = self.layout.as_ref().unwrap();
-            for (slot, area) in layout {
-                let Some(widget_id) = self.slot_map.get(slot) else {
-                    continue;
-                };
-                let Some(view) = views.get(widget_id) else {
-                    continue;
-                };
-                if let Err(e) = view.render(f, *area, app_state) {
-                    let _ = action_tx.send(Action::Error(format!("Failed to draw: {:?}", e)));
-                }
+    fn draw_frame(&mut self, f: &mut Frame<'_>) -> Result<()> {
+        let layout = self
+            .layout
+            .as_ref()
+            .ok_or_else(|| eyre!("Layout is none"))?;
+        for (slot, area) in layout {
+            let Some(widget_id) = self.slot_widgets.get(slot) else {
+                trace!("Widget id");
+                continue;
+            };
+            let view = view_for(widget_id.clone());
+            if let Err(e) = view.render(f, *area, &self.app_state) {
+                let _ = self
+                    .action_tx
+                    .send(Action::Error(format!("Failed to draw: {e:?}")));
             }
-        })?;
-
+        }
         Ok(())
     }
 }

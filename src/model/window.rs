@@ -1,7 +1,6 @@
 use tracing::trace;
 
 pub struct WindowState<T> {
-    // TODO: Check if we can just use Iter, search below
     iter: Box<dyn Iterator<Item = T>>,
     buffer: Vec<T>,
     exhausted: bool,
@@ -11,7 +10,7 @@ pub struct WindowState<T> {
 }
 
 impl<T> WindowState<T> {
-    pub fn new(iter: Box<dyn Iterator<Item = T>>) -> Self {
+    pub fn from_box(iter: Box<dyn Iterator<Item = T>>) -> Self {
         let mut s = Self {
             iter,
             buffer: Vec::new(),
@@ -22,6 +21,10 @@ impl<T> WindowState<T> {
         };
         s.fill_buffer(s.window_size);
         s
+    }
+
+    pub fn from_iter<I: Iterator<Item = T> + 'static>(iter: I) -> Self {
+        WindowState::from_box(Box::new(iter))
     }
 
     fn fill_buffer(&mut self, up_to: usize) {
@@ -102,8 +105,8 @@ impl<T> WindowState<T> {
         (slice, idx)
     }
 
-    pub fn selected(&self) -> Option<&T> {
+    pub fn selected(&self) -> &T {
         let (view, idx) = self.window_view();
-        view.get(idx)
+        &view[idx]
     }
 }

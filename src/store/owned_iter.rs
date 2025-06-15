@@ -6,11 +6,11 @@ use amaru_ledger::store::ReadOnlyStore;
 use std::sync::{Arc, mpsc};
 use std::thread;
 
-pub struct OwnedAccountsIter {
+pub struct OwnedAccountIter {
     inner: Box<dyn Iterator<Item = AccountItem>>,
 }
 
-impl OwnedAccountsIter {
+impl OwnedAccountIter {
     pub fn new(db: Arc<impl ReadOnlyStore + Sync + Send + 'static>) -> Self {
         let (tx, rx) = mpsc::sync_channel(1);
         let db_clone = db.clone();
@@ -22,13 +22,13 @@ impl OwnedAccountsIter {
                 }
             }
         });
-        OwnedAccountsIter {
+        OwnedAccountIter {
             inner: Box::new(rx.into_iter()),
         }
     }
 }
 
-impl Iterator for OwnedAccountsIter {
+impl Iterator for OwnedAccountIter {
     type Item = AccountItem;
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next()

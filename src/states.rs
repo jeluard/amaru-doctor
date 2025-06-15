@@ -1,5 +1,10 @@
 use crate::ui::to_list_item::ToListItem;
-use ratatui::{prelude::Line, text::ToLine, widgets::ListItem};
+use ratatui::{
+    crossterm::event::KeyCode,
+    prelude::Line,
+    text::ToLine,
+    widgets::{ListItem, block::Title},
+};
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter};
 
@@ -17,9 +22,10 @@ pub enum Action {
     Help,
     FocusPrev,
     FocusNext,
-    SearchRequest,
     ScrollUp,
     ScrollDown,
+    Key(KeyCode),
+    SearchUtxosByAddr,
 }
 
 #[derive(Clone, Debug, Default, EnumIter, Display, PartialEq, Eq, Serialize, Deserialize)]
@@ -54,23 +60,29 @@ impl ToLine for TabOption {
     }
 }
 
-#[derive(Clone, Debug, Display, EnumIter, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Display, EnumIter, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum WidgetSlot {
-    Tabs,
+    Header,
+    Nav,
+    SearchBar,
     Options,
     List,
     Details,
+    Footer,
 }
 
 #[derive(Clone, Debug, Display, EnumIter, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum WidgetId {
     Empty,
-    #[serde(rename = "Nav")]
-    CursorTabs,
-    #[serde(rename = "Resources")]
-    ListBrowseOptions,
+    Header,
+    Footer,
+    Nav,
+    #[serde(rename = "Search Query")]
+    SearchQuery,
+    #[serde(rename = "Browse Options")]
+    BrowseOptions,
     #[serde(rename = "Queries")]
-    ListSearchOptions,
+    SearchOptions,
     #[serde(rename = "Accounts")]
     ListAccounts,
     #[serde(rename = "Block Issuers")]
@@ -83,12 +95,8 @@ pub enum WidgetId {
     ListProposals,
     #[serde(rename = "Utxos")]
     ListUtxos,
-    // SearchAccounts,
-    // SearchBlockIssuers,
-    // SearchDReps,
-    // SearchPools,
-    // SearchProposals,
-    // SearchUTXOs,
+    #[serde(rename = "Utxos by Address")]
+    ListUtxosByAddr,
     #[serde(rename = "Account Details")]
     DetailsAccount,
     #[serde(rename = "Block Issuer Details")]
@@ -101,6 +109,12 @@ pub enum WidgetId {
     DetailsProposal,
     #[serde(rename = "Utxo Details")]
     DetailsUtxo,
+}
+
+impl From<WidgetId> for Title<'_> {
+    fn from(wid: WidgetId) -> Self {
+        Title::from(serde_plain::to_string(&wid).unwrap())
+    }
 }
 
 #[derive(Clone, Copy, Debug, EnumIter, PartialEq, Eq, Serialize)]

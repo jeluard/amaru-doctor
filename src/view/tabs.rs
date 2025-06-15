@@ -15,15 +15,24 @@ use ratatui::{
 };
 
 pub struct TabsView {
-    pub widget_id: WidgetId,
-    pub get_tabs: fn(&AppState) -> &Cursor<TabOption>,
+    widget_id: WidgetId,
+    get_tabs: fn(&AppState) -> &Cursor<TabOption>,
+}
+
+impl TabsView {
+    pub fn new(widget_id: WidgetId, get_tabs: fn(&AppState) -> &Cursor<TabOption>) -> Self {
+        Self {
+            widget_id,
+            get_tabs,
+        }
+    }
 }
 
 impl View for TabsView {
     fn render(&self, frame: &mut Frame, area: Rect, app_state: &AppState) -> Result<()> {
         let mut block = Block::default()
             .borders(Borders::ALL)
-            .title(serde_plain::to_string(&self.widget_id)?);
+            .title(self.widget_id.clone());
 
         if is_widget_focused(app_state, &self.widget_id) {
             block = block
