@@ -1,10 +1,10 @@
-use crate::{app::App, store::rocks_db_switch::RocksDBSwitch};
-use amaru_kernel::network::NetworkName;
-use amaru_stores::rocksdb::{RocksDB, RocksDBHistoricalStores};
+use crate::{app::App, store::rocks_db_switch::LedgerDB::*};
+use amaru_kernel::{EraHistory, network::NetworkName};
+use amaru_stores::rocksdb::{RocksDB, RocksDBHistoricalStores, consensus::RocksDBStore};
 use clap::Parser;
 use cli::Cli;
 use color_eyre::Result;
-use std::{env, path::Path, sync::Arc};
+use std::{env, path::PathBuf, str::FromStr};
 
 mod app;
 mod app_state;
@@ -23,28 +23,39 @@ mod view;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let ledger_path_str = &env::var("AMARU_LEDGER_DB").unwrap_or_else(|_| "ledgerdb".to_string());
+    let ledger_path_str = env::var("AMARU_LEDGER_DB").unwrap_or_else(|_| "ledgerdb".to_string());
     eprintln!("Using ledger path: {}", ledger_path_str);
+    let ledger_path = PathBuf::from_str(&ledger_path_str)?;
+
+    let chain_path_str = env::var("AMARU_CHAIN_DB").unwrap_or_else(|_| "chaindb".to_string());
+    eprintln!("Using chain path: {}", chain_path_str);
+    let chain_path = PathBuf::from_str(&chain_path_str)?;
 
     crate::errors::init()?;
     crate::logging::init()?;
 
     let args = Cli::parse();
-    let path = Path::new(ledger_path_str);
-    if let Ok(epoch) = env::var("AMARU_LEDGER_EPOCH") {
+
+    let era_history: &EraHistory = NetworkName::Preprod.into();
+    let ledger_db = if let Ok(epoch) = env::var("AMARU_LEDGER_EPOCH") {
         eprintln!("Using epoch: {}", epoch);
-        let db_arc = Arc::new(RocksDBSwitch::Snapshot(
-            RocksDBHistoricalStores::for_epoch_with(path, epoch.parse::<u64>()?)?,
-        ));
-        let mut app: App = App::new(ledger_path_str, args.tick_rate, args.frame_rate, db_arc)?;
-        app.run().await?;
+        Snapshot(RocksDBHistoricalStores::for_epoch_with(
+            ledger_path.as_path(),
+            epoch.parse::<u64>()?.into(),
+        )?)
     } else {
-        let db_arc = Arc::new(RocksDBSwitch::Store(RocksDB::new(
-            path,
-            NetworkName::Preprod.into(),
-        )?));
-        let mut app: App = App::new(ledger_path_str, args.tick_rate, args.frame_rate, db_arc)?;
-        app.run().await?;
+        Store(RocksDB::new(ledger_path.as_path(), era_history)?)
     };
+    let chain_db = RocksDBStore::new(&chain_path, era_history)?;
+
+    let mut app: App = App::new(
+        args.tick_rate,
+        args.frame_rate,
+        ledger_path_str,
+        ledger_db,
+        chain_path_str,
+        chain_db,
+    )?;
+    app.run().await?;
     Ok(())
 }

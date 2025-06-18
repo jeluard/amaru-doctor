@@ -6,11 +6,13 @@ use crate::{
             OwnedAccountIter, OwnedBlockIssuerIter, OwnedDRepIter, OwnedPoolIter,
             OwnedProposalIter, OwnedUtxoIter,
         },
-        rocks_db_switch::RocksDBSwitch,
+        rocks_db_switch::LedgerDB,
     },
     ui::to_list_item::{AccountItem, BlockIssuerItem, DRepItem, PoolItem, ProposalItem, UtxoItem},
 };
+use amaru_consensus::consensus::store::ChainStore;
 use amaru_kernel::Address;
+use amaru_stores::rocksdb::consensus::RocksDBStore;
 use color_eyre::Result;
 use std::{collections::HashMap, sync::Arc};
 use strum::IntoEnumIterator;
@@ -18,7 +20,11 @@ use strum::IntoEnumIterator;
 /// Holds ALL the app's state. Does not self-mutate.
 pub struct AppState {
     pub ledger_path: String,
-    pub db: Arc<RocksDBSwitch>,
+    pub ledger_db: Arc<LedgerDB>,
+
+    pub chain_path: String,
+    pub chain_db: Arc<RocksDBStore>,
+
     pub slot_focus: Cursor<WidgetSlot>,
     pub tabs: Cursor<TabOption>,
     // Don't put these in Map, however tempting--it will cause pain with generics and ultimately increases complexity
@@ -41,10 +47,20 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new(ledger_path: String, db: Arc<RocksDBSwitch>) -> Result<Self> {
+    pub fn new(
+        ledger_path: String,
+        ledger_db: LedgerDB,
+        chain_path: String,
+        chain_db: RocksDBStore,
+    ) -> Result<Self> {
+        let ledger_db_arc = Arc::new(ledger_db);
+        let chain_db_arc = Arc::new(chain_db);
+
         Ok(Self {
             ledger_path,
-            db: db.clone(),
+            ledger_db: ledger_db_arc.clone(),
+            chain_path,
+            chain_db: chain_db_arc.clone(),
             slot_focus: Cursor::new(vec![
                 WidgetSlot::Nav,
                 WidgetSlot::Options,
@@ -57,12 +73,12 @@ impl AppState {
             browse_options: WindowState::from_iter(BrowseOption::iter()),
             search_options: WindowState::from_iter(SearchOption::iter()),
             list_window_size: 0,
-            accounts: WindowState::from_iter(OwnedAccountIter::new(db.clone())),
-            block_issuers: WindowState::from_iter(OwnedBlockIssuerIter::new(db.clone())),
-            dreps: WindowState::from_iter(OwnedDRepIter::new(db.clone())),
-            pools: WindowState::from_iter(OwnedPoolIter::new(db.clone())),
-            proposals: WindowState::from_iter(OwnedProposalIter::new(db.clone())),
-            utxos: WindowState::from_iter(OwnedUtxoIter::new(db.clone())),
+            accounts: WindowState::from_iter(OwnedAccountIter::new(ledger_db_arc.clone())),
+            block_issuers: WindowState::from_iter(OwnedBlockIssuerIter::new(ledger_db_arc.clone())),
+            dreps: WindowState::from_iter(OwnedDRepIter::new(ledger_db_arc.clone())),
+            pools: WindowState::from_iter(OwnedPoolIter::new(ledger_db_arc.clone())),
+            proposals: WindowState::from_iter(OwnedProposalIter::new(ledger_db_arc.clone())),
+            utxos: WindowState::from_iter(OwnedUtxoIter::new(ledger_db_arc.clone())),
             search_query_bldr: "".to_owned(),
             search_query_addr: None,
             utxos_by_addr_search_res: HashMap::new(),

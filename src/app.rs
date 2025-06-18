@@ -3,16 +3,17 @@ use crate::{
     config::Config,
     controller::layout::{SlotLayout, SlotWidgets, compute_slot_layout, compute_slot_widgets},
     states::Action,
-    store::rocks_db_switch::RocksDBSwitch,
+    store::rocks_db_switch::LedgerDB,
     tui::{Event, Tui},
     update::{UpdateList, get_updates},
     view::view_for,
 };
+use amaru_stores::rocksdb::consensus::RocksDBStore;
 use color_eyre::{Result, eyre::eyre};
 use crossterm::event::KeyEvent;
 use ratatui::{Frame, prelude::Rect};
 use serde::{Deserialize, Serialize};
-use std::{io::Error, sync::Arc};
+use std::io::Error;
 use tokio::sync::mpsc;
 use tracing::{debug, info, trace};
 
@@ -40,13 +41,15 @@ pub enum Mode {
 
 impl App {
     pub fn new(
-        ledger_path_str: &String,
         tick_rate: f64,
         frame_rate: f64,
-        db: Arc<RocksDBSwitch>,
+        ledger_path_str: String,
+        ledger_db: LedgerDB,
+        chain_path_str: String,
+        chain_db: RocksDBStore,
     ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
-        let app_state = AppState::new(ledger_path_str.to_owned(), db)?;
+        let app_state = AppState::new(ledger_path_str, ledger_db, chain_path_str, chain_db)?;
         let slot_widgets = compute_slot_widgets(&app_state);
         Ok(Self {
             tick_rate,

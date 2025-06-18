@@ -63,7 +63,7 @@ impl Update for SearchRequest {
             .entry(addr.clone())
             .or_insert_with(|| {
                 let owned_addr = addr.clone();
-                let iter = OwnedUtxoIter::new(app_state.db.clone())
+                let iter = OwnedUtxoIter::new(app_state.ledger_db.clone())
                     .filter(move |(_, out): &UtxoItem| out.address().unwrap() == owned_addr);
                 let mut window = WindowState::from_box(Box::new(iter));
                 window.set_window_size(app_state.list_window_size);
