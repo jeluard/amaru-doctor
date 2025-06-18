@@ -32,13 +32,14 @@ pub trait View {
 pub fn view_for(widget_id: WidgetId) -> Box<dyn View> {
     match widget_id {
         Empty => Box::new(EmptyView::new(widget_id)),
-        Header => Box::new(LineView::new(widget_id, |s: &AppState| {
+        TopInfo => Box::new(LineView::new(widget_id, |s: &AppState| {
             format!("Reading amaru dir at {}", &s.ledger_path)
         })),
-        Footer => Box::new(LineView::new(widget_id, |_s: &AppState| {
+        BottomInfo => Box::new(LineView::new(widget_id, |_s: &AppState| {
             "Use shift + arrow keys to move focus. Use arrow keys to scroll.".to_owned()
         })),
-        Nav => Box::new(TabsView::new(Nav, |s: &AppState| &s.tabs)),
+        StoreOption => Box::new(TabsView::new(StoreOption, |s: &AppState| &s.store_option)),
+        LedgerMode => Box::new(TabsView::new(LedgerMode, |s: &AppState| &s.ledger_mode)),
         BrowseOptions => Box::new(ListView::new(BrowseOptions, |s: &AppState| {
             &s.browse_options
         })),

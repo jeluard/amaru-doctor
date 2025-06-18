@@ -1,7 +1,9 @@
 use crate::{
     app_state::AppState,
     config::Config,
-    controller::layout::{SlotLayout, SlotWidgets, compute_slot_layout, compute_slot_widgets},
+    controller::layout::{
+        SlotLayout, SlotWidgets, compute_ledger_slot_layout, compute_slot_widgets,
+    },
     states::Action,
     store::rocks_db_switch::LedgerDB,
     tui::{Event, Tui},
@@ -199,7 +201,7 @@ impl App {
         let layout = match self.layout.take() {
             Some(l) => l,
             None => {
-                let new_layout = compute_slot_layout(f.area()).map_err(Error::other)?;
+                let new_layout = compute_ledger_slot_layout(f.area()).map_err(Error::other)?;
                 for (slot, rect) in &new_layout {
                     self.action_tx
                         .send(Action::SetWindowSize(*slot, rect.height as usize))

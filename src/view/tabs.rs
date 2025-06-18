@@ -1,8 +1,5 @@
 use crate::{
-    app_state::AppState,
-    controller::is_widget_focused,
-    model::cursor::Cursor,
-    states::{TabOption, WidgetId},
+    app_state::AppState, controller::is_widget_focused, model::cursor::Cursor, states::WidgetId,
     view::View,
 };
 use color_eyre::Result;
@@ -14,13 +11,13 @@ use ratatui::{
     widgets::{Block, Borders, Tabs},
 };
 
-pub struct TabsView {
+pub struct TabsView<T> {
     widget_id: WidgetId,
-    get_tabs: fn(&AppState) -> &Cursor<TabOption>,
+    get_tabs: fn(&AppState) -> &Cursor<T>,
 }
 
-impl TabsView {
-    pub fn new(widget_id: WidgetId, get_tabs: fn(&AppState) -> &Cursor<TabOption>) -> Self {
+impl<T> TabsView<T> {
+    pub fn new(widget_id: WidgetId, get_tabs: fn(&AppState) -> &Cursor<T>) -> Self {
         Self {
             widget_id,
             get_tabs,
@@ -28,7 +25,7 @@ impl TabsView {
     }
 }
 
-impl View for TabsView {
+impl<T: ToLine> View for TabsView<T> {
     fn render(&self, frame: &mut Frame, area: Rect, app_state: &AppState) -> Result<()> {
         let mut block = Block::default()
             .borders(Borders::ALL)

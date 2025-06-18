@@ -14,8 +14,8 @@ pub type SlotLayout = HashMap<WidgetSlot, Rect>;
 /// Determines what widget to render within a slot
 pub type SlotWidgets = HashMap<WidgetSlot, WidgetId>;
 
-pub fn compute_slot_layout(area: Rect) -> Result<SlotLayout> {
-    let [header, body, footer] = *Layout::default()
+pub fn compute_ledger_slot_layout(area: Rect) -> Result<SlotLayout> {
+    let [top_line, rest, bottom_line] = *Layout::default()
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(1),
@@ -24,7 +24,29 @@ pub fn compute_slot_layout(area: Rect) -> Result<SlotLayout> {
         ])
         .split(area)
     else {
-        return Err(eyre!("Couldn't destructure left and right columns"));
+        return Err(eyre!(
+            "Couldn't destructure top line, rest, and bottom line"
+        ));
+    };
+
+    let [header, body] = *Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(3), Constraint::Fill(1)])
+        .split(rest)
+    else {
+        return Err(eyre!("Couldn't destructure header and body"));
+    };
+
+    let [mode, nav, search] = *Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Fill(1),
+            Constraint::Fill(1),
+            Constraint::Fill(5),
+        ])
+        .split(header)
+    else {
+        return Err(eyre!("Couldn't destructure header left and right"));
     };
 
     let [left, right] = *Layout::default()
@@ -35,36 +57,25 @@ pub fn compute_slot_layout(area: Rect) -> Result<SlotLayout> {
         return Err(eyre!("Couldn't destructure left and right columns"));
     };
 
-    let [nav, options, list] = *Layout::default()
+    let [options, list] = *Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(3),
-            Constraint::Fill(1),
-            Constraint::Fill(3),
-        ])
+        .constraints([Constraint::Fill(1), Constraint::Fill(3)])
         .split(left)
     else {
         return Err(eyre!("Couldn't destructure left column rows"));
     };
 
-    let [search, details] = *Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Fill(1)])
-        .split(right)
-    else {
-        return Err(eyre!("Couldn't destructure right column rows"));
-    };
-
     let layout = WidgetSlot::iter()
         .map(|slot| {
             let rect = match slot {
-                WidgetSlot::Header => header,
-                WidgetSlot::Nav => nav,
+                WidgetSlot::TopLine => top_line,
+                WidgetSlot::StoreOption => mode,
+                WidgetSlot::LedgerMode => nav,
                 WidgetSlot::SearchBar => search,
                 WidgetSlot::Options => options,
                 WidgetSlot::List => list,
-                WidgetSlot::Details => details,
-                WidgetSlot::Footer => footer,
+                WidgetSlot::Details => right,
+                WidgetSlot::BottomLine => bottom_line,
             };
             (slot, rect)
         })

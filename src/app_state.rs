@@ -1,6 +1,6 @@
 use crate::{
     model::{cursor::Cursor, window::WindowState},
-    states::{BrowseOption, SearchOption, TabOption, WidgetSlot},
+    states::{BrowseOption, LedgerMode, SearchOption, StoreOption, WidgetSlot},
     store::{
         owned_iter::{
             OwnedAccountIter, OwnedBlockIssuerIter, OwnedDRepIter, OwnedPoolIter,
@@ -26,7 +26,10 @@ pub struct AppState {
     pub chain_db: Arc<RocksDBStore>,
 
     pub slot_focus: Cursor<WidgetSlot>,
-    pub tabs: Cursor<TabOption>,
+
+    pub store_option: Cursor<StoreOption>,
+    pub ledger_mode: Cursor<LedgerMode>,
+
     // Don't put these in Map, however tempting--it will cause pain with generics and ultimately increases complexity
     pub options_window_size: usize,
     pub browse_options: WindowState<BrowseOption>,
@@ -62,13 +65,15 @@ impl AppState {
             chain_path,
             chain_db: chain_db_arc.clone(),
             slot_focus: Cursor::new(vec![
-                WidgetSlot::Nav,
+                WidgetSlot::StoreOption,
+                WidgetSlot::LedgerMode,
+                WidgetSlot::SearchBar,
                 WidgetSlot::Options,
                 WidgetSlot::List,
-                WidgetSlot::SearchBar,
                 WidgetSlot::Details,
             ])?,
-            tabs: Cursor::new(TabOption::iter().collect())?,
+            store_option: Cursor::new(StoreOption::iter().collect())?,
+            ledger_mode: Cursor::new(LedgerMode::iter().collect())?,
             options_window_size: 0,
             browse_options: WindowState::from_iter(BrowseOption::iter()),
             search_options: WindowState::from_iter(SearchOption::iter()),

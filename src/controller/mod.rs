@@ -2,8 +2,8 @@ use crate::{
     app_state::AppState,
     states::{
         BrowseOption::*,
+        LedgerMode::*,
         SearchOption,
-        TabOption::*,
         WidgetId::{self, *},
         WidgetSlot::{self},
     },
@@ -22,18 +22,19 @@ pub fn focused_widget_id(app_state: &AppState) -> WidgetId {
 
 pub fn resolve_placed_widget_id(app_state: &AppState, slot: WidgetSlot) -> WidgetId {
     match slot {
-        WidgetSlot::Header => Header,
-        WidgetSlot::Footer => Footer,
-        WidgetSlot::Nav => Nav,
-        WidgetSlot::SearchBar => match app_state.tabs.current() {
+        WidgetSlot::TopLine => TopInfo,
+        WidgetSlot::BottomLine => BottomInfo,
+        WidgetSlot::StoreOption => StoreOption,
+        WidgetSlot::LedgerMode => LedgerMode,
+        WidgetSlot::SearchBar => match app_state.ledger_mode.current() {
             Browse => Empty,
             Search => SearchQuery,
         },
-        WidgetSlot::Options => match app_state.tabs.current() {
+        WidgetSlot::Options => match app_state.ledger_mode.current() {
             Browse => BrowseOptions,
             Search => SearchOptions,
         },
-        WidgetSlot::List => match app_state.tabs.current() {
+        WidgetSlot::List => match app_state.ledger_mode.current() {
             Browse => match app_state.browse_options.selected() {
                 Accounts => ListAccounts,
                 BlockIssuers => ListBlockIssuers,

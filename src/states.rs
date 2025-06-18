@@ -49,12 +49,12 @@ impl ToListItem for BrowseOption {
 
 #[derive(Clone, Debug, EnumIter, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum TabOption {
+pub enum LedgerMode {
     Browse,
     Search,
 }
 
-impl ToLine for TabOption {
+impl ToLine for LedgerMode {
     fn to_line(&self) -> Line<'_> {
         Line::from(serde_plain::to_string(self).unwrap().to_owned())
     }
@@ -62,21 +62,25 @@ impl ToLine for TabOption {
 
 #[derive(Clone, Copy, Debug, Display, EnumIter, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum WidgetSlot {
-    Header,
-    Nav,
+    TopLine,
+    StoreOption,
+    LedgerMode,
     SearchBar,
     Options,
     List,
     Details,
-    Footer,
+    BottomLine,
 }
 
 #[derive(Clone, Debug, Display, EnumIter, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum WidgetId {
     Empty,
-    Header,
-    Footer,
-    Nav,
+    TopInfo,
+    BottomInfo,
+    #[serde(rename = "Store")]
+    StoreOption,
+    #[serde(rename = "Ledger Explore Mode")]
+    LedgerMode,
     #[serde(rename = "Search Query")]
     SearchQuery,
     #[serde(rename = "Browse Options")]
@@ -126,5 +130,18 @@ pub enum SearchOption {
 impl ToListItem for SearchOption {
     fn to_list_item(&self) -> ListItem<'static> {
         ListItem::new(serde_plain::to_string(self).unwrap())
+    }
+}
+
+#[derive(Clone, Debug, EnumIter, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum StoreOption {
+    Ledger,
+    Chain,
+}
+
+impl ToLine for StoreOption {
+    fn to_line(&self) -> Line<'_> {
+        Line::from(serde_plain::to_string(self).unwrap().to_owned())
     }
 }
