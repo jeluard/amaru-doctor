@@ -40,9 +40,9 @@ pub fn compute_ledger_slot_layout(area: Rect) -> Result<SlotLayout> {
     let [mode, nav, search] = *Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
+            Constraint::Length(20),
+            Constraint::Length(20),
             Constraint::Fill(1),
-            Constraint::Fill(1),
-            Constraint::Fill(5),
         ])
         .split(header)
     else {

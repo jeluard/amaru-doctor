@@ -79,7 +79,7 @@ pub enum WidgetId {
     BottomInfo,
     #[serde(rename = "Store")]
     StoreOption,
-    #[serde(rename = "Ledger Explore Mode")]
+    #[serde(rename = "Ledger Explore")]
     LedgerMode,
     #[serde(rename = "Search Query")]
     SearchQuery,

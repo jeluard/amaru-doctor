@@ -24,7 +24,7 @@ impl Update for SearchQuery {
                 app_state.search_query_bldr.pop();
             }
             Action::Key(KeyCode::Enter) => match app_state.search_options.selected() {
-                SearchOption::UtxosByAddress => {
+                Some(SearchOption::UtxosByAddress) => {
                     let query = app_state.search_query_bldr.clone();
                     let Ok(addr) = Address::from_str(&query) else {
                         return Some(Action::Error(format!(
@@ -35,6 +35,7 @@ impl Update for SearchQuery {
                     app_state.search_query_addr = Some(addr);
                     return Some(Action::SearchUtxosByAddr);
                 }
+                None => {}
             },
             _ => {}
         }

@@ -90,7 +90,7 @@ fn render_list<T: ToListItem>(
                 .block(block);
 
             let mut state = ListState::default();
-            state.select(Some(selected));
+            state.select(selected);
 
             frame.render_stateful_widget(widget, area, &mut state);
         }

@@ -1,4 +1,4 @@
-use crate::{app::App, store::rocks_db_switch::LedgerDB::*};
+use crate::{app::App, store::rocks_db_switch::LedgerDB::*, tui::Tui};
 use amaru_kernel::{EraHistory, network::NetworkName};
 use amaru_stores::rocksdb::{RocksDB, RocksDBHistoricalStores, consensus::RocksDBStore};
 use clap::Parser;
@@ -48,14 +48,17 @@ async fn main() -> Result<()> {
     };
     let chain_db = RocksDBStore::new(&chain_path, era_history)?;
 
+    let mut tui = Tui::new()?
+        .tick_rate(args.tick_rate)
+        .frame_rate(args.frame_rate);
     let mut app: App = App::new(
-        args.tick_rate,
-        args.frame_rate,
         ledger_path_str,
         ledger_db,
         chain_path_str,
         chain_db,
+        tui.get_frame().area(),
     )?;
-    app.run().await?;
+    app.init()?;
+    app.run(&mut tui).await?;
     Ok(())
 }

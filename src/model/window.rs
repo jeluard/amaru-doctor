@@ -78,16 +78,24 @@ impl<T> WindowState<T> {
         }
     }
 
-    pub fn window_view(&self) -> (&[T], usize) {
+    pub fn window_view(&self) -> (&[T], Option<usize>) {
         let end = (self.window_start + self.window_size).min(self.buffer.len());
         let slice = &self.buffer[self.window_start..end];
-        let idx = (self.cursor - self.window_start).min(slice.len().saturating_sub(1));
+        let idx = if slice.is_empty() {
+            None
+        } else {
+            Some(
+                self.cursor
+                    .saturating_sub(self.window_start)
+                    .min(slice.len().saturating_sub(1)),
+            )
+        };
         (slice, idx)
     }
 
-    pub fn selected(&self) -> &T {
+    pub fn selected(&self) -> Option<&T> {
         let (view, idx) = self.window_view();
-        &view[idx]
+        idx.and_then(|i| view.get(i))
     }
 }
 

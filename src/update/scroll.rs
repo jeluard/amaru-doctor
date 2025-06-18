@@ -85,12 +85,13 @@ fn scroll_search_options(state: &mut AppState, direction: ScrollDirection) {
 fn scroll_browse_list(state: &mut AppState, direction: ScrollDirection) {
     trace!("Will scroll browse list {}", direction);
     match state.browse_options.selected() {
-        Accounts => apply_scroll(direction, &mut state.accounts),
-        BlockIssuers => apply_scroll(direction, &mut state.block_issuers),
-        DReps => apply_scroll(direction, &mut state.dreps),
-        Pools => apply_scroll(direction, &mut state.pools),
-        Proposals => apply_scroll(direction, &mut state.proposals),
-        Utxos => apply_scroll(direction, &mut state.utxos),
+        Some(Accounts) => apply_scroll(direction, &mut state.accounts),
+        Some(BlockIssuers) => apply_scroll(direction, &mut state.block_issuers),
+        Some(DReps) => apply_scroll(direction, &mut state.dreps),
+        Some(Pools) => apply_scroll(direction, &mut state.pools),
+        Some(Proposals) => apply_scroll(direction, &mut state.proposals),
+        Some(Utxos) => apply_scroll(direction, &mut state.utxos),
+        None => {}
     }
 }
 

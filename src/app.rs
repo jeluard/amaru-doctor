@@ -11,9 +11,9 @@ use crate::{
     view::view_for,
 };
 use amaru_stores::rocksdb::consensus::RocksDBStore;
-use color_eyre::{Result, eyre::eyre};
+use color_eyre::Result;
 use crossterm::event::KeyEvent;
-use ratatui::{Frame, prelude::Rect};
+use ratatui::prelude::Rect;
 use serde::{Deserialize, Serialize};
 use std::io::Error;
 use tokio::sync::mpsc;
@@ -21,11 +21,10 @@ use tracing::{debug, info, trace};
 
 pub struct App {
     config: Config,
-    tick_rate: f64,
-    frame_rate: f64,
     app_state: AppState, // Model
     updates: UpdateList, // Update
-    layout: Option<SlotLayout>,
+    last_frame_area: Rect,
+    layout: SlotLayout,
     slot_widgets: SlotWidgets,
     should_quit: bool,
     should_suspend: bool,
@@ -43,22 +42,24 @@ pub enum Mode {
 
 impl App {
     pub fn new(
-        tick_rate: f64,
-        frame_rate: f64,
         ledger_path_str: String,
         ledger_db: LedgerDB,
         chain_path_str: String,
         chain_db: RocksDBStore,
+        frame_area: Rect,
     ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
+
+        let layout = compute_ledger_slot_layout(frame_area)?;
+
         let app_state = AppState::new(ledger_path_str, ledger_db, chain_path_str, chain_db)?;
         let slot_widgets = compute_slot_widgets(&app_state);
+
         Ok(Self {
-            tick_rate,
-            frame_rate,
             app_state,
             updates: get_updates(),
-            layout: None,
+            last_frame_area: frame_area,
+            layout,
             slot_widgets,
             should_quit: false,
             should_suspend: false,
@@ -70,18 +71,18 @@ impl App {
         })
     }
 
-    pub async fn run(&mut self) -> Result<()> {
-        let mut tui = Tui::new()?
-            // .mouse(true) // uncomment this line to enable mouse support
-            .tick_rate(self.tick_rate)
-            .frame_rate(self.frame_rate);
+    pub fn init(&self) -> Result<()> {
+        self.set_window_sizes()
+    }
+
+    pub async fn run(&mut self, tui: &mut Tui) -> Result<()> {
         tui.terminal.clear()?;
         tui.enter()?;
 
         let action_tx = self.action_tx.clone();
         loop {
-            self.handle_events(&mut tui).await?;
-            self.handle_actions(&mut tui)?;
+            self.handle_events(tui).await?;
+            self.handle_actions(tui)?;
             if self.should_suspend {
                 tui.suspend()?;
                 action_tx.send(Action::Resume)?;
@@ -159,7 +160,7 @@ impl App {
                 Action::Quit => self.should_quit = true,
                 Action::Suspend => self.should_suspend = true,
                 Action::Resume => self.should_suspend = false,
-                Action::ClearScreen => tui.terminal.clear()?,
+                Action::ClearScreen => tui.clear()?,
                 Action::Resize(w, h) => self.handle_resize(tui, w, h)?,
                 Action::Render => self.render(tui)?,
                 _ => {}
@@ -181,55 +182,40 @@ impl App {
 
     fn handle_resize(&mut self, tui: &mut Tui, w: u16, h: u16) -> Result<()> {
         tui.resize(Rect::new(0, 0, w, h))?;
-        // Recompute the layout in render
-        // TODO: Check if tui.get_frame could work to compute layout here
-        self.layout = None;
         self.render(tui)
     }
 
     fn render(&mut self, tui: &mut Tui) -> Result<()> {
-        tui.try_draw(|f| -> Result<(), Error> {
-            self.ensure_layout(f).map_err(Error::other)?;
-            self.draw_frame(f).map_err(Error::other)?;
-            Ok(())
+        tui.try_draw(|f| -> std::result::Result<(), _> {
+            let frame_area = f.area();
+            if frame_area != self.last_frame_area {
+                trace!("Frame area changed");
+                self.layout = compute_ledger_slot_layout(frame_area).map_err(Error::other)?;
+                self.set_window_sizes().map_err(Error::other)?;
+                self.last_frame_area = frame_area;
+            }
+            for (slot, area) in &self.layout {
+                let Some(widget_id) = self.slot_widgets.get(slot) else {
+                    continue;
+                };
+                let view = view_for(widget_id.clone());
+                if let Err(e) = view.render(f, *area, &self.app_state) {
+                    let _ = self
+                        .action_tx
+                        .send(Action::Error(format!("Failed to draw: {e:?}")));
+                }
+            }
+            Ok::<(), std::io::Error>(())
         })
         .map(|_| ())
         .map_err(Into::into)
     }
 
-    fn ensure_layout(&mut self, f: &mut Frame<'_>) -> Result<()> {
-        let layout = match self.layout.take() {
-            Some(l) => l,
-            None => {
-                let new_layout = compute_ledger_slot_layout(f.area()).map_err(Error::other)?;
-                for (slot, rect) in &new_layout {
-                    self.action_tx
-                        .send(Action::SetWindowSize(*slot, rect.height as usize))
-                        .map_err(Error::other)?;
-                }
-                new_layout
-            }
-        };
-        self.layout = Some(layout);
-        Ok(())
-    }
-
-    fn draw_frame(&mut self, f: &mut Frame<'_>) -> Result<()> {
-        let layout = self
-            .layout
-            .as_ref()
-            .ok_or_else(|| eyre!("Layout is none"))?;
-        for (slot, area) in layout {
-            let Some(widget_id) = self.slot_widgets.get(slot) else {
-                trace!("Widget id");
-                continue;
-            };
-            let view = view_for(widget_id.clone());
-            if let Err(e) = view.render(f, *area, &self.app_state) {
-                let _ = self
-                    .action_tx
-                    .send(Action::Error(format!("Failed to draw: {e:?}")));
-            }
+    fn set_window_sizes(&self) -> Result<()> {
+        for (slot, rect) in &self.layout {
+            self.action_tx
+                .send(Action::SetWindowSize(*slot, rect.height as usize))
+                .map_err(Error::other)?;
         }
         Ok(())
     }

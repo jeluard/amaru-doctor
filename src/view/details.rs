@@ -1,6 +1,10 @@
 use crate::{
-    app_state::AppState, controller::is_widget_focused, model::window::WindowState,
-    states::WidgetId, ui::to_rich::ToRichText, view::View,
+    app_state::AppState,
+    controller::is_widget_focused,
+    model::window::WindowState,
+    states::WidgetId,
+    ui::to_rich::{RichText, ToRichText},
+    view::View,
 };
 use color_eyre::Result;
 use ratatui::{
@@ -81,7 +85,11 @@ fn render_details<T: ToRichText>(
 
     let widget = match list_opt {
         Some(list) => {
-            let lines = list.selected().to_rich_text().unwrap_lines();
+            let lines = list
+                .selected()
+                .map(ToRichText::to_rich_text)
+                .unwrap_or(RichText::Single(Span::raw("Nothing selected")))
+                .unwrap_lines();
             // TODO: Add offset state to AppState
             // .scroll((self.scroll_offset, 0));
             Paragraph::new(lines).wrap(Wrap { trim: true })
