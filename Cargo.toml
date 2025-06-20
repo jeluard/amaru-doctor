@@ -30,6 +30,7 @@ crossterm = { version = "0.28.1", features = ["serde", "event-stream"] }
 delegate = "0.10"
 derive_deref = "1.1.1"
 directories = "6.0.0"
+either = "1.9"
 futures = "0.3.31"
 human-panic = "2.0.2"
 json5 = "0.4.1"

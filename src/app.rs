@@ -51,7 +51,7 @@ impl App {
 
         let app_state = AppState::new(ledger_path_str, ledger_db, chain_path_str, chain_db)?;
         let last_store_option = app_state.store_option.current().clone();
-        let layout = compute_slot_layout(frame_area, &last_store_option)?;
+        let layout = compute_slot_layout(&app_state, frame_area);
         let slot_widgets = compute_slot_widgets(&app_state);
 
         Ok(Self {
@@ -191,14 +191,13 @@ impl App {
             let store_option = self.app_state.store_option.current();
             if frame_area != self.last_frame_area || store_option != &self.last_store_option {
                 trace!("Frame area or store option changed");
-                self.layout =
-                    compute_slot_layout(frame_area, store_option).map_err(Error::other)?;
+                self.layout = compute_slot_layout(&self.app_state, frame_area);
                 self.set_window_sizes().map_err(Error::other)?;
                 self.last_frame_area = frame_area;
                 self.last_store_option = store_option.clone();
             }
-            for (slot, area) in self.layout.renderables() {
-                let Some(widget_id) = self.slot_widgets.get(&slot) else {
+            for (slot, area) in self.layout.iter() {
+                let Some(widget_id) = self.slot_widgets.get(slot) else {
                     trace!("No widget id for slot");
                     continue;
                 };
@@ -216,9 +215,10 @@ impl App {
     }
 
     fn set_window_sizes(&self) -> Result<()> {
-        for (slot, rect) in self.layout.renderables() {
+        for (slot, rect) in self.layout.iter() {
+            trace!("Will set window size for {} to {}", slot, rect.height);
             self.action_tx
-                .send(Action::SetWindowSize(slot, rect.height as usize))
+                .send(Action::SetWindowSize(*slot, rect.height as usize))
                 .map_err(Error::other)?;
         }
         Ok(())

@@ -82,6 +82,7 @@ dependencies = [
  "delegate",
  "derive_deref",
  "directories",
+ "either",
  "futures",
  "human-panic",
  "json5",
