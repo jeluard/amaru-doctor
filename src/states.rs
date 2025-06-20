@@ -1,10 +1,5 @@
 use crate::ui::to_list_item::ToListItem;
-use ratatui::{
-    crossterm::event::KeyCode,
-    prelude::Line,
-    text::ToLine,
-    widgets::{ListItem, block::Title},
-};
+use ratatui::{crossterm::event::KeyCode, prelude::Line, text::ToLine, widgets::ListItem};
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter};
 
@@ -70,55 +65,6 @@ pub enum WidgetSlot {
     List,
     Details,
     BottomLine,
-}
-
-#[derive(Clone, Debug, Display, EnumIter, Hash, PartialEq, Eq, Serialize, Deserialize)]
-pub enum WidgetId {
-    Empty,
-    TopInfo,
-    BottomInfo,
-    #[serde(rename = "Store")]
-    StoreOption,
-    #[serde(rename = "Ledger Explore")]
-    LedgerMode,
-    #[serde(rename = "Search Query")]
-    SearchQuery,
-    #[serde(rename = "Browse Options")]
-    BrowseOptions,
-    #[serde(rename = "Queries")]
-    SearchOptions,
-    #[serde(rename = "Accounts")]
-    ListAccounts,
-    #[serde(rename = "Block Issuers")]
-    ListBlockIssuers,
-    #[serde(rename = "Dreps")]
-    ListDReps,
-    #[serde(rename = "Pools")]
-    ListPools,
-    #[serde(rename = "Proposals")]
-    ListProposals,
-    #[serde(rename = "Utxos")]
-    ListUtxos,
-    #[serde(rename = "Utxos by Address")]
-    ListUtxosByAddr,
-    #[serde(rename = "Account Details")]
-    DetailsAccount,
-    #[serde(rename = "Block Issuer Details")]
-    DetailsBlockIssuer,
-    #[serde(rename = "DRep Details")]
-    DetailsDRep,
-    #[serde(rename = "Pool Details")]
-    DetailsPool,
-    #[serde(rename = "Proposal Details")]
-    DetailsProposal,
-    #[serde(rename = "Utxo Details")]
-    DetailsUtxo,
-}
-
-impl From<WidgetId> for Title<'_> {
-    fn from(wid: WidgetId) -> Self {
-        Title::from(serde_plain::to_string(&wid).unwrap())
-    }
 }
 
 #[derive(Clone, Copy, Debug, EnumIter, PartialEq, Eq, Serialize)]

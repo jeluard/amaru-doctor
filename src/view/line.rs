@@ -1,18 +1,14 @@
-use crate::{app_state::AppState, states::WidgetId, view::View};
+use crate::{app_state::AppState, view::View};
 use color_eyre::Result;
 use ratatui::{Frame, layout::Rect, widgets::Paragraph};
 
 pub struct LineView {
-    _widget_id: WidgetId,
     get_line: fn(&AppState) -> String,
 }
 
 impl LineView {
-    pub fn new(_widget_id: WidgetId, get_line: fn(&AppState) -> String) -> Self {
-        Self {
-            _widget_id,
-            get_line,
-        }
+    pub fn new(get_line: fn(&AppState) -> String) -> Self {
+        Self { get_line }
     }
 }
 

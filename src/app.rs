@@ -1,12 +1,12 @@
 use crate::{
     app_state::AppState,
     config::Config,
-    controller::layout::{SlotLayout, SlotWidgets, compute_slot_layout, compute_slot_widgets},
+    controller::layout::{SlotLayout, compute_slot_layout},
     states::{Action, StoreOption},
     store::rocks_db_switch::LedgerDB,
     tui::{Event, Tui},
     update::{UpdateList, get_updates},
-    view::view_for,
+    view::{SlotViews, compute_slot_views},
 };
 use amaru_stores::rocksdb::consensus::RocksDBStore;
 use color_eyre::Result;
@@ -24,7 +24,7 @@ pub struct App {
     last_frame_area: Rect,
     last_store_option: StoreOption,
     layout: SlotLayout,
-    slot_widgets: SlotWidgets,
+    slot_views: SlotViews, // View
     should_quit: bool,
     should_suspend: bool,
     mode: Mode,
@@ -52,7 +52,7 @@ impl App {
         let app_state = AppState::new(ledger_path_str, ledger_db, chain_path_str, chain_db)?;
         let last_store_option = app_state.store_option.current().clone();
         let layout = compute_slot_layout(&app_state, frame_area);
-        let slot_widgets = compute_slot_widgets(&app_state);
+        let slot_views = compute_slot_views(&app_state);
 
         Ok(Self {
             app_state,
@@ -60,7 +60,7 @@ impl App {
             last_frame_area: frame_area,
             last_store_option,
             layout,
-            slot_widgets,
+            slot_views,
             should_quit: false,
             should_suspend: false,
             config: Config::new()?,
@@ -173,7 +173,7 @@ impl App {
             }
 
             if recompute_slot_widgets {
-                self.slot_widgets = compute_slot_widgets(&self.app_state);
+                self.slot_views = compute_slot_views(&self.app_state);
             }
         }
 
@@ -197,15 +197,12 @@ impl App {
                 self.last_store_option = store_option.clone();
             }
             for (slot, area) in self.layout.iter() {
-                let Some(widget_id) = self.slot_widgets.get(slot) else {
-                    trace!("No widget id for slot");
-                    continue;
-                };
-                let view = view_for(widget_id.clone());
-                if let Err(e) = view.render(f, *area, &self.app_state) {
-                    let _ = self
-                        .action_tx
-                        .send(Action::Error(format!("Failed to draw: {e:?}")));
+                if let Some(view) = self.slot_views.get(slot) {
+                    if let Err(e) = view.render(f, *area, &self.app_state) {
+                        let _ = self
+                            .action_tx
+                            .send(Action::Error(format!("Failed to draw: {e:?}")));
+                    }
                 }
             }
             Ok::<(), std::io::Error>(())

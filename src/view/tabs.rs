@@ -1,5 +1,5 @@
 use crate::{
-    app_state::AppState, controller::is_widget_focused, model::cursor::Cursor, states::WidgetId,
+    app_state::AppState, controller::is_widget_focused, model::cursor::Cursor, states::WidgetSlot,
     view::View,
 };
 use color_eyre::Result;
@@ -12,14 +12,20 @@ use ratatui::{
 };
 
 pub struct TabsView<T> {
-    widget_id: WidgetId,
+    title: &'static str,
+    widget_slot: WidgetSlot,
     get_tabs: fn(&AppState) -> &Cursor<T>,
 }
 
 impl<T> TabsView<T> {
-    pub fn new(widget_id: WidgetId, get_tabs: fn(&AppState) -> &Cursor<T>) -> Self {
+    pub fn new(
+        title: &'static str,
+        widget_slot: WidgetSlot,
+        get_tabs: fn(&AppState) -> &Cursor<T>,
+    ) -> Self {
         Self {
-            widget_id,
+            title,
+            widget_slot,
             get_tabs,
         }
     }
@@ -27,11 +33,9 @@ impl<T> TabsView<T> {
 
 impl<T: ToLine> View for TabsView<T> {
     fn render(&self, frame: &mut Frame, area: Rect, app_state: &AppState) -> Result<()> {
-        let mut block = Block::default()
-            .borders(Borders::ALL)
-            .title(self.widget_id.clone());
+        let mut block = Block::default().borders(Borders::ALL).title(self.title);
 
-        if is_widget_focused(app_state, &self.widget_id) {
+        if is_widget_focused(app_state, &self.widget_slot) {
             block = block
                 .border_style(Style::default().fg(Color::Blue))
                 .title_style(Style::default().fg(Color::White));

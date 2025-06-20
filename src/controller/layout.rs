@@ -1,15 +1,10 @@
 use crate::{
     app_state::AppState,
-    controller::resolve_placed_widget_id,
-    states::{StoreOption, WidgetId, WidgetSlot},
+    states::{StoreOption, WidgetSlot},
 };
 use either::Either::{self, Left, Right};
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use std::collections::HashMap;
-use strum::IntoEnumIterator;
-
-/// Determines what widget to render within a slot
-pub type SlotWidgets = HashMap<WidgetSlot, WidgetId>;
 
 pub type SlotLayout = HashMap<WidgetSlot, Rect>;
 
@@ -37,52 +32,6 @@ fn walk_layout(out: &mut HashMap<WidgetSlot, Rect>, spec: &LayoutSpec, area: Rec
             }
         }
     }
-}
-
-// pub fn compute_chain_slot_layout(area: Rect) -> Result<SlotLayout> {
-//     let [top_line, rest, bottom_line] = *Layout::default()
-//         .direction(Direction::Vertical)
-//         .constraints([
-//             Constraint::Length(1),
-//             Constraint::Fill(1),
-//             Constraint::Length(1),
-//         ])
-//         .split(area)
-//     else {
-//         return Err(eyre!(
-//             "Couldn't destructure top line, rest, and bottom line"
-//         ));
-//     };
-
-//     let [header, details] = *Layout::default()
-//         .direction(Direction::Vertical)
-//         .constraints([Constraint::Length(3), Constraint::Fill(1)])
-//         .split(rest)
-//     else {
-//         return Err(eyre!("Couldn't destructure header and body"));
-//     };
-
-//     let [store_option, search_bar] = *Layout::default()
-//         .direction(Direction::Horizontal)
-//         .constraints([Constraint::Length(20), Constraint::Fill(1)])
-//         .split(header)
-//     else {
-//         return Err(eyre!("Couldn't destructure header left and right"));
-//     };
-
-//     Ok(SlotLayout::Chain(ChainLayout {
-//         top_line,
-//         store_option,
-//         search_bar,
-//         details,
-//         bottom_line,
-//     }))
-// }
-
-pub fn compute_slot_widgets(app_state: &AppState) -> SlotWidgets {
-    WidgetSlot::iter()
-        .map(|slot| (slot, resolve_placed_widget_id(app_state, slot)))
-        .collect()
 }
 
 pub struct LayoutSpec {
