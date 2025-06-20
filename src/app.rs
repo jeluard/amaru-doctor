@@ -203,6 +203,8 @@ impl App {
                             .action_tx
                             .send(Action::Error(format!("Failed to draw: {e:?}")));
                     }
+                } else {
+                    trace!("Found no view for slot {}", slot);
                 }
             }
             Ok::<(), std::io::Error>(())
