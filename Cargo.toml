@@ -38,6 +38,7 @@ lazy_static = "1.5.0"
 libc = "0.2.161"
 minicbor = { version = "0.25.1", features = ["alloc"] }
 pallas-codec = "0.32.0"
+pallas-crypto = "0.32.0"
 pallas-primitives = "0.32.0"
 pallas-network = "0.32.0"
 pretty_assertions = "1.4.1"

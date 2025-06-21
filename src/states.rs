@@ -21,6 +21,7 @@ pub enum Action {
     ScrollDown,
     Key(KeyCode),
     SearchUtxosByAddr,
+    SearchHeadersByHash,
 }
 
 #[derive(Clone, Debug, Default, EnumIter, Display, PartialEq, Eq, Serialize, Deserialize)]
@@ -68,12 +69,12 @@ pub enum WidgetSlot {
 }
 
 #[derive(Clone, Copy, Debug, EnumIter, PartialEq, Eq, Serialize)]
-pub enum SearchOption {
+pub enum LedgerSearchOption {
     #[serde(rename = "utxos by address")]
     UtxosByAddress,
 }
 
-impl ToListItem for SearchOption {
+impl ToListItem for LedgerSearchOption {
     fn to_list_item(&self) -> ListItem<'static> {
         ListItem::new(serde_plain::to_string(self).unwrap())
     }

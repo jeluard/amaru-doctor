@@ -5,6 +5,7 @@ use clap::Parser;
 use cli::Cli;
 use color_eyre::Result;
 use std::{env, path::PathBuf, str::FromStr};
+use tracing::trace;
 
 mod app;
 mod app_state;
@@ -17,28 +18,27 @@ mod model;
 mod states;
 mod store;
 mod tui;
+mod types;
 mod ui;
 mod update;
 mod view;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let ledger_path_str = env::var("AMARU_LEDGER_DB").unwrap_or_else(|_| "ledgerdb".to_string());
-    eprintln!("Using ledger path: {}", ledger_path_str);
-    let ledger_path = PathBuf::from_str(&ledger_path_str)?;
-
-    let chain_path_str = env::var("AMARU_CHAIN_DB").unwrap_or_else(|_| "chaindb".to_string());
-    eprintln!("Using chain path: {}", chain_path_str);
-    let chain_path = PathBuf::from_str(&chain_path_str)?;
-
     crate::errors::init()?;
     crate::logging::init()?;
 
-    let args = Cli::parse();
+    let ledger_path_str = env::var("AMARU_LEDGER_DB").unwrap_or_else(|_| "ledgerdb".to_string());
+    trace!("Using ledger path: {}", ledger_path_str);
+    let ledger_path = PathBuf::from_str(&ledger_path_str)?;
+
+    let chain_path_str = env::var("AMARU_CHAIN_DB").unwrap_or_else(|_| "chaindb".to_string());
+    trace!("Using chain path: {}", chain_path_str);
+    let chain_path = PathBuf::from_str(&chain_path_str)?;
 
     let era_history: &EraHistory = NetworkName::Preprod.into();
     let ledger_db = if let Ok(epoch) = env::var("AMARU_LEDGER_EPOCH") {
-        eprintln!("Using epoch: {}", epoch);
+        trace!("Using epoch: {}", epoch);
         Snapshot(RocksDBHistoricalStores::for_epoch_with(
             ledger_path.as_path(),
             epoch.parse::<u64>()?.into(),
@@ -48,6 +48,7 @@ async fn main() -> Result<()> {
     };
     let chain_db = RocksDBStore::new(&chain_path, era_history)?;
 
+    let args = Cli::parse();
     let mut tui = Tui::new()?
         .tick_rate(args.tick_rate)
         .frame_rate(args.frame_rate);

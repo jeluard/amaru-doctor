@@ -1,12 +1,14 @@
 use crate::{
     app_state::AppState,
     controller::is_widget_focused,
-    states::{BrowseOption, LedgerMode, SearchOption, StoreOption, WidgetSlot},
+    states::{BrowseOption, LedgerMode, LedgerSearchOption, StoreOption, WidgetSlot},
+    types::chain::ChainSearchOption,
     view::{
-        View, details::render_details, line::render_line, list::render_list,
+        View, details::render_details, header::render_header, line::render_line, list::render_list,
         search::render_search_query, tabs::render_tabs,
     },
 };
+use amaru_kernel::Header;
 use color_eyre::Result;
 use ratatui::{Frame, layout::Rect};
 
@@ -66,22 +68,25 @@ impl View for SearchBar {
     fn slot(&self) -> WidgetSlot {
         WidgetSlot::SearchBar
     }
-    fn is_visible(&self, s: &AppState) -> bool {
-        *s.store_option.current() == StoreOption::Ledger
+    fn is_visible(&self, _s: &AppState) -> bool {
+        true
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
         render_search_query(
             f,
             area,
             "Search",
-            &s.search_query_bldr,
+            match s.store_option.current() {
+                StoreOption::Ledger => &s.ledger_search_query_bldr,
+                StoreOption::Chain => &s.chain_search_query_bldr,
+            },
             is_widget_focused(s, self.slot()),
         )
     }
 }
 
-pub struct BrowseOptions;
-impl View for BrowseOptions {
+pub struct LedgerBrowseOptions;
+impl View for LedgerBrowseOptions {
     fn slot(&self) -> WidgetSlot {
         WidgetSlot::Options
     }
@@ -94,14 +99,58 @@ impl View for BrowseOptions {
             f,
             area,
             "Browse Options",
-            Some(&s.browse_options),
+            Some(&s.ledger_browse_options),
             is_widget_focused(s, self.slot()),
         )
     }
 }
 
-pub struct SearchOptions;
-impl View for SearchOptions {
+pub struct ChainSearchOptions;
+impl View for ChainSearchOptions {
+    fn slot(&self) -> WidgetSlot {
+        WidgetSlot::Options
+    }
+    fn is_visible(&self, s: &AppState) -> bool {
+        *s.store_option.current() == StoreOption::Chain
+    }
+    fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
+        render_list(
+            f,
+            area,
+            "Search Options",
+            Some(&s.chain_search_options),
+            is_widget_focused(s, self.slot()),
+        )
+    }
+}
+
+pub struct ChainSearchHeader;
+impl View for ChainSearchHeader {
+    fn slot(&self) -> WidgetSlot {
+        WidgetSlot::Details
+    }
+    fn is_visible(&self, s: &AppState) -> bool {
+        *s.store_option.current() == StoreOption::Chain
+            && s.chain_search_options.selected() == Some(&ChainSearchOption::Header)
+    }
+    fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
+        let header_opt: Option<&Header> = s
+            .chain_search_query_hash
+            .as_ref()
+            .and_then(|h| s.headers_by_hash_search_res.get(h))
+            .and_then(|opt_hdr| opt_hdr.as_ref());
+        render_header(
+            f,
+            area,
+            "Header Details",
+            header_opt,
+            is_widget_focused(s, self.slot()),
+        )
+    }
+}
+
+pub struct LedgerSearchOptions;
+impl View for LedgerSearchOptions {
     fn slot(&self) -> WidgetSlot {
         WidgetSlot::Options
     }
@@ -114,7 +163,7 @@ impl View for SearchOptions {
             f,
             area,
             "Search Options",
-            Some(&s.search_options),
+            Some(&s.ledger_search_options),
             is_widget_focused(s, self.slot()),
         )
     }
@@ -129,7 +178,7 @@ macro_rules! browse_views {
                 fn is_visible(&self, s: &AppState) -> bool {
                     *s.store_option.current()   == StoreOption::Ledger &&
                     *s.ledger_mode.current()    == LedgerMode::Browse &&
-                    s.browse_options.selected() == Some(&BrowseOption::$variant)
+                    s.ledger_browse_options.selected() == Some(&BrowseOption::$variant)
                 }
                 fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
                     render_list(
@@ -148,7 +197,7 @@ macro_rules! browse_views {
                 fn is_visible(&self, s: &AppState) -> bool {
                     *s.store_option.current()   == StoreOption::Ledger &&
                     *s.ledger_mode.current()    == LedgerMode::Browse &&
-                    s.browse_options.selected() == Some(&BrowseOption::$variant)
+                    s.ledger_browse_options.selected() == Some(&BrowseOption::$variant)
                 }
                 fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
                     render_details(
@@ -165,42 +214,49 @@ macro_rules! browse_views {
 }
 
 browse_views!(
-    (Accounts, Accounts, AccountDetails, accounts, "Accounts"),
+    (
+        Accounts,
+        LedgerAccounts,
+        LedgerAccountDetails,
+        accounts,
+        "Accounts"
+    ),
     (
         BlockIssuers,
-        BlockIssuers,
-        BlockIssuerDetails,
+        LedgerBlockIssuers,
+        LedgerBlockIssuerDetails,
         block_issuers,
         "Block Issuers"
     ),
-    (DReps, DReps, DRepDetails, dreps, "DReps"),
-    (Pools, Pools, PoolDetails, pools, "Pools"),
+    (DReps, LedgerDReps, LedgerDRepDetails, dreps, "DReps"),
+    (Pools, LedgerPools, LedgerPoolDetails, pools, "Pools"),
     (
         Proposals,
-        Proposals,
-        ProposalDetails,
+        LedgerProposals,
+        LedgerProposalDetails,
         proposals,
         "Proposals"
     ),
-    (Utxos, Utxos, UtxoDetails, utxos, "Utxos"),
+    (Utxos, LedgerUtxos, LedgerUtxoDetails, utxos, "Utxos"),
 );
 
-pub struct UtxosByAddrList;
-impl View for UtxosByAddrList {
+pub struct LedgerUtxosByAddr;
+impl View for LedgerUtxosByAddr {
     fn slot(&self) -> WidgetSlot {
         WidgetSlot::List
     }
     fn is_visible(&self, s: &AppState) -> bool {
         *s.store_option.current() == StoreOption::Ledger
             && *s.ledger_mode.current() == LedgerMode::Search
-            && s.search_options.selected() == Some(SearchOption::UtxosByAddress).as_ref()
+            && s.ledger_search_options.selected()
+                == Some(LedgerSearchOption::UtxosByAddress).as_ref()
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
         render_list(
             f,
             area,
             "Utxos by Address",
-            s.search_query_addr
+            s.ledger_search_query_addr
                 .as_ref()
                 .and_then(|a| s.utxos_by_addr_search_res.get(a)),
             is_widget_focused(s, self.slot()),
@@ -208,22 +264,23 @@ impl View for UtxosByAddrList {
     }
 }
 
-pub struct SearchUtxoDetails;
-impl View for SearchUtxoDetails {
+pub struct LedgerSearchUtxoDetails;
+impl View for LedgerSearchUtxoDetails {
     fn slot(&self) -> WidgetSlot {
         WidgetSlot::Details
     }
     fn is_visible(&self, s: &AppState) -> bool {
         *s.store_option.current() == StoreOption::Ledger
             && *s.ledger_mode.current() == LedgerMode::Search
-            && s.search_options.selected() == Some(SearchOption::UtxosByAddress).as_ref()
+            && s.ledger_search_options.selected()
+                == Some(LedgerSearchOption::UtxosByAddress).as_ref()
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
         render_details(
             f,
             area,
             "Utxo Details",
-            s.search_query_addr
+            s.ledger_search_query_addr
                 .as_ref()
                 .and_then(|a| s.utxos_by_addr_search_res.get(a)),
             is_widget_focused(s, self.slot()),

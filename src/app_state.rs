@@ -1,6 +1,6 @@
 use crate::{
     model::{cursor::Cursor, window::WindowState},
-    states::{BrowseOption, LedgerMode, SearchOption, StoreOption, WidgetSlot},
+    states::{BrowseOption, LedgerMode, LedgerSearchOption, StoreOption, WidgetSlot},
     store::{
         owned_iter::{
             OwnedAccountIter, OwnedBlockIssuerIter, OwnedDRepIter, OwnedPoolIter,
@@ -8,12 +8,15 @@ use crate::{
         },
         rocks_db_switch::LedgerDB,
     },
+    types::chain::ChainSearchOption,
     ui::to_list_item::{AccountItem, BlockIssuerItem, DRepItem, PoolItem, ProposalItem, UtxoItem},
 };
-use amaru_consensus::consensus::store::ChainStore;
-use amaru_kernel::Address;
+use amaru_consensus::Nonces;
+use amaru_kernel::{Address, Header, RawBlock};
+use amaru_ledger::store::StoreError;
 use amaru_stores::rocksdb::consensus::RocksDBStore;
 use color_eyre::Result;
+use pallas_crypto::hash::Hash;
 use std::{collections::HashMap, sync::Arc};
 use strum::IntoEnumIterator;
 
@@ -30,10 +33,9 @@ pub struct AppState {
     pub store_option: Cursor<StoreOption>,
     pub ledger_mode: Cursor<LedgerMode>,
 
-    // Don't put these in Map, however tempting--it will cause pain with generics and ultimately increases complexity
     pub options_window_size: usize,
-    pub browse_options: WindowState<BrowseOption>,
-    pub search_options: WindowState<SearchOption>,
+    pub ledger_browse_options: WindowState<BrowseOption>,
+    pub ledger_search_options: WindowState<LedgerSearchOption>,
 
     pub list_window_size: usize,
     pub accounts: WindowState<AccountItem>,
@@ -44,9 +46,17 @@ pub struct AppState {
     pub utxos: WindowState<UtxoItem>,
 
     // TODO: Encapsulate search state
-    pub search_query_bldr: String,
-    pub search_query_addr: Option<Address>,
+    pub ledger_search_query_bldr: String,
+    pub ledger_search_query_addr: Option<Address>,
     pub utxos_by_addr_search_res: HashMap<Address, WindowState<UtxoItem>>,
+
+    pub chain_search_options: WindowState<ChainSearchOption>,
+
+    pub chain_search_query_bldr: String,
+    pub chain_search_query_hash: Option<Hash<32>>,
+    pub headers_by_hash_search_res: HashMap<Hash<32>, Option<Header>>,
+    pub block_by_hash_search_res: HashMap<Hash<32>, Result<RawBlock, StoreError>>,
+    pub nonces_by_hash_search_res: HashMap<Hash<32>, Option<Nonces>>,
 }
 
 impl AppState {
@@ -75,8 +85,8 @@ impl AppState {
             store_option: Cursor::new(StoreOption::iter().collect())?,
             ledger_mode: Cursor::new(LedgerMode::iter().collect())?,
             options_window_size: 0,
-            browse_options: WindowState::from_iter(BrowseOption::iter()),
-            search_options: WindowState::from_iter(SearchOption::iter()),
+            ledger_browse_options: WindowState::from_iter(BrowseOption::iter()),
+            ledger_search_options: WindowState::from_iter(LedgerSearchOption::iter()),
             list_window_size: 0,
             accounts: WindowState::from_iter(OwnedAccountIter::new(ledger_db_arc.clone())),
             block_issuers: WindowState::from_iter(OwnedBlockIssuerIter::new(ledger_db_arc.clone())),
@@ -84,9 +94,15 @@ impl AppState {
             pools: WindowState::from_iter(OwnedPoolIter::new(ledger_db_arc.clone())),
             proposals: WindowState::from_iter(OwnedProposalIter::new(ledger_db_arc.clone())),
             utxos: WindowState::from_iter(OwnedUtxoIter::new(ledger_db_arc.clone())),
-            search_query_bldr: "".to_owned(),
-            search_query_addr: None,
+            ledger_search_query_bldr: "".to_owned(),
+            ledger_search_query_addr: None,
             utxos_by_addr_search_res: HashMap::new(),
+            chain_search_options: WindowState::from_iter(ChainSearchOption::iter()),
+            chain_search_query_bldr: "".to_owned(),
+            chain_search_query_hash: None,
+            headers_by_hash_search_res: HashMap::new(),
+            block_by_hash_search_res: HashMap::new(),
+            nonces_by_hash_search_res: HashMap::new(),
         })
     }
 }

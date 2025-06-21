@@ -1,7 +1,7 @@
 use crate::{
     app_state::AppState,
     config::Config,
-    controller::layout::{SlotLayout, compute_slot_layout},
+    controller::{SlotLayout, compute_slot_layout},
     states::{Action, StoreOption},
     store::rocks_db_switch::LedgerDB,
     tui::{Event, Tui},

@@ -90,6 +90,7 @@ dependencies = [
  "libc",
  "minicbor",
  "pallas-codec",
+ "pallas-crypto",
  "pallas-network",
  "pallas-primitives",
  "pretty_assertions",

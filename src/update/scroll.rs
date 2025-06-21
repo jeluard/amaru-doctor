@@ -1,113 +1,108 @@
+use crate::{
+    app_state::AppState,
+    states::{Action, BrowseOption, LedgerMode, StoreOption, WidgetSlot},
+    update::Update,
+};
 use strum::Display;
 use tracing::trace;
 
-use crate::{
-    app_state::AppState,
-    states::{
-        Action::{self, *},
-        BrowseOption::*,
-        LedgerMode::*,
-        WidgetSlot::{self},
-    },
-    update::Update,
-};
-
-pub struct ScrollUpdate {}
-
-#[derive(Display)]
+#[derive(Display, Debug)]
 pub enum ScrollDirection {
     Up,
     Down,
 }
+
+pub struct ScrollUpdate;
 
 pub trait Scrollable {
     fn scroll_up(&mut self);
     fn scroll_down(&mut self);
 }
 
+struct ScrollDef {
+    slot: WidgetSlot,
+    target: fn(&mut AppState) -> Option<&mut dyn Scrollable>,
+}
+
+static SCROLL_DEFS: &[ScrollDef] = &[
+    ScrollDef {
+        slot: WidgetSlot::StoreOption,
+        target: |s| Some(&mut s.store_option),
+    },
+    ScrollDef {
+        slot: WidgetSlot::LedgerMode,
+        target: |s| Some(&mut s.ledger_mode),
+    },
+    ScrollDef {
+        slot: WidgetSlot::Options,
+        target: |s| match s.store_option.current() {
+            StoreOption::Ledger => match s.ledger_mode.current() {
+                LedgerMode::Browse => Some(&mut s.ledger_browse_options),
+                LedgerMode::Search => Some(&mut s.ledger_search_options),
+            },
+            StoreOption::Chain => Some(&mut s.chain_search_options),
+        },
+    },
+    ScrollDef {
+        slot: WidgetSlot::List,
+        target: |s| {
+            if *s.store_option.current() == StoreOption::Ledger {
+                match s.ledger_mode.current() {
+                    LedgerMode::Browse => match s.ledger_browse_options.selected() {
+                        Some(BrowseOption::Accounts) => Some(&mut s.accounts),
+                        Some(BrowseOption::BlockIssuers) => Some(&mut s.block_issuers),
+                        Some(BrowseOption::DReps) => Some(&mut s.dreps),
+                        Some(BrowseOption::Pools) => Some(&mut s.pools),
+                        Some(BrowseOption::Proposals) => Some(&mut s.proposals),
+                        Some(BrowseOption::Utxos) => Some(&mut s.utxos),
+                        None => None,
+                    },
+                    LedgerMode::Search => s
+                        .ledger_search_query_addr
+                        .as_ref()
+                        .and_then(|a| s.utxos_by_addr_search_res.get_mut(a))
+                        .map(|w| w as &mut dyn Scrollable),
+                }
+            } else {
+                None
+            }
+        },
+    },
+    ScrollDef {
+        slot: WidgetSlot::Details,
+        target: |_| None,
+    },
+    ScrollDef {
+        slot: WidgetSlot::BottomLine,
+        target: |_| None,
+    },
+];
+
 impl Update for ScrollUpdate {
     fn update(&self, action: &Action, app_state: &mut AppState) -> Option<Action> {
         let direction = match action {
-            ScrollUp => ScrollDirection::Up,
-            ScrollDown => ScrollDirection::Down,
+            Action::ScrollUp => ScrollDirection::Up,
+            Action::ScrollDown => ScrollDirection::Down,
             _ => return None,
         };
 
-        let widget_slot = app_state.slot_focus.current();
-        trace!("Will scroll {} {}", widget_slot, direction);
-        match (widget_slot, app_state.ledger_mode.current()) {
-            (WidgetSlot::StoreOption, _) => scroll_store_option(app_state, direction),
-            (WidgetSlot::LedgerMode, _) => scroll_ledger_mode(app_state, direction),
-            (WidgetSlot::Options, Browse) => scroll_browse_options(app_state, direction),
-            (WidgetSlot::Options, Search) => scroll_search_options(app_state, direction),
-            (WidgetSlot::List, Browse) => scroll_browse_list(app_state, direction),
-            (WidgetSlot::List, Search) => scroll_search_list(app_state, direction),
-            // TODO: Add Details scroll offset to AppState
-            // (WidgetSlot::Details, Search) => ...
-            _ => {}
+        let slot = *app_state.slot_focus.current();
+        let def = match SCROLL_DEFS.iter().find(|d| d.slot == slot) {
+            Some(d) => d,
+            None => {
+                trace!("No scroll def found for slot {:?}", slot);
+                return None;
+            }
+        };
+
+        let scrollable = (def.target)(app_state)?;
+
+        trace!("Scrolling {:?} {:?}", slot, direction);
+        match direction {
+            ScrollDirection::Up => scrollable.scroll_up(),
+            ScrollDirection::Down => scrollable.scroll_down(),
         }
+
         None
-    }
-}
-
-fn scroll_store_option(state: &mut AppState, direction: ScrollDirection) {
-    trace!("Will scroll ledger mode {}", direction);
-    match direction {
-        ScrollDirection::Up => state.store_option.scroll_up(),
-        ScrollDirection::Down => state.store_option.scroll_down(),
-    }
-}
-
-fn scroll_ledger_mode(state: &mut AppState, direction: ScrollDirection) {
-    trace!("Will scroll ledger mode {}", direction);
-    match direction {
-        ScrollDirection::Up => state.ledger_mode.scroll_up(),
-        ScrollDirection::Down => state.ledger_mode.scroll_down(),
-    }
-}
-
-fn scroll_browse_options(state: &mut AppState, direction: ScrollDirection) {
-    trace!("Will browse options {}", direction);
-    match direction {
-        ScrollDirection::Up => state.browse_options.scroll_up(),
-        ScrollDirection::Down => state.browse_options.scroll_down(),
-    }
-}
-
-fn scroll_search_options(state: &mut AppState, direction: ScrollDirection) {
-    trace!("Will scroll search options {}", direction);
-    match direction {
-        ScrollDirection::Up => state.search_options.scroll_up(),
-        ScrollDirection::Down => state.search_options.scroll_down(),
-    }
-}
-
-fn scroll_browse_list(state: &mut AppState, direction: ScrollDirection) {
-    trace!("Will scroll browse list {}", direction);
-    match state.browse_options.selected() {
-        Some(Accounts) => apply_scroll(direction, &mut state.accounts),
-        Some(BlockIssuers) => apply_scroll(direction, &mut state.block_issuers),
-        Some(DReps) => apply_scroll(direction, &mut state.dreps),
-        Some(Pools) => apply_scroll(direction, &mut state.pools),
-        Some(Proposals) => apply_scroll(direction, &mut state.proposals),
-        Some(Utxos) => apply_scroll(direction, &mut state.utxos),
-        None => {}
-    }
-}
-
-fn scroll_search_list(state: &mut AppState, direction: ScrollDirection) {
-    trace!("Will scroll search list {}", direction);
-    // UtxosByAddress is the only search option
-    if let Some(addr) = &state.search_query_addr {
-        if let Some(utxo_state) = state.utxos_by_addr_search_res.get_mut(addr) {
-            apply_scroll(direction, utxo_state);
-        }
-    }
-}
-
-fn apply_scroll<T: Scrollable>(direction: ScrollDirection, target: &mut T) {
-    match direction {
-        ScrollDirection::Up => target.scroll_up(),
-        ScrollDirection::Down => target.scroll_down(),
     }
 }

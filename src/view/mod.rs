@@ -5,6 +5,7 @@ use std::collections::HashMap;
 
 pub mod defs;
 pub mod details;
+pub mod header;
 pub mod line;
 pub mod list;
 pub mod search;
@@ -16,27 +17,30 @@ pub trait View: Sync {
     fn render(&self, frame: &mut Frame, area: Rect, s: &AppState) -> Result<()>;
 }
 
+/// All views
 static VIEW_DEFS: &[&dyn View] = &[
     &TopLine,
     &StoreTabs,
     &LedgerModeTabs,
     &SearchBar,
-    &BrowseOptions,
-    &SearchOptions,
-    &Accounts,
-    &BlockIssuers,
-    &DReps,
-    &Pools,
-    &Proposals,
-    &Utxos,
-    &UtxosByAddrList,
-    &AccountDetails,
-    &BlockIssuerDetails,
-    &DRepDetails,
-    &PoolDetails,
-    &ProposalDetails,
-    &UtxoDetails,
-    &SearchUtxoDetails,
+    &LedgerBrowseOptions,
+    &LedgerSearchOptions,
+    &LedgerAccounts,
+    &LedgerBlockIssuers,
+    &LedgerDReps,
+    &LedgerPools,
+    &LedgerProposals,
+    &LedgerUtxos,
+    &LedgerUtxosByAddr,
+    &LedgerAccountDetails,
+    &LedgerBlockIssuerDetails,
+    &LedgerDRepDetails,
+    &LedgerPoolDetails,
+    &LedgerProposalDetails,
+    &LedgerUtxoDetails,
+    &LedgerSearchUtxoDetails,
+    &ChainSearchOptions,
+    &ChainSearchHeader,
     &BottomLine,
 ];
 
