@@ -11,9 +11,7 @@ use crate::{
     types::chain::ChainSearchOption,
     ui::to_list_item::{AccountItem, BlockIssuerItem, DRepItem, PoolItem, ProposalItem, UtxoItem},
 };
-use amaru_consensus::Nonces;
-use amaru_kernel::{Address, Header, RawBlock};
-use amaru_ledger::store::StoreError;
+use amaru_kernel::{Address, Header};
 use amaru_stores::rocksdb::consensus::RocksDBStore;
 use color_eyre::Result;
 use pallas_crypto::hash::Hash;
@@ -25,7 +23,8 @@ pub struct AppState {
     pub ledger_path: String,
     pub ledger_db: Arc<LedgerDB>,
 
-    pub chain_path: String,
+    // TODO: Add this in a header message
+    // pub chain_path: String,
     pub chain_db: Arc<RocksDBStore>,
 
     pub slot_focus: Cursor<WidgetSlot>,
@@ -55,15 +54,16 @@ pub struct AppState {
     pub chain_search_query_bldr: String,
     pub chain_search_query_hash: Option<Hash<32>>,
     pub headers_by_hash_search_res: HashMap<Hash<32>, Option<Header>>,
-    pub block_by_hash_search_res: HashMap<Hash<32>, Result<RawBlock, StoreError>>,
-    pub nonces_by_hash_search_res: HashMap<Hash<32>, Option<Nonces>>,
+    // TODO: Add these next
+    // pub block_by_hash_search_res: HashMap<Hash<32>, Result<RawBlock, StoreError>>,
+    // pub nonces_by_hash_search_res: HashMap<Hash<32>, Option<Nonces>>,
 }
 
 impl AppState {
     pub fn new(
         ledger_path: String,
         ledger_db: LedgerDB,
-        chain_path: String,
+        _chain_path: String,
         chain_db: RocksDBStore,
     ) -> Result<Self> {
         let ledger_db_arc = Arc::new(ledger_db);
@@ -72,7 +72,7 @@ impl AppState {
         Ok(Self {
             ledger_path,
             ledger_db: ledger_db_arc.clone(),
-            chain_path,
+            // chain_path,
             chain_db: chain_db_arc.clone(),
             slot_focus: Cursor::new(vec![
                 WidgetSlot::StoreOption,
@@ -101,8 +101,8 @@ impl AppState {
             chain_search_query_bldr: "".to_owned(),
             chain_search_query_hash: None,
             headers_by_hash_search_res: HashMap::new(),
-            block_by_hash_search_res: HashMap::new(),
-            nonces_by_hash_search_res: HashMap::new(),
+            // block_by_hash_search_res: HashMap::new(),
+            // nonces_by_hash_search_res: HashMap::new(),
         })
     }
 }
