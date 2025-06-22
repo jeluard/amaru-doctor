@@ -11,10 +11,10 @@ use crate::{
     types::chain::ChainSearchOption,
     ui::to_list_item::{AccountItem, BlockIssuerItem, DRepItem, PoolItem, ProposalItem, UtxoItem},
 };
+use amaru_kernel::Hash;
 use amaru_kernel::{Address, Header};
 use amaru_stores::rocksdb::consensus::RocksDBStore;
 use color_eyre::Result;
-use pallas_crypto::hash::Hash;
 use std::{collections::HashMap, sync::Arc};
 use strum::IntoEnumIterator;
 
