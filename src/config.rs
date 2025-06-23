@@ -520,7 +520,7 @@ mod tests {
                 .unwrap()
                 .get(&parse_key_sequence("<Shift-Left>").unwrap_or_default())
                 .unwrap(),
-            &Action::FocusPrev
+            &Action::FocusLeft
         );
         Ok(())
     }

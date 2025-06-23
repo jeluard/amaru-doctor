@@ -17,7 +17,7 @@ pub struct LayoutSpec {
 }
 
 pub fn is_widget_focused(app_state: &AppState, widget_slot: WidgetSlot) -> bool {
-    app_state.slot_focus.current() == &widget_slot
+    app_state.slot_focus == widget_slot
 }
 
 pub fn compute_slot_layout(app_state: &AppState, area: Rect) -> SlotLayout {

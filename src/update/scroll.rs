@@ -85,11 +85,11 @@ impl Update for ScrollUpdate {
             _ => return Vec::new(),
         };
 
-        let slot = *app_state.slot_focus.current();
-        let def = match SCROLL_DEFS.iter().find(|d| d.slot == slot) {
+        let focused_slot = app_state.slot_focus;
+        let def = match SCROLL_DEFS.iter().find(|d| d.slot == focused_slot) {
             Some(d) => d,
             None => {
-                trace!("No scroll def found for slot {:?}", slot);
+                trace!("No scroll def found for slot {:?}", focused_slot);
                 return Vec::new();
             }
         };
@@ -99,7 +99,7 @@ impl Update for ScrollUpdate {
             None => return Vec::new(),
         };
 
-        trace!("Scrolling {:?} {:?}", slot, direction);
+        trace!("Scrolling {:?} {:?}", focused_slot, direction);
         match direction {
             ScrollDirection::Up => scrollable.scroll_up(),
             ScrollDirection::Down => scrollable.scroll_down(),

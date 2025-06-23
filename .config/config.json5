@@ -6,8 +6,10 @@
       "<Ctrl-z>": "Suspend", // Suspend the application
       "<Up>": "ScrollUp",
       "<Down>": "ScrollDown",
-      "<Shift-Left>": "FocusPrev",
-      "<Shift-Right>": "FocusNext",
+      "<Shift-Up>": "FocusUp",
+      "<Shift-Down>": "FocusDown",
+      "<Shift-Left>": "FocusLeft",
+      "<Shift-Right>": "FocusRight",
     },
   }
 }

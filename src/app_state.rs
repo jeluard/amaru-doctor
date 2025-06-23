@@ -29,7 +29,7 @@ pub struct AppState {
     pub chain_db: Arc<RocksDBStore>,
 
     pub layout: SlotLayout,
-    pub slot_focus: Cursor<WidgetSlot>,
+    pub slot_focus: WidgetSlot,
 
     pub store_option: Cursor<StoreOption>,
     pub ledger_mode: Cursor<LedgerMode>,
@@ -66,14 +66,7 @@ impl AppState {
             // chain_path,
             chain_db: chain_db_arc.clone(),
             layout: SlotLayout::default(),
-            slot_focus: Cursor::new(vec![
-                WidgetSlot::StoreOption,
-                WidgetSlot::LedgerMode,
-                WidgetSlot::SearchBar,
-                WidgetSlot::Options,
-                WidgetSlot::List,
-                WidgetSlot::Details,
-            ])?,
+            slot_focus: WidgetSlot::StoreOption,
             store_option: Cursor::new(StoreOption::iter().collect())?,
             ledger_mode: Cursor::new(LedgerMode::iter().collect())?,
             options_window_size: 0,
