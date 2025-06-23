@@ -58,7 +58,6 @@ async fn main() -> Result<()> {
         chain_db,
         tui.get_frame().area(),
     )?;
-    app.init()?;
     app.run(&mut tui).await?;
     Ok(())
 }

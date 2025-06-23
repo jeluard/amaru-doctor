@@ -78,11 +78,11 @@ static SCROLL_DEFS: &[ScrollDef] = &[
 ];
 
 impl Update for ScrollUpdate {
-    fn update(&self, action: &Action, app_state: &mut AppState) -> Option<Action> {
+    fn update(&self, action: &Action, app_state: &mut AppState) -> Vec<Action> {
         let direction = match action {
             Action::ScrollUp => ScrollDirection::Up,
             Action::ScrollDown => ScrollDirection::Down,
-            _ => return None,
+            _ => return Vec::new(),
         };
 
         let slot = *app_state.slot_focus.current();
@@ -90,11 +90,14 @@ impl Update for ScrollUpdate {
             Some(d) => d,
             None => {
                 trace!("No scroll def found for slot {:?}", slot);
-                return None;
+                return Vec::new();
             }
         };
 
-        let scrollable = (def.target)(app_state)?;
+        let scrollable = match (def.target)(app_state) {
+            Some(s) => s,
+            None => return Vec::new(),
+        };
 
         trace!("Scrolling {:?} {:?}", slot, direction);
         match direction {
@@ -102,6 +105,6 @@ impl Update for ScrollUpdate {
             ScrollDirection::Down => scrollable.scroll_down(),
         }
 
-        None
+        Vec::new()
     }
 }

@@ -63,17 +63,20 @@ static WINDOW_DEFS: &[WindowSizeDef] = &[
 ];
 
 impl Update for WindowSizeUpdate {
-    fn update(&self, action: &Action, app_state: &mut AppState) -> Option<Action> {
+    fn update(&self, action: &Action, app_state: &mut AppState) -> Vec<Action> {
         let (slot, size) = match action {
             Action::SetWindowSize(slot, size) => (*slot, *size),
-            _ => return None,
+            _ => return Vec::new(),
         };
 
-        let def = WINDOW_DEFS.iter().find(|d| d.slot == slot)?;
-        for handler in def.handlers.iter() {
+        let window = match WINDOW_DEFS.iter().find(|d| d.slot == slot) {
+            Some(w) => w,
+            None => return Vec::new(),
+        };
+        for handler in window.handlers.iter() {
             handler(app_state, size);
         }
 
-        None
+        Vec::new()
     }
 }

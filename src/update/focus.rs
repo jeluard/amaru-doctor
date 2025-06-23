@@ -4,7 +4,7 @@ use tracing::trace;
 pub struct FocusUpdate {}
 
 impl Update for FocusUpdate {
-    fn update(&self, action: &Action, app_state: &mut AppState) -> Option<Action> {
+    fn update(&self, action: &Action, app_state: &mut AppState) -> Vec<Action> {
         match action {
             Action::FocusPrev => {
                 trace!(
@@ -24,6 +24,6 @@ impl Update for FocusUpdate {
             }
             _ => {}
         }
-        None
+        Vec::new()
     }
 }

@@ -1,4 +1,5 @@
 use crate::{
+    controller::SlotLayout,
     model::{cursor::Cursor, window::WindowState},
     states::{BrowseOption, LedgerMode, LedgerSearchOption, StoreOption, WidgetSlot},
     store::{
@@ -27,6 +28,7 @@ pub struct AppState {
     // pub chain_path: String,
     pub chain_db: Arc<RocksDBStore>,
 
+    pub layout: SlotLayout,
     pub slot_focus: Cursor<WidgetSlot>,
 
     pub store_option: Cursor<StoreOption>,
@@ -58,12 +60,12 @@ impl AppState {
     ) -> Result<Self> {
         let ledger_db_arc = Arc::new(ledger_db);
         let chain_db_arc = Arc::new(chain_db);
-
         Ok(Self {
             ledger_path,
             ledger_db: ledger_db_arc.clone(),
             // chain_path,
             chain_db: chain_db_arc.clone(),
+            layout: SlotLayout::default(),
             slot_focus: Cursor::new(vec![
                 WidgetSlot::StoreOption,
                 WidgetSlot::LedgerMode,

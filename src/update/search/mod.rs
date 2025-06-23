@@ -93,7 +93,7 @@ enum Search {
 }
 
 impl Update for Search {
-    fn update(&self, action: &Action, s: &mut AppState) -> Option<Action> {
+    fn update(&self, action: &Action, s: &mut AppState) -> Vec<Action> {
         match self {
             Search::LedgerUtxosByAddr(h) => update_search(h, action, s),
             Search::ChainSearch(h) => update_search(h, action, s),
@@ -101,13 +101,13 @@ impl Update for Search {
     }
 }
 
-fn update_search<H>(h: &H, a: &Action, s: &mut AppState) -> Option<Action>
+fn update_search<H>(h: &H, a: &Action, s: &mut AppState) -> Vec<Action>
 where
     H: SearchHandler,
     <H::Query as FromStr>::Err: Display,
 {
     if !is_widget_focused(s, h.slot()) || !h.is_active(s) {
-        return None;
+        return Vec::new();
     }
     trace!("{} is focused and active, handling search", h.debug_name());
 
@@ -125,28 +125,26 @@ where
                     let result = h.compute(s, &query);
                     h.state_mut(s).cache_result(query, result);
                 }
-                Err(e) => return Some(Action::Error(e.to_string())),
+                Err(e) => return vec![Action::Error(e.to_string())],
             }
         }
         _ => {}
     }
 
-    None
+    Vec::new()
 }
 
 pub struct SearchUpdate;
 impl Update for SearchUpdate {
-    fn update(&self, action: &Action, app_state: &mut AppState) -> Option<Action> {
+    fn update(&self, action: &Action, app_state: &mut AppState) -> Vec<Action> {
         let Action::Key(_) = action else {
-            return None;
+            return Vec::new();
         };
         trace!("Will handle key event in Search");
+        let mut actions = Vec::new();
         for handler in Search::iter() {
-            if let Some(result) = handler.update(action, app_state) {
-                // This will exit early, we may change this later
-                return Some(result);
-            }
+            actions.extend(handler.update(action, app_state));
         }
-        None
+        actions
     }
 }

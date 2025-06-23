@@ -1,7 +1,6 @@
 use crate::{
     app_state::AppState,
     config::Config,
-    controller::{SlotLayout, compute_slot_layout},
     states::{Action, StoreOption},
     store::rocks_db_switch::LedgerDB,
     tui::{Event, Tui},
@@ -23,7 +22,6 @@ pub struct App {
     updates: UpdateList, // Update
     last_frame_area: Rect,
     last_store_option: StoreOption,
-    layout: SlotLayout,
     slot_views: SlotViews, // View
     should_quit: bool,
     should_suspend: bool,
@@ -50,8 +48,8 @@ impl App {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
 
         let app_state = AppState::new(ledger_path_str, ledger_db, chain_path_str, chain_db)?;
+        action_tx.send(Action::UpdateLayout(frame_area))?;
         let last_store_option = app_state.store_option.current().clone();
-        let layout = compute_slot_layout(&app_state, frame_area);
         let slot_views = compute_slot_views(&app_state);
 
         Ok(Self {
@@ -59,7 +57,6 @@ impl App {
             updates: get_updates(),
             last_frame_area: frame_area,
             last_store_option,
-            layout,
             slot_views,
             should_quit: false,
             should_suspend: false,
@@ -69,10 +66,6 @@ impl App {
             action_tx,
             action_rx,
         })
-    }
-
-    pub fn init(&self) -> Result<()> {
-        self.set_window_sizes()
     }
 
     pub async fn run(&mut self, tui: &mut Tui) -> Result<()> {
@@ -166,17 +159,24 @@ impl App {
                 _ => {}
             }
 
-            for updater in &self.updates {
-                if let Some(action) = updater.update(&action, &mut self.app_state) {
-                    self.action_tx.send(action)?
-                }
-            }
+            self.run_updates(&action)?;
 
             if recompute_slot_widgets {
                 self.slot_views = compute_slot_views(&self.app_state);
             }
         }
 
+        Ok(())
+    }
+
+    fn run_updates(&mut self, action: &Action) -> Result<()> {
+        let mut next_actions = Vec::new();
+        for updater in &self.updates {
+            next_actions.extend(updater.update(action, &mut self.app_state));
+        }
+        for next_action in next_actions {
+            self.action_tx.send(next_action)?
+        }
         Ok(())
     }
 
@@ -188,15 +188,19 @@ impl App {
     fn render(&mut self, tui: &mut Tui) -> Result<()> {
         tui.try_draw(|f| -> std::result::Result<(), _> {
             let frame_area = f.area();
-            let store_option = self.app_state.store_option.current();
-            if frame_area != self.last_frame_area || store_option != &self.last_store_option {
+            if frame_area != self.last_frame_area
+                || self.app_state.store_option.current() != &self.last_store_option
+            {
                 trace!("Frame area or store option changed");
-                self.layout = compute_slot_layout(&self.app_state, frame_area);
-                self.set_window_sizes().map_err(Error::other)?;
+
+                // Synchronously update the layout
+                let action = Action::UpdateLayout(frame_area);
+                self.run_updates(&action).map_err(Error::other)?;
+
                 self.last_frame_area = frame_area;
-                self.last_store_option = store_option.clone();
+                self.last_store_option = self.app_state.store_option.current().clone();
             }
-            for (slot, area) in self.layout.iter() {
+            for (slot, area) in self.app_state.layout.iter() {
                 if let Some(view) = self.slot_views.get(slot) {
                     if let Err(e) = view.render(f, *area, &self.app_state) {
                         let _ = self
@@ -211,15 +215,5 @@ impl App {
         })
         .map(|_| ())
         .map_err(Into::into)
-    }
-
-    fn set_window_sizes(&self) -> Result<()> {
-        for (slot, rect) in self.layout.iter() {
-            trace!("Will set window size for {} to {}", slot, rect.height);
-            self.action_tx
-                .send(Action::SetWindowSize(*slot, rect.height as usize))
-                .map_err(Error::other)?;
-        }
-        Ok(())
     }
 }
