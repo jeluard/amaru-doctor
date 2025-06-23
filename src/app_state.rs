@@ -16,6 +16,7 @@ use amaru_consensus::Nonces;
 use amaru_kernel::{Address, Hash, Header, RawBlock};
 use amaru_stores::rocksdb::consensus::RocksDBStore;
 use color_eyre::Result;
+use ratatui::layout::Rect;
 use std::sync::Arc;
 use strum::IntoEnumIterator;
 
@@ -28,6 +29,7 @@ pub struct AppState {
     // pub chain_path: String,
     pub chain_db: Arc<RocksDBStore>,
 
+    pub frame_area: Rect,
     pub layout: SlotLayout,
     pub slot_focus: WidgetSlot,
 
@@ -65,6 +67,7 @@ impl AppState {
             ledger_db: ledger_db_arc.clone(),
             // chain_path,
             chain_db: chain_db_arc.clone(),
+            frame_area: Rect::default(),
             layout: SlotLayout::default(),
             slot_focus: WidgetSlot::StoreOption,
             store_option: Cursor::new(StoreOption::iter().collect())?,

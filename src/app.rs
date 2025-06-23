@@ -20,7 +20,6 @@ pub struct App {
     config: Config,
     app_state: AppState, // Model
     updates: UpdateList, // Update
-    last_frame_area: Rect,
     last_store_option: StoreOption,
     slot_views: SlotViews, // View
     should_quit: bool,
@@ -55,7 +54,6 @@ impl App {
         Ok(Self {
             app_state,
             updates: get_updates(),
-            last_frame_area: frame_area,
             last_store_option,
             slot_views,
             should_quit: false,
@@ -188,7 +186,7 @@ impl App {
     fn render(&mut self, tui: &mut Tui) -> Result<()> {
         tui.try_draw(|f| -> std::result::Result<(), _> {
             let frame_area = f.area();
-            if frame_area != self.last_frame_area
+            if frame_area != self.app_state.frame_area
                 || self.app_state.store_option.current() != &self.last_store_option
             {
                 trace!("Frame area or store option changed");
@@ -197,7 +195,6 @@ impl App {
                 let action = Action::UpdateLayout(frame_area);
                 self.run_updates(&action).map_err(Error::other)?;
 
-                self.last_frame_area = frame_area;
                 self.last_store_option = self.app_state.store_option.current().clone();
             }
             for (slot, area) in self.app_state.layout.iter() {

@@ -1,7 +1,7 @@
 use crate::{
     app_state::AppState,
     controller::LayoutSpec,
-    states::{StoreOption, WidgetSlot},
+    states::{LedgerMode, StoreOption, WidgetSlot},
 };
 use either::Either::{Left, Right};
 use ratatui::layout::{Constraint, Direction};
@@ -37,14 +37,21 @@ fn build_ledger_rest_ls(app_state: &AppState) -> LayoutSpec {
     }
 }
 
-fn build_ledger_header_ls(_s: &AppState) -> LayoutSpec {
-    LayoutSpec {
-        direction: Direction::Horizontal,
-        constraints: vec![
+fn build_ledger_header_ls(s: &AppState) -> LayoutSpec {
+    let constraints = match s.ledger_mode.current() {
+        LedgerMode::Browse => vec![
+            (Constraint::Fill(1), Left(WidgetSlot::StoreOption)),
+            (Constraint::Fill(1), Left(WidgetSlot::LedgerMode)),
+        ],
+        LedgerMode::Search => vec![
             (Constraint::Length(20), Left(WidgetSlot::StoreOption)),
             (Constraint::Length(20), Left(WidgetSlot::LedgerMode)),
             (Constraint::Fill(1), Left(WidgetSlot::SearchBar)),
         ],
+    };
+    LayoutSpec {
+        direction: Direction::Horizontal,
+        constraints,
     }
 }
 

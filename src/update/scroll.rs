@@ -22,16 +22,20 @@ pub trait Scrollable {
 struct ScrollDef {
     slot: WidgetSlot,
     target: fn(&mut AppState) -> Option<&mut dyn Scrollable>,
+    next_action: fn(&AppState) -> Vec<Action>,
 }
 
+// TODO: Change this--follow the pattern in Search
 static SCROLL_DEFS: &[ScrollDef] = &[
     ScrollDef {
         slot: WidgetSlot::StoreOption,
         target: |s| Some(&mut s.store_option),
+        next_action: |_| Vec::new(),
     },
     ScrollDef {
         slot: WidgetSlot::LedgerMode,
         target: |s| Some(&mut s.ledger_mode),
+        next_action: |s| vec![Action::UpdateLayout(s.frame_area)],
     },
     ScrollDef {
         slot: WidgetSlot::Options,
@@ -42,6 +46,7 @@ static SCROLL_DEFS: &[ScrollDef] = &[
             },
             _ => None,
         },
+        next_action: |_| Vec::new(),
     },
     ScrollDef {
         slot: WidgetSlot::List,
@@ -66,26 +71,29 @@ static SCROLL_DEFS: &[ScrollDef] = &[
                 None
             }
         },
+        next_action: |_| Vec::new(),
     },
     ScrollDef {
         slot: WidgetSlot::Details,
         target: |_| None,
+        next_action: |_| Vec::new(),
     },
     ScrollDef {
         slot: WidgetSlot::BottomLine,
         target: |_| None,
+        next_action: |_| Vec::new(),
     },
 ];
 
 impl Update for ScrollUpdate {
-    fn update(&self, action: &Action, app_state: &mut AppState) -> Vec<Action> {
+    fn update(&self, action: &Action, s: &mut AppState) -> Vec<Action> {
         let direction = match action {
             Action::ScrollUp => ScrollDirection::Up,
             Action::ScrollDown => ScrollDirection::Down,
             _ => return Vec::new(),
         };
 
-        let focused_slot = app_state.slot_focus;
+        let focused_slot = s.slot_focus;
         let def = match SCROLL_DEFS.iter().find(|d| d.slot == focused_slot) {
             Some(d) => d,
             None => {
@@ -94,17 +102,22 @@ impl Update for ScrollUpdate {
             }
         };
 
-        let scrollable = match (def.target)(app_state) {
+        let scrollable = match (def.target)(s) {
             Some(s) => s,
             None => return Vec::new(),
         };
 
         trace!("Scrolling {:?} {:?}", focused_slot, direction);
-        match direction {
-            ScrollDirection::Up => scrollable.scroll_up(),
-            ScrollDirection::Down => scrollable.scroll_down(),
-        }
 
-        Vec::new()
+        match direction {
+            ScrollDirection::Up => {
+                scrollable.scroll_up();
+                (def.next_action)(s)
+            }
+            ScrollDirection::Down => {
+                scrollable.scroll_down();
+                (def.next_action)(s)
+            }
+        }
     }
 }
