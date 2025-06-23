@@ -1,5 +1,4 @@
-use super::labeled_default;
-use crate::ui::to_rich::{RichText, ToRichText, labeled_default_opt};
+use crate::ui::{RichText, ToRichText, labeled_default, labeled_default_opt};
 use amaru_kernel::{Header, HeaderBody};
 use pallas_primitives::{VrfCert, conway::OperationalCert};
 

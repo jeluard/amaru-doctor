@@ -1,6 +1,6 @@
-use crate::{
-    ui::to_list_item::BlockIssuerItem,
-    ui::to_rich::{RichText, ToRichText, labeled_default_single, pool::PoolIdDisplay},
+use crate::ui::{
+    RichText, ToRichText, labeled_default_single, to_list_item::BlockIssuerItem,
+    to_rich::pool::PoolIdDisplay,
 };
 
 impl ToRichText for BlockIssuerItem {

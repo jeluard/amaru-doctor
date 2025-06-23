@@ -1,14 +1,16 @@
+use crate::view::block::render_block;
+use crate::view::nonces::render_nonces;
 use crate::{
     app_state::AppState,
     controller::is_widget_focused,
     states::{BrowseOption, LedgerMode, LedgerSearchOption, StoreOption, WidgetSlot},
-    types::chain::ChainSearchOption,
     view::{
         View, details::render_details, header::render_header, line::render_line, list::render_list,
         search::render_search_query, tabs::render_tabs,
     },
 };
-use amaru_kernel::Header;
+use amaru_consensus::Nonces;
+use amaru_kernel::{Header, RawBlock};
 use color_eyre::Result;
 use ratatui::{Frame, layout::Rect};
 
@@ -77,8 +79,11 @@ impl View for SearchBar {
             area,
             "Search",
             match s.store_option.current() {
-                StoreOption::Ledger => &s.ledger_search_query_bldr,
-                StoreOption::Chain => &s.chain_search_query_bldr,
+                StoreOption::Ledger => match s.ledger_search_options.selected() {
+                    Some(LedgerSearchOption::UtxosByAddress) => &s.utxos_by_addr_search.builder,
+                    None => "",
+                },
+                StoreOption::Chain => &s.chain_search.builder,
             },
             is_widget_focused(s, self.slot()),
         )
@@ -105,45 +110,70 @@ impl View for LedgerBrowseOptions {
     }
 }
 
-pub struct ChainSearchOptions;
-impl View for ChainSearchOptions {
-    fn slot(&self) -> WidgetSlot {
-        WidgetSlot::Options
-    }
-    fn is_visible(&self, s: &AppState) -> bool {
-        *s.store_option.current() == StoreOption::Chain
-    }
-    fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
-        render_list(
-            f,
-            area,
-            "Search Options",
-            Some(&s.chain_search_options),
-            is_widget_focused(s, self.slot()),
-        )
-    }
-}
-
 pub struct ChainSearchHeader;
 impl View for ChainSearchHeader {
     fn slot(&self) -> WidgetSlot {
-        WidgetSlot::Details
+        WidgetSlot::LedgerHeaderDetails
     }
     fn is_visible(&self, s: &AppState) -> bool {
         *s.store_option.current() == StoreOption::Chain
-            && s.chain_search_options.selected() == Some(&ChainSearchOption::Header)
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
-        let header_opt: Option<&Header> = s
-            .chain_search_query_hash
-            .as_ref()
-            .and_then(|h| s.headers_by_hash_search_res.get(h))
-            .and_then(|opt_hdr| opt_hdr.as_ref());
+        let header_opt: Option<Option<&Header>> = s
+            .chain_search
+            .get_current_res()
+            .map(|res| res.as_ref().map(|(h, _, _)| h));
         render_header(
             f,
             area,
             "Header Details",
             header_opt,
+            is_widget_focused(s, self.slot()),
+        )
+    }
+}
+
+pub struct ChainSearchBlock;
+impl View for ChainSearchBlock {
+    fn slot(&self) -> WidgetSlot {
+        WidgetSlot::LedgerBlockDetails
+    }
+    fn is_visible(&self, s: &AppState) -> bool {
+        *s.store_option.current() == StoreOption::Chain
+    }
+    fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
+        let block_opt_opt: Option<Option<&RawBlock>> = s
+            .chain_search
+            .get_current_res()
+            .map(|res| res.as_ref().map(|(_, b, _)| b));
+        render_block(
+            f,
+            area,
+            "Block Details",
+            block_opt_opt,
+            is_widget_focused(s, self.slot()),
+        )
+    }
+}
+
+pub struct ChainSearchNonces;
+impl View for ChainSearchNonces {
+    fn slot(&self) -> WidgetSlot {
+        WidgetSlot::LedgerNoncesDetails
+    }
+    fn is_visible(&self, s: &AppState) -> bool {
+        *s.store_option.current() == StoreOption::Chain
+    }
+    fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
+        let nonces_opt_opt: Option<Option<&Nonces>> = s
+            .chain_search
+            .get_current_res()
+            .map(|res| res.as_ref().map(|(_, _, n)| n));
+        render_nonces(
+            f,
+            area,
+            "Nonces Details",
+            nonces_opt_opt,
             is_widget_focused(s, self.slot()),
         )
     }
@@ -256,9 +286,7 @@ impl View for LedgerUtxosByAddr {
             f,
             area,
             "Utxos by Address",
-            s.ledger_search_query_addr
-                .as_ref()
-                .and_then(|a| s.utxos_by_addr_search_res.get(a)),
+            s.utxos_by_addr_search.get_current_res(),
             is_widget_focused(s, self.slot()),
         )
     }
@@ -280,9 +308,7 @@ impl View for LedgerSearchUtxoDetails {
             f,
             area,
             "Utxo Details",
-            s.ledger_search_query_addr
-                .as_ref()
-                .and_then(|a| s.utxos_by_addr_search_res.get(a)),
+            s.utxos_by_addr_search.get_current_res(),
             is_widget_focused(s, self.slot()),
         )
     }

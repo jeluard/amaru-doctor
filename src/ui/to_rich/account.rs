@@ -1,5 +1,4 @@
-use super::{RichText, ToRichText, labeled};
-use crate::ui::to_list_item::AccountItem;
+use crate::ui::{RichText, ToRichText, labeled, labeled_default_single, to_list_item::AccountItem};
 use amaru_kernel::{DRep, StakeCredential};
 use amaru_ledger::store::columns::accounts::Row;
 use ratatui::{
@@ -29,7 +28,7 @@ impl ToRichText for StakeCredential {
 impl ToRichText for AccountItem {
     fn to_rich_text(&self) -> RichText {
         let mut lines = Vec::new();
-        lines.extend(super::labeled_default_single(
+        lines.extend(labeled_default_single(
             "Account",
             StakeCredentialDisplay(&self.0),
         ));

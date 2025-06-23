@@ -18,7 +18,6 @@ mod model;
 mod states;
 mod store;
 mod tui;
-mod types;
 mod ui;
 mod update;
 mod view;

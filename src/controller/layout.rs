@@ -109,8 +109,9 @@ fn build_chain_body_ls(_s: &AppState) -> LayoutSpec {
     LayoutSpec {
         direction: Direction::Horizontal,
         constraints: vec![
-            (Constraint::Percentage(20), Left(WidgetSlot::Options)),
-            (Constraint::Percentage(80), Left(WidgetSlot::Details)),
+            (Constraint::Fill(1), Left(WidgetSlot::LedgerHeaderDetails)),
+            (Constraint::Fill(1), Left(WidgetSlot::LedgerBlockDetails)),
+            (Constraint::Fill(1), Left(WidgetSlot::LedgerNoncesDetails)),
         ],
     }
 }

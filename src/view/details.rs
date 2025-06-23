@@ -1,7 +1,5 @@
-use crate::{
-    model::window::WindowState,
-    ui::to_rich::{RichText, ToRichText},
-};
+use crate::ui::RichText;
+use crate::{model::window::WindowState, ui::ToRichText};
 use color_eyre::Result;
 use ratatui::{
     Frame,

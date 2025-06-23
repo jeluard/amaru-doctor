@@ -40,7 +40,7 @@ static SCROLL_DEFS: &[ScrollDef] = &[
                 LedgerMode::Browse => Some(&mut s.ledger_browse_options),
                 LedgerMode::Search => Some(&mut s.ledger_search_options),
             },
-            StoreOption::Chain => Some(&mut s.chain_search_options),
+            _ => None,
         },
     },
     ScrollDef {
@@ -58,10 +58,9 @@ static SCROLL_DEFS: &[ScrollDef] = &[
                         None => None,
                     },
                     LedgerMode::Search => s
-                        .ledger_search_query_addr
-                        .as_ref()
-                        .and_then(|a| s.utxos_by_addr_search_res.get_mut(a))
-                        .map(|w| w as &mut dyn Scrollable),
+                        .utxos_by_addr_search
+                        .get_current_res_mut()
+                        .map(|r| r as &mut dyn Scrollable),
                 }
             } else {
                 None

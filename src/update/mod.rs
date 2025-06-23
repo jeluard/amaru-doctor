@@ -2,7 +2,7 @@ use crate::{
     app_state::AppState,
     states::Action,
     update::{
-        focus::FocusUpdate, scroll::ScrollUpdate, search::SearchQuery, window::WindowSizeUpdate,
+        focus::FocusUpdate, scroll::ScrollUpdate, search::SearchUpdate, window::WindowSizeUpdate,
     },
 };
 
@@ -21,6 +21,6 @@ pub fn get_updates() -> UpdateList {
         Box::new(FocusUpdate {}),
         Box::new(ScrollUpdate {}),
         Box::new(WindowSizeUpdate {}),
-        Box::new(SearchQuery {}),
+        Box::new(SearchUpdate {}),
     ]
 }

@@ -65,6 +65,9 @@ pub enum WidgetSlot {
     Options,
     List,
     Details,
+    LedgerHeaderDetails,
+    LedgerBlockDetails,
+    LedgerNoncesDetails,
     BottomLine,
 }
 
