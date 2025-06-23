@@ -46,9 +46,6 @@ pub struct AppState {
     pub ledger_search_options: WindowState<LedgerSearchOption>,
     pub utxos_by_addr_search: SearchState<Address, WindowState<UtxoItem>>,
 
-    // pub header_by_hash_search: SearchState<Hash<32>, Option<Header>>,
-    // pub block_by_hash_search: SearchState<Hash<32>, Result<RawBlock, StoreError>>,
-    // pub nonces_by_hash_search: SearchState<Hash<32>, Option<Nonces>>,
     pub chain_search: SearchState<Hash<32>, Option<(Header, RawBlock, Nonces)>>,
 }
 
@@ -88,9 +85,6 @@ impl AppState {
             proposals: WindowState::from_iter(OwnedProposalIter::new(ledger_db_arc.clone())),
             utxos: WindowState::from_iter(OwnedUtxoIter::new(ledger_db_arc.clone())),
             utxos_by_addr_search: SearchState::default(),
-            // header_by_hash_search: SearchState::default(),
-            // block_by_hash_search: SearchState::default(),
-            // nonces_by_hash_search: SearchState::default(),
             chain_search: SearchState::default(),
         })
     }

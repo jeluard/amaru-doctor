@@ -90,8 +90,6 @@ trait SearchHandler {
 enum Search {
     LedgerUtxosByAddr(LedgerUtxosByAddr),
     ChainSearch(ChainSearch),
-    // ChainBlockHash(ChainBlockHash),
-    // ChainNoncesHash(ChainNoncesHash),
 }
 
 impl Update for Search {
@@ -99,8 +97,6 @@ impl Update for Search {
         match self {
             Search::LedgerUtxosByAddr(h) => update_search(h, action, s),
             Search::ChainSearch(h) => update_search(h, action, s),
-            // Search::ChainBlockHash(h) => update_search(h, action, s),
-            // Search::ChainNoncesHash(h) => update_search(h, action, s),
         }
     }
 }
