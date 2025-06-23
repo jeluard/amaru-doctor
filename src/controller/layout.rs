@@ -1,80 +1,116 @@
 use crate::{
     app_state::AppState,
-    controller::resolve_placed_widget_id,
-    states::{WidgetId, WidgetSlot},
+    controller::LayoutSpec,
+    states::{StoreOption, WidgetSlot},
 };
-use color_eyre::{Result, eyre::eyre};
-use ratatui::layout::{Constraint, Direction, Layout, Rect};
-use std::collections::HashMap;
-use strum::IntoEnumIterator;
+use either::Either::{Left, Right};
+use ratatui::layout::{Constraint, Direction};
 
-/// Determines where to render a slot
-pub type SlotLayout = HashMap<WidgetSlot, Rect>;
-
-/// Determines what widget to render within a slot
-pub type SlotWidgets = HashMap<WidgetSlot, WidgetId>;
-
-pub fn compute_slot_layout(area: Rect) -> Result<SlotLayout> {
-    let [header, body, footer] = *Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(1),
-            Constraint::Fill(1),
-            Constraint::Length(1),
-        ])
-        .split(area)
-    else {
-        return Err(eyre!("Couldn't destructure left and right columns"));
-    };
-
-    let [left, right] = *Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(20), Constraint::Percentage(80)])
-        .split(body)
-    else {
-        return Err(eyre!("Couldn't destructure left and right columns"));
-    };
-
-    let [nav, options, list] = *Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(3),
-            Constraint::Fill(1),
-            Constraint::Fill(3),
-        ])
-        .split(left)
-    else {
-        return Err(eyre!("Couldn't destructure left column rows"));
-    };
-
-    let [search, details] = *Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Fill(1)])
-        .split(right)
-    else {
-        return Err(eyre!("Couldn't destructure right column rows"));
-    };
-
-    let layout = WidgetSlot::iter()
-        .map(|slot| {
-            let rect = match slot {
-                WidgetSlot::Header => header,
-                WidgetSlot::Nav => nav,
-                WidgetSlot::SearchBar => search,
-                WidgetSlot::Options => options,
-                WidgetSlot::List => list,
-                WidgetSlot::Details => details,
-                WidgetSlot::Footer => footer,
-            };
-            (slot, rect)
-        })
-        .collect();
-
-    Ok(layout)
+pub fn build_layout_spec(app_state: &AppState) -> LayoutSpec {
+    match app_state.store_option.current() {
+        StoreOption::Ledger => build_ledger_ls(app_state),
+        StoreOption::Chain => build_chain_ls(app_state),
+    }
 }
 
-pub fn compute_slot_widgets(app_state: &AppState) -> SlotWidgets {
-    WidgetSlot::iter()
-        .map(|slot| (slot, resolve_placed_widget_id(app_state, slot)))
-        .collect()
+fn build_ledger_ls(app_state: &AppState) -> LayoutSpec {
+    LayoutSpec {
+        direction: Direction::Vertical,
+        constraints: vec![
+            (Constraint::Length(1), Left(WidgetSlot::TopLine)),
+            (Constraint::Fill(1), Right(build_ledger_rest_ls(app_state))),
+            (Constraint::Length(1), Left(WidgetSlot::BottomLine)),
+        ],
+    }
+}
+
+fn build_ledger_rest_ls(app_state: &AppState) -> LayoutSpec {
+    LayoutSpec {
+        direction: Direction::Vertical,
+        constraints: vec![
+            (
+                Constraint::Length(3),
+                Right(build_ledger_header_ls(app_state)),
+            ),
+            (Constraint::Fill(1), Right(build_ledger_body_ls(app_state))),
+        ],
+    }
+}
+
+fn build_ledger_header_ls(_s: &AppState) -> LayoutSpec {
+    LayoutSpec {
+        direction: Direction::Horizontal,
+        constraints: vec![
+            (Constraint::Length(20), Left(WidgetSlot::StoreOption)),
+            (Constraint::Length(20), Left(WidgetSlot::LedgerMode)),
+            (Constraint::Fill(1), Left(WidgetSlot::SearchBar)),
+        ],
+    }
+}
+
+fn build_ledger_body_ls(app_state: &AppState) -> LayoutSpec {
+    LayoutSpec {
+        direction: Direction::Horizontal,
+        constraints: vec![
+            (
+                Constraint::Percentage(20),
+                Right(build_ledger_left_col_ls(app_state)),
+            ),
+            (Constraint::Percentage(80), Left(WidgetSlot::Details)),
+        ],
+    }
+}
+
+fn build_ledger_left_col_ls(_s: &AppState) -> LayoutSpec {
+    LayoutSpec {
+        direction: Direction::Vertical,
+        constraints: vec![
+            (Constraint::Fill(1), Left(WidgetSlot::Options)),
+            (Constraint::Fill(3), Left(WidgetSlot::List)),
+        ],
+    }
+}
+
+fn build_chain_ls(app_state: &AppState) -> LayoutSpec {
+    LayoutSpec {
+        direction: Direction::Vertical,
+        constraints: vec![
+            (Constraint::Length(1), Left(WidgetSlot::TopLine)),
+            (Constraint::Fill(1), Right(build_chain_rest_ls(app_state))),
+            (Constraint::Length(1), Left(WidgetSlot::BottomLine)),
+        ],
+    }
+}
+
+fn build_chain_rest_ls(app_state: &AppState) -> LayoutSpec {
+    LayoutSpec {
+        direction: Direction::Vertical,
+        constraints: vec![
+            (
+                Constraint::Length(3),
+                Right(build_chain_header_ls(app_state)),
+            ),
+            (Constraint::Fill(1), Right(build_chain_body_ls(app_state))),
+        ],
+    }
+}
+
+fn build_chain_header_ls(_s: &AppState) -> LayoutSpec {
+    LayoutSpec {
+        direction: Direction::Horizontal,
+        constraints: vec![
+            (Constraint::Length(20), Left(WidgetSlot::StoreOption)),
+            (Constraint::Fill(1), Left(WidgetSlot::SearchBar)),
+        ],
+    }
+}
+
+fn build_chain_body_ls(_s: &AppState) -> LayoutSpec {
+    LayoutSpec {
+        direction: Direction::Horizontal,
+        constraints: vec![
+            (Constraint::Percentage(20), Left(WidgetSlot::Options)),
+            (Constraint::Percentage(80), Left(WidgetSlot::Details)),
+        ],
+    }
 }

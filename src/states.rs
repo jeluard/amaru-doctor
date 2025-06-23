@@ -1,10 +1,5 @@
 use crate::ui::to_list_item::ToListItem;
-use ratatui::{
-    crossterm::event::KeyCode,
-    prelude::Line,
-    text::ToLine,
-    widgets::{ListItem, block::Title},
-};
+use ratatui::{crossterm::event::KeyCode, prelude::Line, text::ToLine, widgets::ListItem};
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter};
 
@@ -26,6 +21,7 @@ pub enum Action {
     ScrollDown,
     Key(KeyCode),
     SearchUtxosByAddr,
+    SearchHeadersByHash,
 }
 
 #[derive(Clone, Debug, Default, EnumIter, Display, PartialEq, Eq, Serialize, Deserialize)]
@@ -49,12 +45,12 @@ impl ToListItem for BrowseOption {
 
 #[derive(Clone, Debug, EnumIter, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum TabOption {
+pub enum LedgerMode {
     Browse,
     Search,
 }
 
-impl ToLine for TabOption {
+impl ToLine for LedgerMode {
     fn to_line(&self) -> Line<'_> {
         Line::from(serde_plain::to_string(self).unwrap().to_owned())
     }
@@ -62,69 +58,37 @@ impl ToLine for TabOption {
 
 #[derive(Clone, Copy, Debug, Display, EnumIter, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum WidgetSlot {
-    Header,
-    Nav,
+    TopLine,
+    StoreOption,
+    LedgerMode,
     SearchBar,
     Options,
     List,
     Details,
-    Footer,
-}
-
-#[derive(Clone, Debug, Display, EnumIter, Hash, PartialEq, Eq, Serialize, Deserialize)]
-pub enum WidgetId {
-    Empty,
-    Header,
-    Footer,
-    Nav,
-    #[serde(rename = "Search Query")]
-    SearchQuery,
-    #[serde(rename = "Browse Options")]
-    BrowseOptions,
-    #[serde(rename = "Queries")]
-    SearchOptions,
-    #[serde(rename = "Accounts")]
-    ListAccounts,
-    #[serde(rename = "Block Issuers")]
-    ListBlockIssuers,
-    #[serde(rename = "Dreps")]
-    ListDReps,
-    #[serde(rename = "Pools")]
-    ListPools,
-    #[serde(rename = "Proposals")]
-    ListProposals,
-    #[serde(rename = "Utxos")]
-    ListUtxos,
-    #[serde(rename = "Utxos by Address")]
-    ListUtxosByAddr,
-    #[serde(rename = "Account Details")]
-    DetailsAccount,
-    #[serde(rename = "Block Issuer Details")]
-    DetailsBlockIssuer,
-    #[serde(rename = "DRep Details")]
-    DetailsDRep,
-    #[serde(rename = "Pool Details")]
-    DetailsPool,
-    #[serde(rename = "Proposal Details")]
-    DetailsProposal,
-    #[serde(rename = "Utxo Details")]
-    DetailsUtxo,
-}
-
-impl From<WidgetId> for Title<'_> {
-    fn from(wid: WidgetId) -> Self {
-        Title::from(serde_plain::to_string(&wid).unwrap())
-    }
+    BottomLine,
 }
 
 #[derive(Clone, Copy, Debug, EnumIter, PartialEq, Eq, Serialize)]
-pub enum SearchOption {
+pub enum LedgerSearchOption {
     #[serde(rename = "utxos by address")]
     UtxosByAddress,
 }
 
-impl ToListItem for SearchOption {
+impl ToListItem for LedgerSearchOption {
     fn to_list_item(&self) -> ListItem<'static> {
         ListItem::new(serde_plain::to_string(self).unwrap())
+    }
+}
+
+#[derive(Clone, Debug, EnumIter, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum StoreOption {
+    Ledger,
+    Chain,
+}
+
+impl ToLine for StoreOption {
+    fn to_line(&self) -> Line<'_> {
+        Line::from(serde_plain::to_string(self).unwrap().to_owned())
     }
 }

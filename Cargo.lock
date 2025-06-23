@@ -47,14 +47,16 @@ checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 [[package]]
 name = "amaru-consensus"
 version = "0.1.0"
-source = "git+https://github.com/pragma-org/amaru.git#6ccac35656ece392ae2c1422e4621d0ee4697067"
+source = "git+https://github.com/pragma-org/amaru.git#2e6d5c122e7d5941ba7dbd44d7403fcf85d70456"
 dependencies = [
  "amaru-kernel",
  "amaru-ouroboros",
  "amaru-ouroboros-traits",
+ "hex",
  "pallas-codec",
  "pallas-crypto",
  "pallas-math",
+ "pure-stage",
  "rayon",
  "slot-arithmetic",
  "thiserror 2.0.12",
@@ -66,6 +68,7 @@ dependencies = [
 name = "amaru-doctor"
 version = "0.0.1"
 dependencies = [
+ "amaru-consensus",
  "amaru-kernel",
  "amaru-ledger",
  "amaru-stores",
@@ -79,6 +82,7 @@ dependencies = [
  "delegate",
  "derive_deref",
  "directories",
+ "either",
  "futures",
  "human-panic",
  "json5",
@@ -93,6 +97,7 @@ dependencies = [
  "serde_json",
  "serde_plain",
  "signal-hook",
+ "slot-arithmetic",
  "strip-ansi-escapes",
  "strum 0.27.1",
  "tokio",
@@ -106,11 +111,10 @@ dependencies = [
 [[package]]
 name = "amaru-kernel"
 version = "0.1.0"
-source = "git+https://github.com/pragma-org/amaru.git#6ccac35656ece392ae2c1422e4621d0ee4697067"
+source = "git+https://github.com/pragma-org/amaru.git#2e6d5c122e7d5941ba7dbd44d7403fcf85d70456"
 dependencies = [
  "bech32 0.11.0",
  "hex",
- "num",
  "pallas-addresses",
  "pallas-codec",
  "pallas-crypto",
@@ -121,12 +125,13 @@ dependencies = [
  "sha3",
  "slot-arithmetic",
  "thiserror 2.0.12",
+ "tracing",
 ]
 
 [[package]]
 name = "amaru-ledger"
 version = "0.1.0"
-source = "git+https://github.com/pragma-org/amaru.git#6ccac35656ece392ae2c1422e4621d0ee4697067"
+source = "git+https://github.com/pragma-org/amaru.git#2e6d5c122e7d5941ba7dbd44d7403fcf85d70456"
 dependencies = [
  "amaru-kernel",
  "amaru-ouroboros-traits",
@@ -144,7 +149,7 @@ dependencies = [
 [[package]]
 name = "amaru-ouroboros"
 version = "0.1.0"
-source = "git+https://github.com/pragma-org/amaru.git#6ccac35656ece392ae2c1422e4621d0ee4697067"
+source = "git+https://github.com/pragma-org/amaru.git#2e6d5c122e7d5941ba7dbd44d7403fcf85d70456"
 dependencies = [
  "amaru-kernel",
  "amaru-ouroboros-traits",
@@ -163,15 +168,16 @@ dependencies = [
 [[package]]
 name = "amaru-ouroboros-traits"
 version = "0.1.0"
-source = "git+https://github.com/pragma-org/amaru.git#6ccac35656ece392ae2c1422e4621d0ee4697067"
+source = "git+https://github.com/pragma-org/amaru.git#2e6d5c122e7d5941ba7dbd44d7403fcf85d70456"
 dependencies = [
  "amaru-kernel",
+ "slot-arithmetic",
 ]
 
 [[package]]
 name = "amaru-stores"
 version = "0.1.0"
-source = "git+https://github.com/pragma-org/amaru.git#6ccac35656ece392ae2c1422e4621d0ee4697067"
+source = "git+https://github.com/pragma-org/amaru.git#2e6d5c122e7d5941ba7dbd44d7403fcf85d70456"
 dependencies = [
  "amaru-consensus",
  "amaru-kernel",
@@ -2453,7 +2459,7 @@ checksum = "7943c866cc5cd64cbc25b2e01621d07fa8eb2a1a23160ee81ce38704e97b8ecf"
 [[package]]
 name = "iter-borrow"
 version = "0.1.0"
-source = "git+https://github.com/pragma-org/amaru.git#6ccac35656ece392ae2c1422e4621d0ee4697067"
+source = "git+https://github.com/pragma-org/amaru.git#2e6d5c122e7d5941ba7dbd44d7403fcf85d70456"
 dependencies = [
  "minicbor",
 ]
@@ -3224,6 +3230,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "pure-stage"
+version = "0.1.0"
+source = "git+https://github.com/pragma-org/amaru.git#2e6d5c122e7d5941ba7dbd44d7403fcf85d70456"
+dependencies = [
+ "anyhow",
+ "either",
+ "futures-util",
+ "parking_lot",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3690,7 +3711,7 @@ dependencies = [
 [[package]]
 name = "slot-arithmetic"
 version = "0.1.0"
-source = "git+https://github.com/pragma-org/amaru.git#6ccac35656ece392ae2c1422e4621d0ee4697067"
+source = "git+https://github.com/pragma-org/amaru.git#2e6d5c122e7d5941ba7dbd44d7403fcf85d70456"
 dependencies = [
  "hex",
  "minicbor",
@@ -4102,7 +4123,7 @@ dependencies = [
 [[package]]
 name = "tracing-json"
 version = "0.1.0"
-source = "git+https://github.com/pragma-org/amaru.git#6ccac35656ece392ae2c1422e4621d0ee4697067"
+source = "git+https://github.com/pragma-org/amaru.git#2e6d5c122e7d5941ba7dbd44d7403fcf85d70456"
 dependencies = [
  "assert-json-diff",
  "hex",

@@ -6,6 +6,7 @@ use std::fmt;
 pub mod account;
 pub mod block_issuer;
 pub mod drep;
+pub mod header;
 pub mod pool;
 pub mod proposal;
 pub mod utxo;
@@ -113,6 +114,12 @@ impl<'a> fmt::Display for RationalNumberDisplay<'a> {
 impl ToRichText for RationalNumber {
     fn to_rich_text(&self) -> RichText {
         RichText::Single(Span::raw(RationalNumberDisplay(self).to_string()))
+    }
+}
+
+impl ToRichText for u8 {
+    fn to_rich_text(&self) -> RichText {
+        RichText::Single(Span::raw(self.to_string()))
     }
 }
 

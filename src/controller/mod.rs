@@ -1,58 +1,47 @@
 use crate::{
     app_state::AppState,
-    states::{
-        BrowseOption::*,
-        SearchOption,
-        TabOption::*,
-        WidgetId::{self, *},
-        WidgetSlot::{self},
-    },
+    controller::layout::build_layout_spec,
+    states::WidgetSlot::{self},
 };
+use either::Either::{self, Left, Right};
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use std::collections::HashMap;
 
 pub mod layout;
 
-pub fn is_widget_focused(app_state: &AppState, widget_id: &WidgetId) -> bool {
-    focused_widget_id(app_state) == *widget_id
+pub type SlotLayout = HashMap<WidgetSlot, Rect>;
+
+pub struct LayoutSpec {
+    direction: Direction,
+    constraints: Vec<(Constraint, Either<WidgetSlot, LayoutSpec>)>,
 }
 
-pub fn focused_widget_id(app_state: &AppState) -> WidgetId {
-    let slot = app_state.slot_focus.current();
-    resolve_placed_widget_id(app_state, *slot)
+pub fn is_widget_focused(app_state: &AppState, widget_slot: WidgetSlot) -> bool {
+    app_state.slot_focus.current() == &widget_slot
 }
 
-pub fn resolve_placed_widget_id(app_state: &AppState, slot: WidgetSlot) -> WidgetId {
-    match slot {
-        WidgetSlot::Header => Header,
-        WidgetSlot::Footer => Footer,
-        WidgetSlot::Nav => Nav,
-        WidgetSlot::SearchBar => match app_state.tabs.current() {
-            Browse => Empty,
-            Search => SearchQuery,
-        },
-        WidgetSlot::Options => match app_state.tabs.current() {
-            Browse => BrowseOptions,
-            Search => SearchOptions,
-        },
-        WidgetSlot::List => match app_state.tabs.current() {
-            Browse => match app_state.browse_options.selected() {
-                Accounts => ListAccounts,
-                BlockIssuers => ListBlockIssuers,
-                DReps => ListDReps,
-                Pools => ListPools,
-                Proposals => ListProposals,
-                Utxos => ListUtxos,
-            },
-            Search => match app_state.search_options.selected() {
-                SearchOption::UtxosByAddress => ListUtxosByAddr,
-            },
-        },
-        WidgetSlot::Details => match app_state.browse_options.selected() {
-            Accounts => DetailsAccount,
-            BlockIssuers => DetailsBlockIssuer,
-            DReps => DetailsDRep,
-            Pools => DetailsPool,
-            Proposals => DetailsProposal,
-            Utxos => DetailsUtxo,
-        },
+pub fn compute_slot_layout(app_state: &AppState, area: Rect) -> SlotLayout {
+    let spec = build_layout_spec(app_state);
+    let mut out = HashMap::new();
+    walk_layout(&mut out, &spec, area);
+    out
+}
+
+fn walk_layout(out: &mut HashMap<WidgetSlot, Rect>, spec: &LayoutSpec, area: Rect) {
+    let constraints: Vec<Constraint> = spec.constraints.iter().map(|(c, _)| *c).collect();
+    let regions = Layout::default()
+        .direction(spec.direction)
+        .constraints(constraints)
+        .split(area);
+
+    for ((_, slot_or_spec), sub_area) in spec.constraints.iter().zip(regions.iter()) {
+        match slot_or_spec {
+            Left(slot) => {
+                out.insert(*slot, *sub_area);
+            }
+            Right(child_spec) => {
+                walk_layout(out, child_spec, *sub_area);
+            }
+        }
     }
 }

@@ -1,4 +1,4 @@
-use crate::store::rocks_db_switch::RocksDBSwitch;
+use crate::store::rocks_db_switch::LedgerDB;
 use crate::ui::to_list_item::{
     AccountItem, BlockIssuerItem, DRepItem, PoolItem, ProposalItem, UtxoItem,
 };
@@ -156,7 +156,7 @@ pub struct OwnedUtxoIter {
 }
 
 impl OwnedUtxoIter {
-    pub fn new(db: Arc<RocksDBSwitch>) -> Self {
+    pub fn new(db: Arc<LedgerDB>) -> Self {
         let (tx, rx) = mpsc::sync_channel(1);
         let db_clone = db.clone();
 

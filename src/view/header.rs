@@ -1,0 +1,36 @@
+use crate::ui::to_rich::{RichText, ToRichText};
+use amaru_kernel::Header;
+use color_eyre::Result;
+use ratatui::{
+    Frame,
+    layout::Rect,
+    style::{Color, Style},
+    text::Span,
+    widgets::{Block, Borders, Paragraph, Wrap},
+};
+
+pub fn render_header(
+    frame: &mut Frame,
+    area: Rect,
+    title: &str,
+    header_opt: Option<&Header>,
+    is_focused: bool,
+) -> Result<()> {
+    let mut block = Block::default().title(title).borders(Borders::ALL);
+    if is_focused {
+        block = block
+            .border_style(Style::default().fg(Color::Blue))
+            .title_style(Style::default().fg(Color::White));
+    }
+
+    let lines = match header_opt {
+        Some(header) => header.to_rich_text(),
+        None => RichText::Single(Span::raw("No header to detail")),
+    };
+    let widget = Paragraph::new(lines.unwrap_lines())
+        .wrap(Wrap { trim: true })
+        .block(block);
+    frame.render_widget(widget, area);
+
+    Ok(())
+}

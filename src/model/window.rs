@@ -1,5 +1,7 @@
 use tracing::trace;
 
+use crate::update::scroll::Scrollable;
+
 pub struct WindowState<T> {
     iter: Box<dyn Iterator<Item = T>>,
     buffer: Vec<T>,
@@ -57,28 +59,6 @@ impl<T> WindowState<T> {
         self.fill_buffer(self.window_start + self.window_size);
     }
 
-    pub fn scroll_up(&mut self) {
-        trace!("Scrolling up");
-        if self.cursor > 0 {
-            self.cursor -= 1;
-            if self.cursor < self.window_start {
-                self.window_start = self.cursor;
-            }
-        }
-    }
-
-    pub fn scroll_down(&mut self) {
-        trace!("Scrolling down");
-        let len = self.len();
-        if self.cursor + 1 < len {
-            self.cursor += 1;
-            if self.cursor >= self.window_start + self.window_size {
-                self.window_start = self.cursor + 1 - self.window_size;
-            }
-            self.fill_buffer(self.window_start + self.window_size);
-        }
-    }
-
     fn clamp_all(&mut self) {
         let len = self.len();
         if len == 0 {
@@ -98,15 +78,47 @@ impl<T> WindowState<T> {
         }
     }
 
-    pub fn window_view(&self) -> (&[T], usize) {
+    pub fn window_view(&self) -> (&[T], Option<usize>) {
         let end = (self.window_start + self.window_size).min(self.buffer.len());
         let slice = &self.buffer[self.window_start..end];
-        let idx = (self.cursor - self.window_start).min(slice.len().saturating_sub(1));
+        let idx = if slice.is_empty() {
+            None
+        } else {
+            Some(
+                self.cursor
+                    .saturating_sub(self.window_start)
+                    .min(slice.len().saturating_sub(1)),
+            )
+        };
         (slice, idx)
     }
 
-    pub fn selected(&self) -> &T {
+    pub fn selected(&self) -> Option<&T> {
         let (view, idx) = self.window_view();
-        &view[idx]
+        idx.and_then(|i| view.get(i))
+    }
+}
+
+impl<T> Scrollable for WindowState<T> {
+    fn scroll_up(&mut self) {
+        trace!("Scrolling up");
+        if self.cursor > 0 {
+            self.cursor -= 1;
+            if self.cursor < self.window_start {
+                self.window_start = self.cursor;
+            }
+        }
+    }
+
+    fn scroll_down(&mut self) {
+        trace!("Scrolling down");
+        let len = self.len();
+        if self.cursor + 1 < len {
+            self.cursor += 1;
+            if self.cursor >= self.window_start + self.window_size {
+                self.window_start = self.cursor + 1 - self.window_size;
+            }
+            self.fill_buffer(self.window_start + self.window_size);
+        }
     }
 }

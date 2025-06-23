@@ -2,10 +2,11 @@ use super::{RichText, ToRichText, labeled};
 use amaru_kernel::Address;
 use amaru_kernel::{
     PostAlonzoTransactionOutput, PseudoTransactionOutput, TransactionInput, TransactionOutput,
-    Value, alonzo, alonzo::PlutusData,
+    Value,
 };
 use pallas_codec::utils::CborWrap;
 use pallas_primitives::babbage::PseudoDatumOption;
+use pallas_primitives::{PlutusData, alonzo};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use std::fmt;
@@ -146,15 +147,13 @@ impl<'a> ToRichText for GenericValueRichText<'a> {
     }
 }
 
-pub struct AlonzoValueRichText<'a>(pub &'a amaru_kernel::alonzo::Value);
+pub struct AlonzoValueRichText<'a>(pub &'a alonzo::Value);
 
 impl<'a> ToRichText for AlonzoValueRichText<'a> {
     fn to_rich_text(&self) -> RichText {
         match self.0 {
-            amaru_kernel::alonzo::Value::Coin(c) => {
-                RichText::Single(Span::raw(format!("{} lovelace", c)))
-            }
-            amaru_kernel::alonzo::Value::Multiasset(coin, assets) => {
+            alonzo::Value::Coin(c) => RichText::Single(Span::raw(format!("{} lovelace", c))),
+            alonzo::Value::Multiasset(coin, assets) => {
                 let mut lines = vec![Line::from(vec![Span::raw(format!("{} lovelace +", coin))])];
                 for (pid, aset) in assets.iter() {
                     let pid_str = pid.to_string();
