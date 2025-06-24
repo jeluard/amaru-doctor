@@ -12,7 +12,7 @@ cd amaru-doctor
 cargo install --path .
 ```
 
-You can now run with `AMARU_LEDGER_DB=path/to/ledger.db amaru-doctor`
+You can now run with `AMARU_LEDGER_DB=path/to/ledger.db AMARU_CHAIN_DB=path/to/chain.db amaru-doctor`
 
 ![Demo](./resources/demo.gif)
 
