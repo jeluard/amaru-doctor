@@ -53,10 +53,7 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new(
-        ledger_db: LedgerDB,
-        chain_db: RocksDBStore,
-    ) -> Result<Self> {
+    pub fn new(ledger_db: LedgerDB, chain_db: RocksDBStore) -> Result<Self> {
         let ledger_db_arc = Arc::new(ledger_db);
         let chain_db_arc = Arc::new(chain_db);
         Ok(Self {

@@ -37,11 +37,7 @@ pub enum Mode {
 }
 
 impl App {
-    pub fn new(
-        ledger_db: LedgerDB,
-        chain_db: RocksDBStore,
-        frame_area: Rect,
-    ) -> Result<Self> {
+    pub fn new(ledger_db: LedgerDB, chain_db: RocksDBStore, frame_area: Rect) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
 
         let app_state = AppState::new(ledger_db, chain_db)?;

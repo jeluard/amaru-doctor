@@ -5,10 +5,22 @@ use crate::config::{get_config_dir, get_data_dir};
 #[derive(Parser, Debug)]
 #[command(author, version = version(), about)]
 pub struct Cli {
-    #[arg(short, long, value_name = "FLOAT", default_value = "ledger.db", env = "AMARU_LEDGER_DB")]
+    #[arg(
+        short,
+        long,
+        value_name = "FLOAT",
+        default_value = "ledger.db",
+        env = "AMARU_LEDGER_DB"
+    )]
     pub ledger_db: String,
 
-    #[arg(short, long, value_name = "FLOAT", default_value = "chain.db", env = "AMARU_CHAIN_DB")]
+    #[arg(
+        short,
+        long,
+        value_name = "FLOAT",
+        default_value = "chain.db",
+        env = "AMARU_CHAIN_DB"
+    )]
     pub chain_db: String,
 }
 

@@ -45,11 +45,7 @@ async fn main() -> Result<()> {
     let chain_db = RocksDBStore::new(&chain_path, era_history)?;
 
     let mut tui = Tui::new()?;
-    let mut app: App = App::new(
-        ledger_db,
-        chain_db,
-        tui.get_frame().area(),
-    )?;
+    let mut app: App = App::new(ledger_db, chain_db, tui.get_frame().area())?;
     app.run(&mut tui).await?;
     Ok(())
 }

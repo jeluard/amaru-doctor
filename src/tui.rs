@@ -79,19 +79,13 @@ impl Tui {
     pub fn start(&mut self) {
         self.cancel(); // Cancel any existing task
         self.cancellation_token = CancellationToken::new();
-        let event_loop = Self::event_loop(
-            self.event_tx.clone(),
-            self.cancellation_token.clone(),
-        );
+        let event_loop = Self::event_loop(self.event_tx.clone(), self.cancellation_token.clone());
         self.task = tokio::spawn(async {
             event_loop.await;
         });
     }
 
-    async fn event_loop(
-        event_tx: UnboundedSender<Event>,
-        cancellation_token: CancellationToken,
-    ) {
+    async fn event_loop(event_tx: UnboundedSender<Event>, cancellation_token: CancellationToken) {
         let mut event_stream = EventStream::new();
         let mut tick_interval = interval(Duration::from_secs_f64(1.0 / 4.0));
         let mut render_interval = interval(Duration::from_secs_f64(1.0 / 60.0));
