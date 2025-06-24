@@ -22,7 +22,6 @@ use strum::IntoEnumIterator;
 
 /// Holds ALL the app's state. Does not self-mutate.
 pub struct AppState {
-    pub ledger_path: String,
     pub ledger_db: Arc<LedgerDB>,
 
     // TODO: Add this in a header message
@@ -55,17 +54,13 @@ pub struct AppState {
 
 impl AppState {
     pub fn new(
-        ledger_path: String,
         ledger_db: LedgerDB,
-        _chain_path: String,
         chain_db: RocksDBStore,
     ) -> Result<Self> {
         let ledger_db_arc = Arc::new(ledger_db);
         let chain_db_arc = Arc::new(chain_db);
         Ok(Self {
-            ledger_path,
             ledger_db: ledger_db_arc.clone(),
-            // chain_path,
             chain_db: chain_db_arc.clone(),
             frame_area: Rect::default(),
             layout: SlotLayout::default(),

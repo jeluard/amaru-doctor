@@ -38,15 +38,13 @@ pub enum Mode {
 
 impl App {
     pub fn new(
-        ledger_path_str: String,
         ledger_db: LedgerDB,
-        chain_path_str: String,
         chain_db: RocksDBStore,
         frame_area: Rect,
     ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
 
-        let app_state = AppState::new(ledger_path_str, ledger_db, chain_path_str, chain_db)?;
+        let app_state = AppState::new(ledger_db, chain_db)?;
         action_tx.send(Action::UpdateLayout(frame_area))?;
         let last_store_option = app_state.store_option.current().clone();
         let slot_views = compute_slot_views(&app_state);

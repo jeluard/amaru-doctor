@@ -23,6 +23,7 @@ clap = { version = "4.5.20", features = [
     "unicode",
     "string",
     "unstable-styles",
+    "env",
 ] }
 color-eyre = "0.6.3"
 config = "0.15.11"

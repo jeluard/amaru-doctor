@@ -14,19 +14,6 @@ use amaru_kernel::{Header, RawBlock};
 use color_eyre::Result;
 use ratatui::{Frame, layout::Rect};
 
-pub struct TopLine;
-impl View for TopLine {
-    fn slot(&self) -> WidgetSlot {
-        WidgetSlot::TopLine
-    }
-    fn is_visible(&self, _s: &AppState) -> bool {
-        true
-    }
-    fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
-        render_line(f, area, format!("Reading amaru dir at {}", s.ledger_path))
-    }
-}
-
 pub struct StoreTabs;
 impl View for StoreTabs {
     fn slot(&self) -> WidgetSlot {

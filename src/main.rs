@@ -27,13 +27,10 @@ async fn main() -> Result<()> {
     crate::errors::init()?;
     crate::logging::init()?;
 
-    let ledger_path_str = env::var("AMARU_LEDGER_DB").unwrap_or_else(|_| "ledgerdb".to_string());
-    trace!("Using ledger path: {}", ledger_path_str);
-    let ledger_path = PathBuf::from_str(&ledger_path_str)?;
+    let args = Cli::parse();
 
-    let chain_path_str = env::var("AMARU_CHAIN_DB").unwrap_or_else(|_| "chaindb".to_string());
-    trace!("Using chain path: {}", chain_path_str);
-    let chain_path = PathBuf::from_str(&chain_path_str)?;
+    let ledger_path = PathBuf::from_str(&args.ledger_db)?;
+    let chain_path = PathBuf::from_str(&args.chain_db)?;
 
     let era_history: &EraHistory = NetworkName::Preprod.into();
     let ledger_db = if let Ok(epoch) = env::var("AMARU_LEDGER_EPOCH") {
@@ -47,14 +44,9 @@ async fn main() -> Result<()> {
     };
     let chain_db = RocksDBStore::new(&chain_path, era_history)?;
 
-    let args = Cli::parse();
-    let mut tui = Tui::new()?
-        .tick_rate(args.tick_rate)
-        .frame_rate(args.frame_rate);
+    let mut tui = Tui::new()?;
     let mut app: App = App::new(
-        ledger_path_str,
         ledger_db,
-        chain_path_str,
         chain_db,
         tui.get_frame().area(),
     )?;

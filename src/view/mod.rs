@@ -21,7 +21,6 @@ pub trait View: Sync {
 
 /// All views
 static VIEW_DEFS: &[&dyn View] = &[
-    &TopLine,
     &StoreTabs,
     &LedgerModeTabs,
     &SearchBar,

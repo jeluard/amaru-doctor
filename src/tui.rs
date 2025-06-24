@@ -48,8 +48,6 @@ pub struct Tui {
     pub cancellation_token: CancellationToken,
     pub event_rx: UnboundedReceiver<Event>,
     pub event_tx: UnboundedSender<Event>,
-    pub frame_rate: f64,
-    pub tick_rate: f64,
     pub mouse: bool,
     pub paste: bool,
 }
@@ -63,21 +61,9 @@ impl Tui {
             cancellation_token: CancellationToken::new(),
             event_rx,
             event_tx,
-            frame_rate: 60.0,
-            tick_rate: 4.0,
             mouse: false,
             paste: false,
         })
-    }
-
-    pub fn tick_rate(mut self, tick_rate: f64) -> Self {
-        self.tick_rate = tick_rate;
-        self
-    }
-
-    pub fn frame_rate(mut self, frame_rate: f64) -> Self {
-        self.frame_rate = frame_rate;
-        self
     }
 
     pub fn mouse(mut self, mouse: bool) -> Self {
@@ -96,8 +82,6 @@ impl Tui {
         let event_loop = Self::event_loop(
             self.event_tx.clone(),
             self.cancellation_token.clone(),
-            self.tick_rate,
-            self.frame_rate,
         );
         self.task = tokio::spawn(async {
             event_loop.await;
@@ -107,12 +91,10 @@ impl Tui {
     async fn event_loop(
         event_tx: UnboundedSender<Event>,
         cancellation_token: CancellationToken,
-        tick_rate: f64,
-        frame_rate: f64,
     ) {
         let mut event_stream = EventStream::new();
-        let mut tick_interval = interval(Duration::from_secs_f64(1.0 / tick_rate));
-        let mut render_interval = interval(Duration::from_secs_f64(1.0 / frame_rate));
+        let mut tick_interval = interval(Duration::from_secs_f64(1.0 / 4.0));
+        let mut render_interval = interval(Duration::from_secs_f64(1.0 / 60.0));
 
         // if this fails, then it's likely a bug in the calling code
         event_tx
