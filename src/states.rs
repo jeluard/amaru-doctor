@@ -1,7 +1,11 @@
+use std::collections::HashSet;
+
 use crate::ui::to_list_item::ToListItem;
-use ratatui::{crossterm::event::KeyCode, prelude::Line, text::ToLine, widgets::ListItem};
+use ratatui::{
+    crossterm::event::KeyCode, layout::Rect, prelude::Line, text::ToLine, widgets::ListItem,
+};
 use serde::{Deserialize, Serialize};
-use strum::{Display, EnumIter};
+use strum::{Display, EnumIter, IntoEnumIterator};
 
 #[derive(Debug, Clone, PartialEq, Eq, Display, Serialize, Deserialize)]
 pub enum Action {
@@ -15,13 +19,14 @@ pub enum Action {
     ClearScreen,
     Error(String),
     Help,
-    FocusPrev,
-    FocusNext,
+    FocusUp,
+    FocusDown,
+    FocusLeft,
+    FocusRight,
     ScrollUp,
     ScrollDown,
     Key(KeyCode),
-    SearchUtxosByAddr,
-    SearchHeadersByHash,
+    UpdateLayout(Rect),
 }
 
 #[derive(Clone, Debug, Default, EnumIter, Display, PartialEq, Eq, Serialize, Deserialize)]
@@ -65,7 +70,18 @@ pub enum WidgetSlot {
     Options,
     List,
     Details,
+    LedgerHeaderDetails,
+    LedgerBlockDetails,
+    LedgerNoncesDetails,
     BottomLine,
+}
+
+impl WidgetSlot {
+    pub fn focusable() -> HashSet<WidgetSlot> {
+        WidgetSlot::iter()
+            .filter(|s| !matches!(s, WidgetSlot::TopLine | WidgetSlot::BottomLine))
+            .collect()
+    }
 }
 
 #[derive(Clone, Copy, Debug, EnumIter, PartialEq, Eq, Serialize)]

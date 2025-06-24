@@ -1,4 +1,4 @@
-use super::{RichText, ToRichText, labeled};
+use crate::ui::{RichText, ToRichText, labeled};
 use amaru_kernel::Address;
 use amaru_kernel::{
     PostAlonzoTransactionOutput, PseudoTransactionOutput, TransactionInput, TransactionOutput,

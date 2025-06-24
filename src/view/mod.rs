@@ -3,11 +3,13 @@ use color_eyre::Result;
 use ratatui::{Frame, layout::Rect};
 use std::collections::HashMap;
 
+pub mod block;
 pub mod defs;
 pub mod details;
 pub mod header;
 pub mod line;
 pub mod list;
+pub mod nonces;
 pub mod search;
 pub mod tabs;
 
@@ -39,8 +41,9 @@ static VIEW_DEFS: &[&dyn View] = &[
     &LedgerProposalDetails,
     &LedgerUtxoDetails,
     &LedgerSearchUtxoDetails,
-    &ChainSearchOptions,
     &ChainSearchHeader,
+    &ChainSearchBlock,
+    &ChainSearchNonces,
     &BottomLine,
 ];
 

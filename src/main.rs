@@ -18,7 +18,6 @@ mod model;
 mod states;
 mod store;
 mod tui;
-mod types;
 mod ui;
 mod update;
 mod view;
@@ -59,7 +58,6 @@ async fn main() -> Result<()> {
         chain_db,
         tui.get_frame().area(),
     )?;
-    app.init()?;
     app.run(&mut tui).await?;
     Ok(())
 }

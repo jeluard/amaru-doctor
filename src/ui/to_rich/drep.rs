@@ -1,15 +1,12 @@
-use crate::{
-    ui::to_list_item::DRepItem,
-    ui::to_rich::{
-        RichText, ToRichText, account::StakeCredentialDisplay, labeled_default,
-        labeled_default_opt, labeled_default_opt_single, labeled_default_single,
-    },
+use crate::ui::{
+    RichText, ToRichText, labeled_default, labeled_default_opt, labeled_default_opt_single,
+    labeled_default_single, to_list_item::DRepItem, to_rich::account::StakeCredentialDisplay,
 };
 use amaru_kernel::Anchor;
 use amaru_ledger::store::columns::dreps;
 
 impl ToRichText for DRepItem {
-    fn to_rich_text(&self) -> super::RichText {
+    fn to_rich_text(&self) -> RichText {
         let mut lines = Vec::new();
         lines.extend(labeled_default_single(
             "DRep",
