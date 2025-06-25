@@ -1,6 +1,6 @@
-use crate::{app::App, store::rocks_db_switch::LedgerDB::*, tui::Tui};
+use crate::{app::App, store::ROLedgerDB, tui::Tui};
 use amaru_kernel::{EraHistory, network::NetworkName};
-use amaru_stores::rocksdb::{RocksDB, RocksDBHistoricalStores, consensus::RocksDBStore};
+use amaru_stores::rocksdb::consensus::RocksDBStore;
 use clap::Parser;
 use cli::Cli;
 use color_eyre::Result;
@@ -35,12 +35,9 @@ async fn main() -> Result<()> {
     let era_history: &EraHistory = NetworkName::Preprod.into();
     let ledger_db = if let Ok(epoch) = env::var("AMARU_LEDGER_EPOCH") {
         trace!("Using epoch: {}", epoch);
-        Snapshot(RocksDBHistoricalStores::for_epoch_with(
-            ledger_path.as_path(),
-            epoch.parse::<u64>()?.into(),
-        )?)
+        ROLedgerDB::open_snapshot(&ledger_path, epoch.parse::<u64>()?.into())?
     } else {
-        Store(RocksDB::new(ledger_path.as_path(), era_history)?)
+        ROLedgerDB::open_live(&ledger_path)?
     };
     let chain_db = RocksDBStore::new(&chain_path, era_history)?;
 

@@ -3,11 +3,11 @@ use crate::{
     model::{cursor::Cursor, window::WindowState},
     states::{BrowseOption, LedgerMode, LedgerSearchOption, StoreOption, WidgetSlot},
     store::{
+        ROLedgerDB,
         owned_iter::{
             OwnedAccountIter, OwnedBlockIssuerIter, OwnedDRepIter, OwnedPoolIter,
             OwnedProposalIter, OwnedUtxoIter,
         },
-        rocks_db_switch::LedgerDB,
     },
     ui::to_list_item::{AccountItem, BlockIssuerItem, DRepItem, PoolItem, ProposalItem, UtxoItem},
     update::search::SearchState,
@@ -22,7 +22,7 @@ use strum::IntoEnumIterator;
 
 /// Holds ALL the app's state. Does not self-mutate.
 pub struct AppState {
-    pub ledger_db: Arc<LedgerDB>,
+    pub ledger_db: Arc<ROLedgerDB>,
 
     // TODO: Add this in a header message
     // pub chain_path: String,
@@ -53,7 +53,7 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new(ledger_db: LedgerDB, chain_db: RocksDBStore) -> Result<Self> {
+    pub fn new(ledger_db: ROLedgerDB, chain_db: RocksDBStore) -> Result<Self> {
         let ledger_db_arc = Arc::new(ledger_db);
         let chain_db_arc = Arc::new(chain_db);
         Ok(Self {
