@@ -4,6 +4,7 @@ use crate::{
     states::{BrowseOption, LedgerMode, LedgerSearchOption, StoreOption, WidgetSlot},
     store::{
         ROLedgerDB,
+        chaindb::ROChainDB,
         owned_iter::{
             OwnedAccountIter, OwnedBlockIssuerIter, OwnedDRepIter, OwnedPoolIter,
             OwnedProposalIter, OwnedUtxoIter,
@@ -14,7 +15,6 @@ use crate::{
 };
 use amaru_consensus::Nonces;
 use amaru_kernel::{Address, Hash, Header, RawBlock};
-use amaru_stores::rocksdb::consensus::RocksDBStore;
 use color_eyre::Result;
 use ratatui::layout::Rect;
 use std::sync::Arc;
@@ -23,10 +23,7 @@ use strum::IntoEnumIterator;
 /// Holds ALL the app's state. Does not self-mutate.
 pub struct AppState {
     pub ledger_db: Arc<ROLedgerDB>,
-
-    // TODO: Add this in a header message
-    // pub chain_path: String,
-    pub chain_db: Arc<RocksDBStore>,
+    pub chain_db: Arc<ROChainDB>,
 
     pub frame_area: Rect,
     pub layout: SlotLayout,
@@ -53,7 +50,7 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new(ledger_db: ROLedgerDB, chain_db: RocksDBStore) -> Result<Self> {
+    pub fn new(ledger_db: ROLedgerDB, chain_db: ROChainDB) -> Result<Self> {
         let ledger_db_arc = Arc::new(ledger_db);
         let chain_db_arc = Arc::new(chain_db);
         Ok(Self {

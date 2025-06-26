@@ -24,6 +24,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+pub mod chaindb;
 pub mod owned_iter;
 
 // Special key where we store the protocol parameters
