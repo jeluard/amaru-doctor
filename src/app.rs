@@ -2,11 +2,12 @@ use crate::{
     app_state::AppState,
     config::Config,
     states::{Action, StoreOption},
-    store::{chaindb::ROChainDB, ledgerdb::ROLedgerDB},
+    store::rocks_db_switch::LedgerDB,
     tui::{Event, Tui},
     update::{UpdateList, get_updates},
     view::{SlotViews, compute_slot_views},
 };
+use amaru_stores::rocksdb::consensus::RocksDBStore;
 use color_eyre::Result;
 use crossterm::event::KeyEvent;
 use ratatui::prelude::Rect;
@@ -36,7 +37,7 @@ pub enum Mode {
 }
 
 impl App {
-    pub fn new(ledger_db: ROLedgerDB, chain_db: ROChainDB, frame_area: Rect) -> Result<Self> {
+    pub fn new(ledger_db: LedgerDB, chain_db: RocksDBStore, frame_area: Rect) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
 
         let app_state = AppState::new(ledger_db, chain_db)?;
