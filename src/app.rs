@@ -2,7 +2,7 @@ use crate::{
     app_state::AppState,
     config::Config,
     states::{Action, StoreOption},
-    store::{ROLedgerDB, chaindb::ROChainDB},
+    store::{chaindb::ROChainDB, ledgerdb::ROLedgerDB},
     tui::{Event, Tui},
     update::{UpdateList, get_updates},
     view::{SlotViews, compute_slot_views},

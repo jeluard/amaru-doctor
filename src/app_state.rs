@@ -3,8 +3,8 @@ use crate::{
     model::{cursor::Cursor, window::WindowState},
     states::{BrowseOption, LedgerMode, LedgerSearchOption, StoreOption, WidgetSlot},
     store::{
-        ROLedgerDB,
         chaindb::ROChainDB,
+        ledgerdb::ROLedgerDB,
         owned_iter::{
             OwnedAccountIter, OwnedBlockIssuerIter, OwnedDRepIter, OwnedPoolIter,
             OwnedProposalIter, OwnedUtxoIter,

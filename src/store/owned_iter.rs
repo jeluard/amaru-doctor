@@ -1,4 +1,4 @@
-use crate::store::ROLedgerDB;
+use crate::store::ledgerdb::ROLedgerDB;
 use crate::ui::to_list_item::{
     AccountItem, BlockIssuerItem, DRepItem, PoolItem, ProposalItem, UtxoItem,
 };

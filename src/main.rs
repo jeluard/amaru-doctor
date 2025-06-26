@@ -1,6 +1,6 @@
 use crate::{
     app::App,
-    store::{ROLedgerDB, chaindb::ROChainDB},
+    store::{chaindb::ROChainDB, ledgerdb::ROLedgerDB},
     tui::Tui,
 };
 use clap::Parser;
@@ -34,7 +34,6 @@ async fn main() -> Result<()> {
     let ledger_path = PathBuf::from_str(&args.ledger_db)?;
     let chain_path = PathBuf::from_str(&args.chain_db)?;
 
-    // let era_history: &EraHistory = NetworkName::Preprod.into();
     let ledger_db = if let Ok(epoch) = env::var("AMARU_LEDGER_EPOCH") {
         trace!("Using epoch: {}", epoch);
         ROLedgerDB::open_snapshot(&ledger_path, epoch.parse::<u64>()?.into())?
