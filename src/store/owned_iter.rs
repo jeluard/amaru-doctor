@@ -1,8 +1,8 @@
-use crate::store::rocks_db_switch::LedgerDB;
 use crate::ui::to_list_item::{
     AccountItem, BlockIssuerItem, DRepItem, PoolItem, ProposalItem, UtxoItem,
 };
-use amaru_ledger::store::ReadOnlyStore;
+use amaru_ledger::store::ReadStore;
+use amaru_stores::rocksdb::ReadOnlyRocksDB;
 use std::sync::{Arc, mpsc};
 use std::thread;
 
@@ -11,7 +11,7 @@ pub struct OwnedAccountIter {
 }
 
 impl OwnedAccountIter {
-    pub fn new(db: Arc<impl ReadOnlyStore + Sync + Send + 'static>) -> Self {
+    pub fn new(db: Arc<ReadOnlyRocksDB>) -> Self {
         let (tx, rx) = mpsc::sync_channel(1);
         let db_clone = db.clone();
         thread::spawn(move || {
@@ -40,7 +40,7 @@ pub struct OwnedBlockIssuerIter {
 }
 
 impl OwnedBlockIssuerIter {
-    pub fn new(db: Arc<impl ReadOnlyStore + Sync + Send + 'static>) -> Self {
+    pub fn new(db: Arc<ReadOnlyRocksDB>) -> Self {
         let (tx, rx) = mpsc::sync_channel(1);
         let db_clone = db.clone();
         thread::spawn(move || {
@@ -69,7 +69,7 @@ pub struct OwnedDRepIter {
 }
 
 impl OwnedDRepIter {
-    pub fn new(db: Arc<impl ReadOnlyStore + Sync + Send + 'static>) -> Self {
+    pub fn new(db: Arc<ReadOnlyRocksDB>) -> Self {
         let (tx, rx) = mpsc::sync_channel(1);
         let db_clone = db.clone();
         thread::spawn(move || {
@@ -98,7 +98,7 @@ pub struct OwnedPoolIter {
 }
 
 impl OwnedPoolIter {
-    pub fn new(db: Arc<impl ReadOnlyStore + Sync + Send + 'static>) -> Self {
+    pub fn new(db: Arc<ReadOnlyRocksDB>) -> Self {
         let (tx, rx) = mpsc::sync_channel(1);
         let db_clone = db.clone();
         thread::spawn(move || {
@@ -127,7 +127,7 @@ pub struct OwnedProposalIter {
 }
 
 impl OwnedProposalIter {
-    pub fn new(db: Arc<impl ReadOnlyStore + Sync + Send + 'static>) -> Self {
+    pub fn new(db: Arc<ReadOnlyRocksDB>) -> Self {
         let (tx, rx) = mpsc::sync_channel(1);
         let db_clone = db.clone();
         thread::spawn(move || {
@@ -156,7 +156,7 @@ pub struct OwnedUtxoIter {
 }
 
 impl OwnedUtxoIter {
-    pub fn new(db: Arc<LedgerDB>) -> Self {
+    pub fn new(db: Arc<ReadOnlyRocksDB>) -> Self {
         let (tx, rx) = mpsc::sync_channel(1);
         let db_clone = db.clone();
 
