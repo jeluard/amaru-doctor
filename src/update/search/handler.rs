@@ -6,7 +6,7 @@ use crate::{
     ui::to_list_item::UtxoItem,
     update::search::{SearchHandler, SearchState},
 };
-use amaru_consensus::{Nonces, consensus::store::ChainStore};
+use amaru_consensus::{Nonces, consensus::store::ReadOnlyChainStore};
 use amaru_kernel::{Address, HasAddress, Hash, Header, RawBlock};
 use tracing::trace;
 
@@ -82,7 +82,7 @@ impl SearchHandler for ChainSearch {
                 return None;
             }
         };
-        let block = match ChainStore::<Header>::load_block(&*s.chain_db, query) {
+        let block = match ReadOnlyChainStore::<Header>::load_block(&*s.chain_db, query) {
             Ok(b) => b,
             Err(e) => {
                 trace!(
@@ -94,7 +94,7 @@ impl SearchHandler for ChainSearch {
                 return None;
             }
         };
-        let nonces = match ChainStore::<Header>::get_nonces(&*s.chain_db, query) {
+        let nonces = match ReadOnlyChainStore::<Header>::get_nonces(&*s.chain_db, query) {
             Some(n) => n,
             None => {
                 trace!("{} Found no nonces for query {}", self.debug_name(), query);
