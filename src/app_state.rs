@@ -1,7 +1,8 @@
 use crate::{
     controller::SlotLayout,
     model::{cursor::Cursor, window::WindowState},
-    states::{BrowseOption, LedgerMode, LedgerSearchOption, StoreOption, WidgetSlot},
+    otel::TraceCollector,
+    states::{BrowseOption, InspectOption, LedgerMode, LedgerSearchOption, WidgetSlot},
     store::owned_iter::{
         OwnedAccountIter, OwnedBlockIssuerIter, OwnedDRepIter, OwnedPoolIter, OwnedProposalIter,
         OwnedUtxoIter,
@@ -26,7 +27,7 @@ pub struct AppState {
     pub layout: SlotLayout,
     pub slot_focus: WidgetSlot,
 
-    pub store_option: Cursor<StoreOption>,
+    pub inspect_option: Cursor<InspectOption>,
     pub ledger_mode: Cursor<LedgerMode>,
 
     pub options_window_size: usize,
@@ -44,10 +45,16 @@ pub struct AppState {
     pub utxos_by_addr_search: SearchState<Address, WindowState<UtxoItem>>,
 
     pub chain_search: SearchState<Hash<32>, Option<(Header, RawBlock, Nonces)>>,
+
+    pub collector: Arc<TraceCollector>,
 }
 
 impl AppState {
-    pub fn new(ledger_db: ReadOnlyRocksDB, chain_db: ReadOnlyChainDB) -> Result<Self> {
+    pub fn new(
+        ledger_db: ReadOnlyRocksDB,
+        chain_db: ReadOnlyChainDB,
+        collector: Arc<TraceCollector>,
+    ) -> Result<Self> {
         let ledger_db_arc = Arc::new(ledger_db);
         let chain_db_arc = Arc::new(chain_db);
         Ok(Self {
@@ -55,8 +62,8 @@ impl AppState {
             chain_db: chain_db_arc.clone(),
             frame_area: Rect::default(),
             layout: SlotLayout::default(),
-            slot_focus: WidgetSlot::StoreOption,
-            store_option: Cursor::new(StoreOption::iter().collect())?,
+            slot_focus: WidgetSlot::InspectOption,
+            inspect_option: Cursor::new(InspectOption::iter().collect())?,
             ledger_mode: Cursor::new(LedgerMode::iter().collect())?,
             options_window_size: 0,
             ledger_browse_options: WindowState::from_iter(BrowseOption::iter()),
@@ -70,6 +77,7 @@ impl AppState {
             utxos: WindowState::from_iter(OwnedUtxoIter::new(ledger_db_arc.clone())),
             utxos_by_addr_search: SearchState::default(),
             chain_search: SearchState::default(),
+            collector,
         })
     }
 }

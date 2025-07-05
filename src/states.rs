@@ -64,7 +64,7 @@ impl ToLine for LedgerMode {
 #[derive(Clone, Copy, Debug, Display, EnumIter, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum WidgetSlot {
     TopLine,
-    StoreOption,
+    InspectOption,
     LedgerMode,
     SearchBar,
     Options,
@@ -98,12 +98,13 @@ impl ToListItem for LedgerSearchOption {
 
 #[derive(Clone, Debug, EnumIter, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum StoreOption {
+pub enum InspectOption {
     Ledger,
     Chain,
+    Otel,
 }
 
-impl ToLine for StoreOption {
+impl ToLine for InspectOption {
     fn to_line(&self) -> Line<'_> {
         Line::from(serde_plain::to_string(self).unwrap().to_owned())
     }

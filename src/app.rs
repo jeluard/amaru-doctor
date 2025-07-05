@@ -1,9 +1,10 @@
 use crate::{
     app_state::AppState,
     config::Config,
-    states::{Action, StoreOption},
+    otel::TraceCollector,
+    states::{Action, InspectOption},
     tui::{Event, Tui},
-    update::{UpdateList, get_updates},
+    update::{UPDATE_DEFS, UpdateList},
     view::{SlotViews, compute_slot_views},
 };
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
@@ -11,7 +12,7 @@ use color_eyre::Result;
 use crossterm::event::KeyEvent;
 use ratatui::prelude::Rect;
 use serde::{Deserialize, Serialize};
-use std::io::Error;
+use std::{io::Error, sync::Arc};
 use tokio::sync::mpsc;
 use tracing::{debug, info, trace};
 
@@ -19,7 +20,7 @@ pub struct App {
     config: Config,
     app_state: AppState, // Model
     updates: UpdateList, // Update
-    last_store_option: StoreOption,
+    last_store_option: InspectOption,
     slot_views: SlotViews, // View
     should_quit: bool,
     should_suspend: bool,
@@ -39,19 +40,20 @@ impl App {
     pub fn new(
         ledger_db: ReadOnlyRocksDB,
         chain_db: ReadOnlyChainDB,
+        collector: Arc<TraceCollector>,
         frame_area: Rect,
     ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
 
-        let app_state = AppState::new(ledger_db, chain_db)?;
+        let app_state = AppState::new(ledger_db, chain_db, collector)?;
         action_tx.send(Action::UpdateLayout(frame_area))?;
-        let last_store_option = app_state.store_option.current().clone();
+        let last_inspect_option = app_state.inspect_option.current().clone();
         let slot_views = compute_slot_views(&app_state);
 
         Ok(Self {
             app_state,
-            updates: get_updates(),
-            last_store_option,
+            updates: UPDATE_DEFS.to_vec(),
+            last_store_option: last_inspect_option,
             slot_views,
             should_quit: false,
             should_suspend: false,
@@ -184,7 +186,7 @@ impl App {
         tui.try_draw(|f| -> std::result::Result<(), _> {
             let frame_area = f.area();
             if frame_area != self.app_state.frame_area
-                || self.app_state.store_option.current() != &self.last_store_option
+                || self.app_state.inspect_option.current() != &self.last_store_option
             {
                 trace!("Frame area or store option changed");
 
@@ -192,7 +194,7 @@ impl App {
                 let action = Action::UpdateLayout(frame_area);
                 self.run_updates(&action).map_err(Error::other)?;
 
-                self.last_store_option = self.app_state.store_option.current().clone();
+                self.last_store_option = self.app_state.inspect_option.current().clone();
             }
             for (slot, area) in self.app_state.layout.iter() {
                 if let Some(view) = self.slot_views.get(slot) {

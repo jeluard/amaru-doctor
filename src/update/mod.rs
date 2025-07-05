@@ -13,17 +13,15 @@ pub mod scroll;
 pub mod search;
 pub mod window;
 
-pub type UpdateList = Vec<Box<dyn Update>>;
-pub trait Update {
+pub type UpdateList = Vec<&'static dyn Update>;
+pub trait Update: Sync {
     fn update(&self, action: &Action, app_state: &mut AppState) -> Vec<Action>;
 }
 
-pub fn get_updates() -> UpdateList {
-    vec![
-        Box::new(FocusUpdate {}),
-        Box::new(ScrollUpdate {}),
-        Box::new(WindowSizeUpdate {}),
-        Box::new(SearchUpdate {}),
-        Box::new(LayoutUpdate {}),
-    ]
-}
+pub static UPDATE_DEFS: &[&dyn Update] = &[
+    &FocusUpdate,
+    &ScrollUpdate,
+    &WindowSizeUpdate,
+    &SearchUpdate,
+    &LayoutUpdate,
+];

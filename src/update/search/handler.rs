@@ -1,7 +1,7 @@
 use crate::{
     app_state::AppState,
     model::window::WindowState,
-    states::{LedgerSearchOption, StoreOption, WidgetSlot},
+    states::{InspectOption, LedgerSearchOption, WidgetSlot},
     store::owned_iter::OwnedUtxoIter,
     ui::to_list_item::UtxoItem,
     update::search::{SearchHandler, SearchState},
@@ -25,7 +25,7 @@ impl SearchHandler for LedgerUtxosByAddr {
     }
 
     fn is_active(&self, s: &AppState) -> bool {
-        *s.store_option.current() == StoreOption::Ledger
+        *s.inspect_option.current() == InspectOption::Ledger
             && s.ledger_search_options.selected() == Some(&LedgerSearchOption::UtxosByAddress)
     }
 
@@ -63,7 +63,7 @@ impl SearchHandler for ChainSearch {
     }
 
     fn is_active(&self, s: &AppState) -> bool {
-        *s.store_option.current() == StoreOption::Chain
+        *s.inspect_option.current() == InspectOption::Chain
     }
 
     fn state<'a>(&self, s: &'a AppState) -> &'a SearchState<Self::Query, Self::Result> {

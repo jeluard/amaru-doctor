@@ -1,6 +1,6 @@
 use crate::{
     app_state::AppState,
-    states::{Action, BrowseOption, LedgerMode, StoreOption, WidgetSlot},
+    states::{Action, BrowseOption, InspectOption, LedgerMode, WidgetSlot},
     update::Update,
 };
 use strum::Display;
@@ -28,8 +28,8 @@ struct ScrollDef {
 // TODO: Change this--follow the pattern in Search
 static SCROLL_DEFS: &[ScrollDef] = &[
     ScrollDef {
-        slot: WidgetSlot::StoreOption,
-        target: |s| Some(&mut s.store_option),
+        slot: WidgetSlot::InspectOption,
+        target: |s| Some(&mut s.inspect_option),
         next_action: |_| Vec::new(),
     },
     ScrollDef {
@@ -39,8 +39,8 @@ static SCROLL_DEFS: &[ScrollDef] = &[
     },
     ScrollDef {
         slot: WidgetSlot::Options,
-        target: |s| match s.store_option.current() {
-            StoreOption::Ledger => match s.ledger_mode.current() {
+        target: |s| match s.inspect_option.current() {
+            InspectOption::Ledger => match s.ledger_mode.current() {
                 LedgerMode::Browse => Some(&mut s.ledger_browse_options),
                 LedgerMode::Search => Some(&mut s.ledger_search_options),
             },
@@ -51,7 +51,7 @@ static SCROLL_DEFS: &[ScrollDef] = &[
     ScrollDef {
         slot: WidgetSlot::List,
         target: |s| {
-            if *s.store_option.current() == StoreOption::Ledger {
+            if *s.inspect_option.current() == InspectOption::Ledger {
                 match s.ledger_mode.current() {
                     LedgerMode::Browse => match s.ledger_browse_options.selected() {
                         Some(BrowseOption::Accounts) => Some(&mut s.accounts),
