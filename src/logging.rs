@@ -20,7 +20,8 @@ pub fn init() -> Result<()> {
     // errors, then this will return an error.
     let env_filter = env_filter
         .try_from_env()
-        .or_else(|_| env_filter.with_env_var(LOG_ENV.clone()).from_env())?;
+        .or_else(|_| env_filter.with_env_var(LOG_ENV.clone()).from_env())?
+        .add_directive("h2=off".parse()?);
     let file_subscriber = fmt::layer()
         .with_file(true)
         .with_line_number(true)

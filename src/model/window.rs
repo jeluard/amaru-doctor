@@ -1,6 +1,5 @@
-use tracing::trace;
-
 use crate::update::scroll::Scrollable;
+use tracing::trace;
 
 pub struct WindowState<T> {
     iter: Box<dyn Iterator<Item = T>>,

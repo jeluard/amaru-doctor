@@ -1,6 +1,5 @@
-use tracing::trace;
-
 use crate::{app_state::AppState, controller::compute_slot_layout, states::Action, update::Update};
+use tracing::trace;
 
 pub struct LayoutUpdate;
 impl Update for LayoutUpdate {
