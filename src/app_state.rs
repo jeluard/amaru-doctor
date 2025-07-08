@@ -1,7 +1,7 @@
 use crate::{
     controller::SlotLayout,
     model::{cursor::Cursor, window::WindowState},
-    otel::TraceCollector,
+    otel::{TraceCollector, MetricsCollector},
     states::{BrowseOption, InspectOption, LedgerMode, LedgerSearchOption, WidgetSlot},
     store::owned_iter::{
         OwnedAccountIter, OwnedBlockIssuerIter, OwnedDRepIter, OwnedPoolIter, OwnedProposalIter,
@@ -47,6 +47,7 @@ pub struct AppState {
     pub chain_search: SearchState<Hash<32>, Option<(Header, RawBlock, Nonces)>>,
 
     pub collector: Arc<TraceCollector>,
+    pub metrics_collector: Arc<MetricsCollector>,
 }
 
 impl AppState {
@@ -54,6 +55,7 @@ impl AppState {
         ledger_db: ReadOnlyRocksDB,
         chain_db: ReadOnlyChainDB,
         collector: Arc<TraceCollector>,
+        metrics_collector: Arc<MetricsCollector>,
     ) -> Result<Self> {
         let ledger_db_arc = Arc::new(ledger_db);
         let chain_db_arc = Arc::new(chain_db);
@@ -78,6 +80,7 @@ impl AppState {
             utxos_by_addr_search: SearchState::default(),
             chain_search: SearchState::default(),
             collector,
+            metrics_collector,
         })
     }
 }

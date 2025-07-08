@@ -102,6 +102,7 @@ pub enum InspectOption {
     Ledger,
     Chain,
     Otel,
+    Metrics,
 }
 
 impl ToLine for InspectOption {
