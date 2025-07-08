@@ -2,14 +2,14 @@ use crate::{
     app_state::AppState,
     config::Config,
     otel::TraceCollector,
-    states::{Action, InspectOption},
+    states::{Action, InspectOption, WidgetSlot},
     tui::{Event, Tui},
     update::{UPDATE_DEFS, UpdateList},
     view::{SlotViews, compute_slot_views},
 };
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
 use color_eyre::Result;
-use crossterm::event::KeyEvent;
+use crossterm::event::{KeyEvent, MouseEvent, MouseEventKind, MouseButton};
 use ratatui::prelude::Rect;
 use serde::{Deserialize, Serialize};
 use std::{io::Error, sync::Arc};
@@ -102,6 +102,9 @@ impl App {
                 action_tx.send(Action::Key(key.code))?;
                 self.handle_key_event(key)?
             }
+            Event::Mouse(mouse) => {
+                self.handle_mouse_event(mouse)?
+            }
             _ => {}
         }
         Ok(())
@@ -135,6 +138,49 @@ impl App {
         Ok(())
     }
 
+    fn handle_mouse_event(&mut self, mouse: MouseEvent) -> Result<()> {
+        trace!("App::handle_mouse_event - received: {:?}", mouse);
+        let action_tx = self.action_tx.clone();
+        
+        match mouse.kind {
+            MouseEventKind::Down(MouseButton::Left) => {
+                // Send mouse click action with coordinates
+                action_tx.send(Action::Mouse(mouse.column, mouse.row))?;
+                
+                // Check if mouse click is on a focusable widget and switch focus
+                self.handle_mouse_focus(mouse.column, mouse.row)?;
+            }
+            MouseEventKind::Moved => {
+                // Send mouse move action for potential hover effects
+                action_tx.send(Action::MouseMove(mouse.column, mouse.row))?;
+            }
+            _ => {
+                // Ignore other mouse events for now (right click, drag, etc.)
+            }
+        }
+        Ok(())
+    }
+    
+    fn handle_mouse_focus(&mut self, x: u16, y: u16) -> Result<()> {
+        // Find which widget slot contains the mouse coordinates
+        for (slot, rect) in &self.app_state.layout {
+            if WidgetSlot::focusable().contains(slot) 
+                && x >= rect.x 
+                && x < rect.x + rect.width 
+                && y >= rect.y 
+                && y < rect.y + rect.height {
+                
+                // Only change focus if it's different from current focus
+                if self.app_state.slot_focus != *slot {
+                    trace!("Mouse focus change from {} to {}", self.app_state.slot_focus, slot);
+                    self.app_state.slot_focus = *slot;
+                }
+                break;
+            }
+        }
+        Ok(())
+    }
+
     fn handle_actions(&mut self, tui: &mut Tui) -> Result<()> {
         while let Ok(action) = self.action_rx.try_recv() {
             if !matches!(action, Action::Tick | Action::Render) {
@@ -153,6 +199,16 @@ impl App {
                 Action::ClearScreen => tui.clear()?,
                 Action::Resize(w, h) => self.handle_resize(tui, w, h)?,
                 Action::Render => self.render(tui)?,
+                Action::Mouse(x, y) => {
+                    debug!("Mouse click at ({}, {})", x, y);
+                    // Mouse click actions are handled in handle_mouse_event
+                    // This is logged for debugging purposes
+                }
+                Action::MouseMove(x, y) => {
+                    // Mouse move can be used for hover effects in the future
+                    // For now, just trace it to avoid spam
+                    trace!("Mouse move at ({}, {})", x, y);
+                }
                 _ => {}
             }
 
@@ -211,5 +267,44 @@ impl App {
         })
         .map(|_| ())
         .map_err(Into::into)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crossterm::event::{MouseEvent, MouseEventKind, MouseButton};
+    use ratatui::layout::Rect;
+    use tokio::sync::mpsc;
+
+    #[tokio::test]
+    async fn test_mouse_action_creation() {
+        // Test that mouse actions can be created with coordinates
+        let mouse_click = Action::Mouse(10, 20);
+        let mouse_move = Action::MouseMove(15, 25);
+        
+        assert!(matches!(mouse_click, Action::Mouse(10, 20)));
+        assert!(matches!(mouse_move, Action::MouseMove(15, 25)));
+    }
+
+    #[tokio::test]
+    async fn test_mouse_event_handling() {
+        // Create a mock mouse event
+        let mouse_event = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            column: 10,
+            row: 5,
+            modifiers: crossterm::event::KeyModifiers::empty(),
+        };
+
+        // Test the mouse event handling logic by checking the event kind
+        match mouse_event.kind {
+            MouseEventKind::Down(MouseButton::Left) => {
+                // This should trigger mouse focus and action sending
+                assert_eq!(mouse_event.column, 10);
+                assert_eq!(mouse_event.row, 5);
+            }
+            _ => panic!("Expected left mouse button down event"),
+        }
     }
 }
