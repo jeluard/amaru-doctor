@@ -64,6 +64,7 @@ impl View for SearchBar {
             InspectOption::Ledger => true,
             InspectOption::Chain => true,
             InspectOption::Otel => false,
+            InspectOption::Metrics => false,
         }
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
@@ -78,6 +79,7 @@ impl View for SearchBar {
                 },
                 InspectOption::Chain => &s.chain_search.builder,
                 InspectOption::Otel => "",
+                InspectOption::Metrics => "",
             },
             is_widget_focused(s, self.slot()),
         )

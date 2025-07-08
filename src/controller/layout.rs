@@ -11,6 +11,7 @@ pub fn build_layout_spec(app_state: &AppState) -> LayoutSpec {
         InspectOption::Ledger => build_ledger_ls(app_state),
         InspectOption::Chain => build_chain_ls(app_state),
         InspectOption::Otel => build_otel_ls(app_state),
+        InspectOption::Metrics => build_otel_ls(app_state), // Use same layout as Otel for metrics
     }
 }
 
