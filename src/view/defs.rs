@@ -1,6 +1,7 @@
 use crate::view::block::render_block;
 use crate::view::nonces::render_nonces;
 use crate::view::otel::render_otel_snapshot;
+use crate::view::metrics::render_metrics_snapshot;
 use crate::{
     app_state::AppState,
     controller::is_widget_focused,
@@ -63,6 +64,7 @@ impl View for SearchBar {
             InspectOption::Ledger => true,
             InspectOption::Chain => true,
             InspectOption::Otel => false,
+            InspectOption::Metrics => false,
         }
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
@@ -77,6 +79,7 @@ impl View for SearchBar {
                 },
                 InspectOption::Chain => &s.chain_search.builder,
                 InspectOption::Otel => "",
+                InspectOption::Metrics => "",
             },
             is_widget_focused(s, self.slot()),
         )
@@ -324,6 +327,28 @@ impl View for OtelDetails {
             area,
             "Otel",
             spans,
+            is_widget_focused(s, self.slot()),
+        )
+    }
+}
+
+pub struct MetricsDetails;
+impl View for MetricsDetails {
+    fn slot(&self) -> WidgetSlot {
+        WidgetSlot::Details
+    }
+
+    fn is_visible(&self, s: &AppState) -> bool {
+        *s.inspect_option.current() == InspectOption::Metrics
+    }
+
+    fn render(&self, frame: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
+        let metrics = s.metrics_collector.snapshot();
+        render_metrics_snapshot(
+            frame,
+            area,
+            "Metrics",
+            metrics,
             is_widget_focused(s, self.slot()),
         )
     }

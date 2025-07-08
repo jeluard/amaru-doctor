@@ -1,7 +1,7 @@
 use crate::{
     app_state::AppState,
     config::Config,
-    otel::TraceCollector,
+    otel::{TraceCollector, MetricsCollector},
     states::{Action, InspectOption},
     tui::{Event, Tui},
     update::{UPDATE_DEFS, UpdateList},
@@ -41,11 +41,12 @@ impl App {
         ledger_db: ReadOnlyRocksDB,
         chain_db: ReadOnlyChainDB,
         collector: Arc<TraceCollector>,
+        metrics_collector: Arc<MetricsCollector>,
         frame_area: Rect,
     ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
 
-        let app_state = AppState::new(ledger_db, chain_db, collector)?;
+        let app_state = AppState::new(ledger_db, chain_db, collector, metrics_collector)?;
         action_tx.send(Action::UpdateLayout(frame_area))?;
         let last_inspect_option = app_state.inspect_option.current().clone();
         let slot_views = compute_slot_views(&app_state);
