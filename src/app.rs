@@ -9,7 +9,7 @@ use crate::{
 };
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
 use color_eyre::Result;
-use crossterm::event::{KeyEvent, MouseEvent, MouseEventKind, MouseButton};
+use crossterm::event::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::prelude::Rect;
 use serde::{Deserialize, Serialize};
 use std::{io::Error, sync::Arc};
@@ -103,9 +103,7 @@ impl App {
                 action_tx.send(Action::Key(key.code))?;
                 self.handle_key_event(key)?
             }
-            Event::Mouse(mouse) => {
-                self.handle_mouse_event(mouse)?
-            }
+            Event::Mouse(mouse) => self.handle_mouse_event(mouse)?,
             _ => {}
         }
         Ok(())
@@ -142,12 +140,12 @@ impl App {
     fn handle_mouse_event(&mut self, mouse: MouseEvent) -> Result<()> {
         trace!("App::handle_mouse_event - received: {:?}", mouse);
         let action_tx = self.action_tx.clone();
-        
+
         match mouse.kind {
             MouseEventKind::Down(MouseButton::Left) => {
                 // Send mouse click action with coordinates for potential widget-specific handling
                 action_tx.send(Action::Mouse(mouse.column, mouse.row))?;
-                
+
                 // Check if mouse click is on a focusable widget and switch focus
                 // This allows users to click on widgets to focus them, similar to modern GUIs
                 self.handle_mouse_focus(mouse.column, mouse.row)?;
@@ -164,20 +162,23 @@ impl App {
         }
         Ok(())
     }
-    
+
     fn handle_mouse_focus(&mut self, x: u16, y: u16) -> Result<()> {
         // Find which widget slot contains the mouse coordinates
         // This implements click-to-focus functionality similar to modern GUI applications
         for (slot, rect) in &self.app_state.layout {
-            if WidgetSlot::focusable().contains(slot) 
-                && x >= rect.x 
-                && x < rect.x + rect.width 
-                && y >= rect.y 
-                && y < rect.y + rect.height {
-                
+            if WidgetSlot::focusable().contains(slot)
+                && x >= rect.x
+                && x < rect.x + rect.width
+                && y >= rect.y
+                && y < rect.y + rect.height
+            {
                 // Only change focus if it's different from current focus to avoid unnecessary updates
                 if self.app_state.slot_focus != *slot {
-                    trace!("Mouse focus change from {} to {}", self.app_state.slot_focus, slot);
+                    trace!(
+                        "Mouse focus change from {} to {}",
+                        self.app_state.slot_focus, slot
+                    );
                     self.app_state.slot_focus = *slot;
                 }
                 break; // Found the widget, no need to check others
@@ -278,7 +279,7 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crossterm::event::{MouseEvent, MouseEventKind, MouseButton};
+    use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
     use ratatui::layout::Rect;
     use tokio::sync::mpsc;
 
@@ -287,7 +288,7 @@ mod tests {
         // Test that mouse actions can be created with coordinates
         let mouse_click = Action::Mouse(10, 20);
         let mouse_move = Action::MouseMove(15, 25);
-        
+
         assert!(matches!(mouse_click, Action::Mouse(10, 20)));
         assert!(matches!(mouse_move, Action::MouseMove(15, 25)));
     }
@@ -317,13 +318,13 @@ mod tests {
     fn test_mouse_focus_coordinates() {
         // Test the coordinate checking logic for focus
         let rect = Rect::new(5, 5, 10, 10); // x=5, y=5, width=10, height=10
-        
+
         // Point inside the rectangle
         let inside_x = 7;
         let inside_y = 8;
         assert!(inside_x >= rect.x && inside_x < rect.x + rect.width);
         assert!(inside_y >= rect.y && inside_y < rect.y + rect.height);
-        
+
         // Point outside the rectangle
         let outside_x = 20;
         let outside_y = 3;
