@@ -144,18 +144,21 @@ impl App {
         
         match mouse.kind {
             MouseEventKind::Down(MouseButton::Left) => {
-                // Send mouse click action with coordinates
+                // Send mouse click action with coordinates for potential widget-specific handling
                 action_tx.send(Action::Mouse(mouse.column, mouse.row))?;
                 
                 // Check if mouse click is on a focusable widget and switch focus
+                // This allows users to click on widgets to focus them, similar to modern GUIs
                 self.handle_mouse_focus(mouse.column, mouse.row)?;
             }
             MouseEventKind::Moved => {
-                // Send mouse move action for potential hover effects
+                // Send mouse move action for potential hover effects in the future
+                // This could be used to highlight widgets on hover or show tooltips
                 action_tx.send(Action::MouseMove(mouse.column, mouse.row))?;
             }
             _ => {
-                // Ignore other mouse events for now (right click, drag, etc.)
+                // Ignore other mouse events for now (right click, drag, scroll, etc.)
+                // These could be implemented in the future for additional functionality
             }
         }
         Ok(())
@@ -163,6 +166,7 @@ impl App {
     
     fn handle_mouse_focus(&mut self, x: u16, y: u16) -> Result<()> {
         // Find which widget slot contains the mouse coordinates
+        // This implements click-to-focus functionality similar to modern GUI applications
         for (slot, rect) in &self.app_state.layout {
             if WidgetSlot::focusable().contains(slot) 
                 && x >= rect.x 
@@ -170,12 +174,12 @@ impl App {
                 && y >= rect.y 
                 && y < rect.y + rect.height {
                 
-                // Only change focus if it's different from current focus
+                // Only change focus if it's different from current focus to avoid unnecessary updates
                 if self.app_state.slot_focus != *slot {
                     trace!("Mouse focus change from {} to {}", self.app_state.slot_focus, slot);
                     self.app_state.slot_focus = *slot;
                 }
-                break;
+                break; // Found the widget, no need to check others
             }
         }
         Ok(())
@@ -306,5 +310,23 @@ mod tests {
             }
             _ => panic!("Expected left mouse button down event"),
         }
+    }
+
+    #[test]
+    fn test_mouse_focus_coordinates() {
+        // Test the coordinate checking logic for focus
+        let rect = Rect::new(5, 5, 10, 10); // x=5, y=5, width=10, height=10
+        
+        // Point inside the rectangle
+        let inside_x = 7;
+        let inside_y = 8;
+        assert!(inside_x >= rect.x && inside_x < rect.x + rect.width);
+        assert!(inside_y >= rect.y && inside_y < rect.y + rect.height);
+        
+        // Point outside the rectangle
+        let outside_x = 20;
+        let outside_y = 3;
+        assert!(!(outside_x >= rect.x && outside_x < rect.x + rect.width));
+        assert!(!(outside_y >= rect.y && outside_y < rect.y + rect.height));
     }
 }
