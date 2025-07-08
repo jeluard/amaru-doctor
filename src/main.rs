@@ -56,7 +56,7 @@ async fn main() -> Result<()> {
     let ledger_db = ReadOnlyRocksDB::new(&ledger_path)?;
     let chain_db = RocksDBStore::open_for_readonly(&chain_path)?;
 
-    let mut tui = Tui::new()?;
+    let mut tui = Tui::new()?.mouse(true);
     let mut app: App = App::new(ledger_db, chain_db, collector_clone, metrics_collector_clone, tui.get_frame().area())?;
     app.run(&mut tui).await?;
     Ok(())
