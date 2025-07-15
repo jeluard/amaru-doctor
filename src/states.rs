@@ -27,6 +27,8 @@ pub enum Action {
     ScrollDown,
     Key(KeyCode),
     UpdateLayout(Rect),
+    Mouse(u16, u16),     // Mouse click at coordinates
+    MouseMove(u16, u16), // Mouse movement
 }
 
 #[derive(Clone, Debug, Default, EnumIter, Display, PartialEq, Eq, Serialize, Deserialize)]
