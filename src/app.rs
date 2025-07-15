@@ -280,7 +280,6 @@ mod tests {
     use super::*;
     use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
     use ratatui::layout::Rect;
-    use tokio::sync::mpsc;
 
     #[tokio::test]
     async fn test_mouse_action_creation() {
