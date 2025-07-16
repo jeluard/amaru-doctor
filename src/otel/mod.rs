@@ -1,14 +1,15 @@
 use crate::otel::batch_processor::{BatchProcessor, MetricsBatchProcessor};
 use crate::otel::bounded_queue::BoundedQueue;
 use crate::otel::rate_limit::RateLimiter;
+use opentelemetry_proto::tonic::collector::metrics::v1::{
+    ExportMetricsServiceRequest, ExportMetricsServiceResponse,
+    metrics_service_server::MetricsService,
+};
 use opentelemetry_proto::tonic::collector::trace::v1::{
     ExportTraceServiceRequest, ExportTraceServiceResponse, trace_service_server::TraceService,
 };
-use opentelemetry_proto::tonic::collector::metrics::v1::{
-    ExportMetricsServiceRequest, ExportMetricsServiceResponse, metrics_service_server::MetricsService,
-};
-use opentelemetry_proto::tonic::trace::v1::Span;
 use opentelemetry_proto::tonic::metrics::v1::{Metric, metric::Data as MetricData};
+use opentelemetry_proto::tonic::trace::v1::Span;
 use std::sync::{Arc, RwLock};
 use tokio::sync::mpsc;
 use tokio::task;
@@ -80,7 +81,11 @@ impl From<Metric> for MetricEvent {
             }
             Some(MetricData::Histogram(histogram)) => {
                 if let Some(data_point) = histogram.data_points.first() {
-                    let value = format!("count: {}, sum: {}", data_point.count, data_point.sum.unwrap_or_default());
+                    let value = format!(
+                        "count: {}, sum: {}",
+                        data_point.count,
+                        data_point.sum.unwrap_or_default()
+                    );
                     ("Histogram".to_string(), value, data_point.time_unix_nano)
                 } else {
                     ("Histogram".to_string(), "N/A".to_string(), 0)
@@ -190,7 +195,9 @@ pub struct MetricsCollector {
 impl MetricsCollector {
     pub fn new(max_batches_per_sec: usize, queue_capacity: usize) -> Self {
         let (tx, mut rx) = mpsc::channel::<Vec<Metric>>(10);
-        let events = Arc::new(RwLock::new(BoundedQueue::<MetricEvent>::new(queue_capacity)));
+        let events = Arc::new(RwLock::new(BoundedQueue::<MetricEvent>::new(
+            queue_capacity,
+        )));
         let events_clone = events.clone();
         let batch_rate_limiter = RateLimiter::new(max_batches_per_sec);
 

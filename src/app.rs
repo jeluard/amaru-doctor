@@ -1,7 +1,7 @@
 use crate::{
     app_state::AppState,
     config::Config,
-    otel::{TraceCollector, MetricsCollector},
+    otel::{MetricsCollector, TraceCollector},
     states::{Action, InspectOption, WidgetSlot},
     tui::{Event, Tui},
     update::{UPDATE_DEFS, UpdateList},

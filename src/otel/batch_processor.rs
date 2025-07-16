@@ -1,6 +1,6 @@
 use crate::otel::bounded_queue::BoundedQueue;
-use opentelemetry_proto::tonic::trace::v1::Span;
 use opentelemetry_proto::tonic::metrics::v1::Metric;
+use opentelemetry_proto::tonic::trace::v1::Span;
 
 pub struct BatchProcessor {
     buffer: Vec<Span>,

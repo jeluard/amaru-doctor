@@ -1,7 +1,7 @@
 use crate::{
     controller::SlotLayout,
     model::{cursor::Cursor, window::WindowState},
-    otel::{TraceCollector, MetricsCollector},
+    otel::{MetricsCollector, TraceCollector},
     states::{BrowseOption, InspectOption, LedgerMode, LedgerSearchOption, WidgetSlot},
     store::owned_iter::{
         OwnedAccountIter, OwnedBlockIssuerIter, OwnedDRepIter, OwnedPoolIter, OwnedProposalIter,

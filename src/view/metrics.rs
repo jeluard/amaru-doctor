@@ -27,8 +27,7 @@ pub fn render_metrics_snapshot(
 
     let rows = metrics.iter().map(|event| {
         let timestamp = if event.timestamp > 0 {
-            Utc
-                .timestamp_nanos(event.timestamp as i64)
+            Utc.timestamp_nanos(event.timestamp as i64)
                 .format("%Y-%m-%d %H:%M:%S%.3f")
                 .to_string()
         } else {

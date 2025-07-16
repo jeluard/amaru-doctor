@@ -1,7 +1,7 @@
 use crate::view::block::render_block;
+use crate::view::metrics::render_metrics_snapshot;
 use crate::view::nonces::render_nonces;
 use crate::view::otel::render_otel_snapshot;
-use crate::view::metrics::render_metrics_snapshot;
 use crate::{
     app_state::AppState,
     controller::is_widget_focused,
