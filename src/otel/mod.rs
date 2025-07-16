@@ -30,12 +30,10 @@ pub struct SpanEvent {
 #[derive(Clone, Debug)]
 pub struct MetricEvent {
     pub name: String,
-    pub description: String,
     pub unit: String,
     pub metric_type: String,
     pub value: String,
     pub timestamp: u64,
-    pub attributes: Vec<(String, String)>,
 }
 
 impl From<Span> for SpanEvent {
