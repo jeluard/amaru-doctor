@@ -69,6 +69,7 @@ jobs:
           go install github.com/charmbracelet/vhs@latest
           vhs resources/demo.tape
         env:
+          AMARU_CHAIN_DB: 'resources/chain.db'
           AMARU_LEDGER_DB: 'resources/ledger.db'
       - uses: stefanzweifel/git-auto-commit-action@v5
         if: github.event_name == 'push'
