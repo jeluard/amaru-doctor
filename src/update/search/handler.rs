@@ -7,7 +7,7 @@ use crate::{
     update::search::{SearchHandler, SearchState},
 };
 use amaru_consensus::{Nonces, consensus::store::ReadOnlyChainStore};
-use amaru_kernel::{Address, HasAddress, Hash, Header, RawBlock};
+use amaru_kernel::{Address, Hash, Header, RawBlock};
 use tracing::trace;
 
 #[derive(Default)]
@@ -39,9 +39,8 @@ impl SearchHandler for LedgerUtxosByAddr {
 
     fn compute(&self, s: &AppState, query: &Self::Query) -> Self::Result {
         let owned_query = query.clone();
-        let iter = OwnedUtxoIter::new(s.ledger_db.clone()).filter(move |(_, out): &UtxoItem| {
-            out.address().ok().is_some_and(|addr| addr == owned_query)
-        });
+        let iter = OwnedUtxoIter::new(s.ledger_db.clone())
+            .filter(move |(_, out): &UtxoItem| out.address == owned_query);
         let mut window = WindowState::from_iter(iter);
         window.set_window_size(s.list_window_size);
         window

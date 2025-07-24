@@ -1,14 +1,16 @@
-use crate::ui::{RichText, ToRichText, labeled};
-use amaru_kernel::Address;
+use crate::ui::{
+    RichText, ToRichText, labeled, labeled_default, labeled_default_opt, labeled_default_single,
+};
 use amaru_kernel::{
-    PostAlonzoTransactionOutput, PseudoTransactionOutput, TransactionInput, TransactionOutput,
-    Value,
+    Address, MemoizedDatum, MemoizedScript, MemoizedTransactionOutput, PostAlonzoTransactionOutput,
+    PseudoScript, TransactionInput, Value,
 };
 use pallas_codec::utils::CborWrap;
-use pallas_primitives::babbage::PseudoDatumOption;
-use pallas_primitives::{PlutusData, alonzo};
-use ratatui::style::{Color, Modifier, Style};
-use ratatui::text::{Line, Span};
+use pallas_primitives::{PlutusData, alonzo, babbage::PseudoDatumOption};
+use ratatui::{
+    style::{Color, Modifier, Style},
+    text::{Line, Span},
+};
 use std::fmt;
 
 pub struct TransactionInputDisplay<'a>(pub &'a TransactionInput);
@@ -19,7 +21,7 @@ impl<'a> fmt::Display for TransactionInputDisplay<'a> {
     }
 }
 
-impl ToRichText for (TransactionInput, TransactionOutput) {
+impl ToRichText for (TransactionInput, MemoizedTransactionOutput) {
     fn to_rich_text(&self) -> RichText {
         let mut lines = Vec::new();
         lines.extend(labeled(
@@ -32,12 +34,14 @@ impl ToRichText for (TransactionInput, TransactionOutput) {
     }
 }
 
-impl ToRichText for TransactionOutput {
+impl ToRichText for MemoizedTransactionOutput {
     fn to_rich_text(&self) -> RichText {
-        match self {
-            PseudoTransactionOutput::Legacy(inner) => inner.to_rich_text(),
-            PseudoTransactionOutput::PostAlonzo(inner) => inner.to_rich_text(),
-        }
+        let mut lines = Vec::new();
+        lines.extend(labeled_default_single("Address", &self.address));
+        lines.extend(labeled_default("Value", &GenericValueRichText(&self.value)));
+        lines.extend(labeled_default("Datum", &self.datum));
+        lines.extend(labeled_default_opt("Script", self.script.as_ref()));
+        RichText::Lines(lines)
     }
 }
 
@@ -174,8 +178,45 @@ impl<'a> ToRichText for AlonzoValueRichText<'a> {
 impl ToRichText for PseudoDatumOption<PlutusData> {
     fn to_rich_text(&self) -> RichText {
         match self {
-            PseudoDatumOption::Hash(h) => RichText::Single(Span::raw(format!("DatumHash({})", h))),
+            PseudoDatumOption::Hash(h) => {
+                RichText::Single(Span::raw(format!("DatumHash({})", hex::encode(h))))
+            }
             PseudoDatumOption::Data(cbor) => CborWrapRichText(cbor).to_rich_text(),
+        }
+    }
+}
+
+impl ToRichText for MemoizedDatum {
+    fn to_rich_text(&self) -> RichText {
+        match self {
+            MemoizedDatum::None => RichText::Single(Span::from("None")),
+            MemoizedDatum::Hash(d) => {
+                RichText::Single(Span::raw(format!("MemoizedDatumHash({})", hex::encode(d))))
+            }
+            MemoizedDatum::Inline(d) => RichText::Single(Span::raw(format!(
+                "MemoizedDatumInline({})",
+                hex::encode(d.original_bytes())
+            ))),
+        }
+    }
+}
+
+impl ToRichText for MemoizedScript {
+    fn to_rich_text(&self) -> RichText {
+        match self {
+            PseudoScript::NativeScript(s) => RichText::Single(Span::raw(format!(
+                "NativeScript({})",
+                hex::encode(s.original_bytes())
+            ))),
+            PseudoScript::PlutusV1Script(s) => {
+                RichText::Single(Span::raw(format!("PlutusV1Script({})", hex::encode(&*s.0))))
+            }
+            PseudoScript::PlutusV2Script(s) => {
+                RichText::Single(Span::raw(format!("PlutusV2Script({})", hex::encode(&*s.0))))
+            }
+            PseudoScript::PlutusV3Script(s) => {
+                RichText::Single(Span::raw(format!("PlutusV3Script({})", hex::encode(&*s.0))))
+            }
         }
     }
 }
