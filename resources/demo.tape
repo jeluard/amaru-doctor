@@ -59,10 +59,10 @@ Output resources/demo.gif
 
 
 Set Shell "bash"
-Set FontSize 32
+Set FontSize 46
 Set Width 1200
 Set Height 600
-
+Set CursorBlink false
 
 Hide
 Type "./target/release/amaru-doctor"
