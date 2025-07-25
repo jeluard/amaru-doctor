@@ -72,8 +72,8 @@ fn build_ledger_left_col_ls(_s: &AppState) -> LayoutSpec {
     LayoutSpec {
         direction: Direction::Vertical,
         constraints: vec![
-            (Constraint::Fill(1), Left(WidgetSlot::Options)),
-            (Constraint::Fill(3), Left(WidgetSlot::List)),
+            (Constraint::Fill(1), Left(WidgetSlot::LedgerOptions)),
+            (Constraint::Fill(3), Left(WidgetSlot::LedgerList)),
         ],
     }
 }

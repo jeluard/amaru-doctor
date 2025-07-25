@@ -1,4 +1,3 @@
-use crate::update::scroll::Scrollable;
 use tracing::trace;
 
 pub struct WindowState<T> {
@@ -96,11 +95,8 @@ impl<T> WindowState<T> {
         let (view, idx) = self.window_view();
         idx.and_then(|i| view.get(i))
     }
-}
 
-impl<T> Scrollable for WindowState<T> {
-    fn scroll_up(&mut self) {
-        trace!("Scrolling up");
+    pub fn scroll_up(&mut self) {
         if self.cursor > 0 {
             self.cursor -= 1;
             if self.cursor < self.window_start {
@@ -109,8 +105,7 @@ impl<T> Scrollable for WindowState<T> {
         }
     }
 
-    fn scroll_down(&mut self) {
-        trace!("Scrolling down");
+    pub fn scroll_down(&mut self) {
         let len = self.len();
         if self.cursor + 1 < len {
             self.cursor += 1;

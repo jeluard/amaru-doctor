@@ -16,45 +16,45 @@ struct WindowSizeDef {
 
 static WINDOW_DEFS: &[WindowSizeDef] = &[
     WindowSizeDef {
-        slot: WidgetSlot::Options,
+        slot: WidgetSlot::LedgerOptions,
         handlers: &[
             |s, size| {
-                s.options_window_size = size;
+                s.ledger_view.options_window_size = size;
             },
             |s, size| {
-                s.ledger_browse_options.set_window_size(size);
+                s.ledger_view.browse_options.set_window_size(size);
             },
             |s, size| {
-                s.ledger_search_options.set_window_size(size);
+                s.ledger_view.search_options.set_window_size(size);
             },
         ],
     },
     WindowSizeDef {
-        slot: WidgetSlot::List,
+        slot: WidgetSlot::LedgerList,
         handlers: &[
             |s, size| {
-                s.list_window_size = size;
+                s.ledger_view.list_window_size = size;
             },
             |s, size| {
-                s.accounts.set_window_size(size);
+                s.ledger_view.accounts.set_window_size(size);
             },
             |s, size| {
-                s.block_issuers.set_window_size(size);
+                s.ledger_view.block_issuers.set_window_size(size);
             },
             |s, size| {
-                s.dreps.set_window_size(size);
+                s.ledger_view.dreps.set_window_size(size);
             },
             |s, size| {
-                s.pools.set_window_size(size);
+                s.ledger_view.pools.set_window_size(size);
             },
             |s, size| {
-                s.proposals.set_window_size(size);
+                s.ledger_view.proposals.set_window_size(size);
             },
             |s, size| {
-                s.utxos.set_window_size(size);
+                s.ledger_view.utxos.set_window_size(size);
             },
             |s, size| {
-                for w in s.utxos_by_addr_search.results.values_mut() {
+                for w in s.ledger_view.utxos_by_addr_search.results.values_mut() {
                     w.set_window_size(size);
                 }
             },

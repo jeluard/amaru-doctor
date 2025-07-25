@@ -4,7 +4,7 @@ use crate::view::otel::render_otel_snapshot;
 use crate::{
     app_state::AppState,
     controller::is_widget_focused,
-    states::{BrowseOption, InspectOption, LedgerMode, LedgerSearchOption, WidgetSlot},
+    states::{InspectOption, LedgerBrowse, LedgerMode, LedgerSearch, WidgetSlot},
     view::{
         View, details::render_details, header::render_header, line::render_line, list::render_list,
         search::render_search_query, tabs::render_tabs,
@@ -71,11 +71,13 @@ impl View for SearchBar {
             area,
             "Search",
             match s.inspect_option.current() {
-                InspectOption::Ledger => match s.ledger_search_options.selected() {
-                    Some(LedgerSearchOption::UtxosByAddress) => &s.utxos_by_addr_search.builder,
+                InspectOption::Ledger => match s.ledger_view.search_options.selected() {
+                    Some(LedgerSearch::UtxosByAddress) => {
+                        &s.ledger_view.utxos_by_addr_search.builder
+                    }
                     None => "",
                 },
-                InspectOption::Chain => &s.chain_search.builder,
+                InspectOption::Chain => &s.chain_view.chain_search.builder,
                 InspectOption::Otel => "",
             },
             is_widget_focused(s, self.slot()),
@@ -86,7 +88,7 @@ impl View for SearchBar {
 pub struct LedgerBrowseOptions;
 impl View for LedgerBrowseOptions {
     fn slot(&self) -> WidgetSlot {
-        WidgetSlot::Options
+        WidgetSlot::LedgerOptions
     }
     fn is_visible(&self, s: &AppState) -> bool {
         *s.inspect_option.current() == InspectOption::Ledger
@@ -97,7 +99,7 @@ impl View for LedgerBrowseOptions {
             f,
             area,
             "Browse Options",
-            Some(&s.ledger_browse_options),
+            Some(&s.ledger_view.browse_options),
             is_widget_focused(s, self.slot()),
         )
     }
@@ -113,6 +115,7 @@ impl View for ChainSearchHeader {
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
         let header_opt: Option<Option<&Header>> = s
+            .chain_view
             .chain_search
             .get_current_res()
             .map(|res| res.as_ref().map(|(h, _, _)| h));
@@ -136,6 +139,7 @@ impl View for ChainSearchBlock {
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
         let block_opt_opt: Option<Option<&RawBlock>> = s
+            .chain_view
             .chain_search
             .get_current_res()
             .map(|res| res.as_ref().map(|(_, b, _)| b));
@@ -159,6 +163,7 @@ impl View for ChainSearchNonces {
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
         let nonces_opt_opt: Option<Option<&Nonces>> = s
+            .chain_view
             .chain_search
             .get_current_res()
             .map(|res| res.as_ref().map(|(_, _, n)| n));
@@ -175,7 +180,7 @@ impl View for ChainSearchNonces {
 pub struct LedgerSearchOptions;
 impl View for LedgerSearchOptions {
     fn slot(&self) -> WidgetSlot {
-        WidgetSlot::Options
+        WidgetSlot::LedgerOptions
     }
     fn is_visible(&self, s: &AppState) -> bool {
         *s.inspect_option.current() == InspectOption::Ledger
@@ -186,7 +191,7 @@ impl View for LedgerSearchOptions {
             f,
             area,
             "Search Options",
-            Some(&s.ledger_search_options),
+            Some(&s.ledger_view.search_options),
             is_widget_focused(s, self.slot()),
         )
     }
@@ -197,19 +202,19 @@ macro_rules! browse_views {
         $(
             pub struct $list_struct;
             impl View for $list_struct {
-                fn slot(&self) -> WidgetSlot { WidgetSlot::List }
+                fn slot(&self) -> WidgetSlot { WidgetSlot::LedgerList }
                 fn is_visible(&self, s: &AppState) -> bool {
                     *s.inspect_option.current() == InspectOption::Ledger &&
                     *s.ledger_mode.current() == LedgerMode::Browse &&
-                    s.ledger_browse_options.selected() == Some(&BrowseOption::$variant)
+                    s.ledger_view.browse_options.selected() == Some(&LedgerBrowse::$variant)
                 }
                 fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
                     render_list(
                         f,
                         area,
                         $label,
-                        Some(&s.$field),
-                        is_widget_focused(s, WidgetSlot::List),
+                        Some(&s.ledger_view.$field),
+                        is_widget_focused(s, WidgetSlot::LedgerList),
                     )
                 }
             }
@@ -220,14 +225,14 @@ macro_rules! browse_views {
                 fn is_visible(&self, s: &AppState) -> bool {
                     *s.inspect_option.current() == InspectOption::Ledger &&
                     *s.ledger_mode.current() == LedgerMode::Browse &&
-                    s.ledger_browse_options.selected() == Some(&BrowseOption::$variant)
+                    s.ledger_view.browse_options.selected() == Some(&LedgerBrowse::$variant)
                 }
                 fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
                     render_details(
                         f,
                         area,
                         $label,
-                        Some(&s.$field),
+                        Some(&s.ledger_view.$field),
                         is_widget_focused(s, WidgetSlot::Details),
                     )
                 }
@@ -266,20 +271,20 @@ browse_views!(
 pub struct LedgerUtxosByAddr;
 impl View for LedgerUtxosByAddr {
     fn slot(&self) -> WidgetSlot {
-        WidgetSlot::List
+        WidgetSlot::LedgerList
     }
     fn is_visible(&self, s: &AppState) -> bool {
         *s.inspect_option.current() == InspectOption::Ledger
             && *s.ledger_mode.current() == LedgerMode::Search
-            && s.ledger_search_options.selected()
-                == Some(LedgerSearchOption::UtxosByAddress).as_ref()
+            && s.ledger_view.search_options.selected()
+                == Some(LedgerSearch::UtxosByAddress).as_ref()
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
         render_list(
             f,
             area,
             "Utxos by Address",
-            s.utxos_by_addr_search.get_current_res(),
+            s.ledger_view.utxos_by_addr_search.get_current_res(),
             is_widget_focused(s, self.slot()),
         )
     }
@@ -293,15 +298,15 @@ impl View for LedgerSearchUtxoDetails {
     fn is_visible(&self, s: &AppState) -> bool {
         *s.inspect_option.current() == InspectOption::Ledger
             && *s.ledger_mode.current() == LedgerMode::Search
-            && s.ledger_search_options.selected()
-                == Some(LedgerSearchOption::UtxosByAddress).as_ref()
+            && s.ledger_view.search_options.selected()
+                == Some(LedgerSearch::UtxosByAddress).as_ref()
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
         render_details(
             f,
             area,
             "Utxo Details",
-            s.utxos_by_addr_search.get_current_res(),
+            s.ledger_view.utxos_by_addr_search.get_current_res(),
             is_widget_focused(s, self.slot()),
         )
     }
