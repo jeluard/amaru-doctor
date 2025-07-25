@@ -1,90 +1,45 @@
 use crate::{
     app_state::AppState,
-    states::{Action, BrowseOption, InspectOption, LedgerMode, WidgetSlot},
+    model::{cursor::Cursor, ledger_view::LedgerViewState, window::WindowState},
+    states::{Action, LedgerBrowse, LedgerMode, WidgetSlot},
     update::Update,
 };
 use strum::Display;
 use tracing::trace;
 
-#[derive(Display, Debug)]
+#[derive(Display, Debug, Clone, Copy)]
 pub enum ScrollDirection {
     Up,
     Down,
 }
 
-pub struct ScrollUpdate;
-
-pub trait Scrollable {
-    fn scroll_up(&mut self);
-    fn scroll_down(&mut self);
+pub trait ScrollableList {
+    fn scroll(&mut self, direction: ScrollDirection);
 }
 
-struct ScrollDef {
-    slot: WidgetSlot,
-    target: fn(&mut AppState) -> Option<&mut dyn Scrollable>,
-    next_action: fn(&AppState) -> Vec<Action>,
+impl<T> ScrollableList for WindowState<T> {
+    fn scroll(&mut self, direction: ScrollDirection) {
+        match direction {
+            ScrollDirection::Up => WindowState::scroll_up(self),
+            ScrollDirection::Down => WindowState::scroll_down(self),
+        }
+    }
 }
 
-// TODO: Change this--follow the pattern in Search
-static SCROLL_DEFS: &[ScrollDef] = &[
-    ScrollDef {
-        slot: WidgetSlot::InspectOption,
-        target: |s| Some(&mut s.inspect_option),
-        next_action: |_| Vec::new(),
-    },
-    ScrollDef {
-        slot: WidgetSlot::LedgerMode,
-        target: |s| Some(&mut s.ledger_mode),
-        next_action: |s| vec![Action::UpdateLayout(s.frame_area)],
-    },
-    ScrollDef {
-        slot: WidgetSlot::Options,
-        target: |s| match s.inspect_option.current() {
-            InspectOption::Ledger => match s.ledger_mode.current() {
-                LedgerMode::Browse => Some(&mut s.ledger_browse_options),
-                LedgerMode::Search => Some(&mut s.ledger_search_options),
-            },
-            _ => None,
-        },
-        next_action: |_| Vec::new(),
-    },
-    ScrollDef {
-        slot: WidgetSlot::List,
-        target: |s| {
-            if *s.inspect_option.current() == InspectOption::Ledger {
-                match s.ledger_mode.current() {
-                    LedgerMode::Browse => match s.ledger_browse_options.selected() {
-                        Some(BrowseOption::Accounts) => Some(&mut s.accounts),
-                        Some(BrowseOption::BlockIssuers) => Some(&mut s.block_issuers),
-                        Some(BrowseOption::DReps) => Some(&mut s.dreps),
-                        Some(BrowseOption::Pools) => Some(&mut s.pools),
-                        Some(BrowseOption::Proposals) => Some(&mut s.proposals),
-                        Some(BrowseOption::Utxos) => Some(&mut s.utxos),
-                        None => None,
-                    },
-                    LedgerMode::Search => s
-                        .utxos_by_addr_search
-                        .get_current_res_mut()
-                        .map(|r| r as &mut dyn Scrollable),
-                }
-            } else {
-                None
+impl<T> ScrollableList for Cursor<T> {
+    fn scroll(&mut self, direction: ScrollDirection) {
+        match direction {
+            ScrollDirection::Up => {
+                Cursor::next_back(self);
             }
-        },
-        next_action: |_| Vec::new(),
-    },
-    ScrollDef {
-        slot: WidgetSlot::Details,
-        target: |_| None,
-        next_action: |_| Vec::new(),
-    },
-    ScrollDef {
-        slot: WidgetSlot::BottomLine,
-        target: |_| None,
-        next_action: |_| Vec::new(),
-    },
-];
+            ScrollDirection::Down => {
+                Cursor::next(self);
+            }
+        }
+    }
+}
 
+pub struct ScrollUpdate;
 impl Update for ScrollUpdate {
     fn update(&self, action: &Action, s: &mut AppState) -> Vec<Action> {
         let direction = match action {
@@ -94,30 +49,71 @@ impl Update for ScrollUpdate {
         };
 
         let focused_slot = s.slot_focus;
-        let def = match SCROLL_DEFS.iter().find(|d| d.slot == focused_slot) {
-            Some(d) => d,
-            None => {
-                trace!("No scroll def found for slot {:?}", focused_slot);
-                return Vec::new();
-            }
-        };
-
-        let scrollable = match (def.target)(s) {
-            Some(s) => s,
-            None => return Vec::new(),
-        };
-
         trace!("Scrolling {:?} {:?}", focused_slot, direction);
 
-        match direction {
-            ScrollDirection::Up => {
-                scrollable.scroll_up();
-                (def.next_action)(s)
+        match focused_slot {
+            WidgetSlot::InspectOption => {
+                s.inspect_option.scroll(direction);
+                Vec::new()
             }
-            ScrollDirection::Down => {
-                scrollable.scroll_down();
-                (def.next_action)(s)
+            WidgetSlot::LedgerMode => {
+                s.ledger_mode.scroll(direction);
+                // This widget triggers a layout update on scroll (search bar).
+                vec![Action::UpdateLayout(s.frame_area)]
+            }
+            WidgetSlot::LedgerOptions | WidgetSlot::LedgerList => {
+                let mode = s.ledger_mode.current();
+                scroll_ledger_view(&mut s.ledger_view, direction, mode, focused_slot);
+                Vec::new()
+            }
+            WidgetSlot::Details => {
+                // TODO: Item details may be scrolled.
+                Vec::new()
+            }
+            _ => {
+                trace!("No scroll logic for slot {:?}", focused_slot);
+                Vec::new()
             }
         }
+    }
+}
+
+fn scroll_ledger_view(
+    ledger_view: &mut LedgerViewState,
+    direction: ScrollDirection,
+    mode: &LedgerMode,
+    focused_slot: WidgetSlot,
+) {
+    match focused_slot {
+        WidgetSlot::LedgerOptions => {
+            let options_list: &mut dyn ScrollableList = match mode {
+                LedgerMode::Browse => &mut ledger_view.browse_options,
+                LedgerMode::Search => &mut ledger_view.search_options,
+            };
+
+            options_list.scroll(direction);
+        }
+        WidgetSlot::LedgerList => {
+            let list_to_scroll: Option<&mut dyn ScrollableList> = match mode {
+                LedgerMode::Browse => match ledger_view.browse_options.selected() {
+                    Some(LedgerBrowse::Accounts) => Some(&mut ledger_view.accounts),
+                    Some(LedgerBrowse::BlockIssuers) => Some(&mut ledger_view.block_issuers),
+                    Some(LedgerBrowse::DReps) => Some(&mut ledger_view.dreps),
+                    Some(LedgerBrowse::Pools) => Some(&mut ledger_view.pools),
+                    Some(LedgerBrowse::Proposals) => Some(&mut ledger_view.proposals),
+                    Some(LedgerBrowse::Utxos) => Some(&mut ledger_view.utxos),
+                    None => None,
+                },
+                LedgerMode::Search => ledger_view
+                    .utxos_by_addr_search
+                    .get_current_res_mut()
+                    .map(|r| r as &mut dyn ScrollableList),
+            };
+
+            if let Some(list) = list_to_scroll {
+                list.scroll(direction);
+            }
+        }
+        _ => {}
     }
 }

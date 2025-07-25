@@ -1,7 +1,7 @@
 use crate::{
     app_state::AppState,
     model::window::WindowState,
-    states::{InspectOption, LedgerSearchOption, WidgetSlot},
+    states::{InspectOption, LedgerSearch, WidgetSlot},
     store::owned_iter::OwnedUtxoIter,
     ui::to_list_item::UtxoItem,
     update::search::{SearchHandler, SearchState},
@@ -26,15 +26,15 @@ impl SearchHandler for LedgerUtxosByAddr {
 
     fn is_active(&self, s: &AppState) -> bool {
         *s.inspect_option.current() == InspectOption::Ledger
-            && s.ledger_search_options.selected() == Some(&LedgerSearchOption::UtxosByAddress)
+            && s.ledger_view.search_options.selected() == Some(&LedgerSearch::UtxosByAddress)
     }
 
     fn state<'a>(&self, s: &'a AppState) -> &'a SearchState<Self::Query, Self::Result> {
-        &s.utxos_by_addr_search
+        &s.ledger_view.utxos_by_addr_search
     }
 
     fn state_mut<'a>(&self, s: &'a mut AppState) -> &'a mut SearchState<Self::Query, Self::Result> {
-        &mut s.utxos_by_addr_search
+        &mut s.ledger_view.utxos_by_addr_search
     }
 
     fn compute(&self, s: &AppState, query: &Self::Query) -> Self::Result {
@@ -42,7 +42,7 @@ impl SearchHandler for LedgerUtxosByAddr {
         let iter = OwnedUtxoIter::new(s.ledger_db.clone())
             .filter(move |(_, out): &UtxoItem| out.address == owned_query);
         let mut window = WindowState::from_iter(iter);
-        window.set_window_size(s.list_window_size);
+        window.set_window_size(s.ledger_view.list_window_size);
         window
     }
 }
@@ -66,11 +66,11 @@ impl SearchHandler for ChainSearch {
     }
 
     fn state<'a>(&self, s: &'a AppState) -> &'a SearchState<Self::Query, Self::Result> {
-        &s.chain_search
+        &s.chain_view.chain_search
     }
 
     fn state_mut<'a>(&self, s: &'a mut AppState) -> &'a mut SearchState<Self::Query, Self::Result> {
-        &mut s.chain_search
+        &mut s.chain_view.chain_search
     }
 
     fn compute(&self, s: &AppState, query: &Self::Query) -> Self::Result {

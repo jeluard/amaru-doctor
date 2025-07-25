@@ -33,7 +33,7 @@ pub enum Action {
 
 #[derive(Clone, Debug, Default, EnumIter, Display, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum BrowseOption {
+pub enum LedgerBrowse {
     #[default]
     Accounts,
     #[serde(rename = "block issuers")]
@@ -44,7 +44,7 @@ pub enum BrowseOption {
     Utxos,
 }
 
-impl ToListItem for BrowseOption {
+impl ToListItem for LedgerBrowse {
     fn to_list_item(&self) -> ListItem<'static> {
         ListItem::new(serde_plain::to_string(self).unwrap())
     }
@@ -69,8 +69,8 @@ pub enum WidgetSlot {
     InspectOption,
     LedgerMode,
     SearchBar,
-    Options,
-    List,
+    LedgerOptions,
+    LedgerList,
     Details,
     LedgerHeaderDetails,
     LedgerBlockDetails,
@@ -87,12 +87,12 @@ impl WidgetSlot {
 }
 
 #[derive(Clone, Copy, Debug, EnumIter, PartialEq, Eq, Serialize)]
-pub enum LedgerSearchOption {
+pub enum LedgerSearch {
     #[serde(rename = "utxos by address")]
     UtxosByAddress,
 }
 
-impl ToListItem for LedgerSearchOption {
+impl ToListItem for LedgerSearch {
     fn to_list_item(&self) -> ListItem<'static> {
         ListItem::new(serde_plain::to_string(self).unwrap())
     }

@@ -1,7 +1,6 @@
 use color_eyre::eyre::{Result, eyre};
 use std::slice::Iter;
-
-use crate::update::scroll::Scrollable;
+use strum::IntoEnumIterator;
 
 pub struct Cursor<T> {
     vec: Vec<T>,
@@ -40,12 +39,8 @@ impl<T> Cursor<T> {
     }
 }
 
-impl<T> Scrollable for Cursor<T> {
-    fn scroll_up(&mut self) {
-        self.next_back();
-    }
-
-    fn scroll_down(&mut self) {
-        self.next();
+impl<T: IntoEnumIterator> Default for Cursor<T> {
+    fn default() -> Self {
+        Self::new(T::iter().collect()).unwrap()
     }
 }
