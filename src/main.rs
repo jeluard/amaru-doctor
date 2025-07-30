@@ -12,10 +12,9 @@ use amaru_stores::rocksdb::{
 use clap::Parser;
 use cli::Cli;
 use color_eyre::Result;
-use ratatui_splash_screen::{SplashConfig, SplashScreen};
 use core::panic;
 use opentelemetry_proto::tonic::collector::trace::v1::trace_service_server::TraceServiceServer;
-use std::{path::PathBuf, sync::Arc, time::Duration};
+use std::{path::PathBuf, sync::Arc};
 use tokio::task;
 use tonic::transport::Server;
 
@@ -76,13 +75,6 @@ pub fn open_chain_db(args: &Cli) -> Result<ReadOnlyChainDB> {
     }
 }
 
-static SPLASH_CONFIG: SplashConfig = SplashConfig {
-    image_data: include_bytes!("../resources/splash.png"),
-    sha256sum: None,
-    render_steps: 24,
-    use_colors: false,
-};
-
 #[tokio::main]
 async fn main() -> Result<()> {
     crate::errors::init()?;
@@ -102,14 +94,6 @@ async fn main() -> Result<()> {
     let args = Cli::parse();
 
     let mut tui = Tui::new()?.mouse(true);
-
-    let mut splash_screen = SplashScreen::new(SPLASH_CONFIG)?;
-    while !splash_screen.is_rendered() {
-        tui.draw(|frame| {
-            frame.render_widget(&mut splash_screen, frame.area());
-        })?;
-        std::thread::sleep(Duration::from_millis(100));
-    }
 
     let mut app: App = App::new(
         open_ledger_db(&args)?,
