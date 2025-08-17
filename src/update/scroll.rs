@@ -57,9 +57,9 @@ impl Update for ScrollUpdate {
                 Vec::new()
             }
             WidgetSlot::LedgerMode => {
-                // Tab selection should not change on scroll, only on click
-                // Scrolling in this widget is disabled to prevent accidental tab changes
-                Vec::new()
+                s.ledger_mode.scroll(direction);
+                // This widget triggers a layout update on scroll (search bar).
+                vec![Action::UpdateLayout(s.frame_area)]
             }
             WidgetSlot::LedgerOptions | WidgetSlot::LedgerList => {
                 let mode = s.ledger_mode.current();
