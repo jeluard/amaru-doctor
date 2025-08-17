@@ -147,7 +147,7 @@ impl App {
             MouseEventKind::Down(MouseButton::Left) => {
                 // Start tracking drag for potential scroll behavior
                 self.mouse_drag_start = Some((mouse.column, mouse.row));
-                
+
                 // Send mouse click action with coordinates for potential widget-specific handling
                 action_tx.send(Action::Mouse(mouse.column, mouse.row))?;
 
@@ -210,16 +210,22 @@ impl App {
         Ok(())
     }
 
-    fn handle_mouse_drag_scroll(&mut self, start_x: u16, start_y: u16, current_x: u16, current_y: u16) -> Result<()> {
+    fn handle_mouse_drag_scroll(
+        &mut self,
+        start_x: u16,
+        start_y: u16,
+        current_x: u16,
+        current_y: u16,
+    ) -> Result<()> {
         // Calculate drag distance
         let _delta_x = current_x as i32 - start_x as i32;
         let delta_y = current_y as i32 - start_y as i32;
-        
+
         // Use a threshold to avoid triggering scroll on tiny movements
         const SCROLL_THRESHOLD: i32 = 2;
-        
+
         let action_tx = self.action_tx.clone();
-        
+
         // Determine scroll direction based on drag movement
         // Positive delta_y means dragging down, which should scroll up (like mobile scrolling)
         // Negative delta_y means dragging up, which should scroll down
@@ -228,14 +234,14 @@ impl App {
                 // Dragging down -> scroll content up
                 action_tx.send(Action::ScrollUp)?;
             } else {
-                // Dragging up -> scroll content down  
+                // Dragging up -> scroll content down
                 action_tx.send(Action::ScrollDown)?;
             }
-            
+
             // Update drag start position to current position for continuous scrolling
             self.mouse_drag_start = Some((current_x, current_y));
         }
-        
+
         Ok(())
     }
 
@@ -416,7 +422,10 @@ mod tests {
         };
 
         // Verify event kind is correct
-        assert!(matches!(drag_event.kind, MouseEventKind::Drag(MouseButton::Left)));
+        assert!(matches!(
+            drag_event.kind,
+            MouseEventKind::Drag(MouseButton::Left)
+        ));
     }
 
     #[test]
