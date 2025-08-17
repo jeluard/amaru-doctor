@@ -37,6 +37,16 @@ impl<T> Cursor<T> {
     pub fn iter(&self) -> Iter<'_, T> {
         self.vec.iter()
     }
+
+    pub fn len(&self) -> usize {
+        self.vec.len()
+    }
+
+    pub fn set_index(&mut self, index: usize) {
+        if index < self.vec.len() {
+            self.idx = index;
+        }
+    }
 }
 
 impl<T: IntoEnumIterator> Default for Cursor<T> {
