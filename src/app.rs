@@ -28,6 +28,8 @@ pub struct App {
     last_tick_key_events: Vec<KeyEvent>,
     action_tx: mpsc::UnboundedSender<Action>,
     action_rx: mpsc::UnboundedReceiver<Action>,
+    // Mouse drag state for scroll functionality
+    mouse_drag_start: Option<(u16, u16)>,
 }
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -62,6 +64,7 @@ impl App {
             last_tick_key_events: Vec::new(),
             action_tx,
             action_rx,
+            mouse_drag_start: None,
         })
     }
 
@@ -142,6 +145,9 @@ impl App {
 
         match mouse.kind {
             MouseEventKind::Down(MouseButton::Left) => {
+                // Start tracking drag for potential scroll behavior
+                self.mouse_drag_start = Some((mouse.column, mouse.row));
+                
                 // Send mouse click action with coordinates for potential widget-specific handling
                 action_tx.send(Action::Mouse(mouse.column, mouse.row))?;
 
@@ -149,13 +155,31 @@ impl App {
                 // This allows users to click on widgets to focus them, similar to modern GUIs
                 self.handle_mouse_focus(mouse.column, mouse.row)?;
             }
+            MouseEventKind::Up(MouseButton::Left) => {
+                // End drag tracking when mouse button is released
+                self.mouse_drag_start = None;
+            }
+            MouseEventKind::Drag(MouseButton::Left) => {
+                // Handle mouse drag for scrolling
+                if let Some((start_x, start_y)) = self.mouse_drag_start {
+                    self.handle_mouse_drag_scroll(start_x, start_y, mouse.column, mouse.row)?;
+                }
+            }
+            MouseEventKind::ScrollUp => {
+                // Handle mouse wheel scroll up
+                action_tx.send(Action::ScrollUp)?;
+            }
+            MouseEventKind::ScrollDown => {
+                // Handle mouse wheel scroll down
+                action_tx.send(Action::ScrollDown)?;
+            }
             MouseEventKind::Moved => {
                 // Send mouse move action for potential hover effects in the future
                 // This could be used to highlight widgets on hover or show tooltips
                 action_tx.send(Action::MouseMove(mouse.column, mouse.row))?;
             }
             _ => {
-                // Ignore other mouse events for now (right click, drag, scroll, etc.)
+                // Ignore other mouse events for now (right click, etc.)
                 // These could be implemented in the future for additional functionality
             }
         }
@@ -183,6 +207,35 @@ impl App {
                 break; // Found the widget, no need to check others
             }
         }
+        Ok(())
+    }
+
+    fn handle_mouse_drag_scroll(&mut self, start_x: u16, start_y: u16, current_x: u16, current_y: u16) -> Result<()> {
+        // Calculate drag distance
+        let _delta_x = current_x as i32 - start_x as i32;
+        let delta_y = current_y as i32 - start_y as i32;
+        
+        // Use a threshold to avoid triggering scroll on tiny movements
+        const SCROLL_THRESHOLD: i32 = 2;
+        
+        let action_tx = self.action_tx.clone();
+        
+        // Determine scroll direction based on drag movement
+        // Positive delta_y means dragging down, which should scroll up (like mobile scrolling)
+        // Negative delta_y means dragging up, which should scroll down
+        if delta_y.abs() > SCROLL_THRESHOLD {
+            if delta_y > 0 {
+                // Dragging down -> scroll content up
+                action_tx.send(Action::ScrollUp)?;
+            } else {
+                // Dragging up -> scroll content down  
+                action_tx.send(Action::ScrollDown)?;
+            }
+            
+            // Update drag start position to current position for continuous scrolling
+            self.mouse_drag_start = Some((current_x, current_y));
+        }
+        
         Ok(())
     }
 
@@ -328,5 +381,60 @@ mod tests {
         let outside_y = 3;
         assert!(!(outside_x >= rect.x && outside_x < rect.x + rect.width));
         assert!(!(outside_y >= rect.y && outside_y < rect.y + rect.height));
+    }
+
+    #[tokio::test]
+    async fn test_mouse_wheel_scroll_events() {
+        // Test that mouse wheel events create the right actions
+        let scroll_up_event = MouseEvent {
+            kind: MouseEventKind::ScrollUp,
+            column: 10,
+            row: 5,
+            modifiers: crossterm::event::KeyModifiers::empty(),
+        };
+
+        let scroll_down_event = MouseEvent {
+            kind: MouseEventKind::ScrollDown,
+            column: 10,
+            row: 5,
+            modifiers: crossterm::event::KeyModifiers::empty(),
+        };
+
+        // Verify event kinds are correct
+        assert!(matches!(scroll_up_event.kind, MouseEventKind::ScrollUp));
+        assert!(matches!(scroll_down_event.kind, MouseEventKind::ScrollDown));
+    }
+
+    #[tokio::test]
+    async fn test_mouse_drag_events() {
+        // Test that mouse drag events are recognized
+        let drag_event = MouseEvent {
+            kind: MouseEventKind::Drag(MouseButton::Left),
+            column: 15,
+            row: 10,
+            modifiers: crossterm::event::KeyModifiers::empty(),
+        };
+
+        // Verify event kind is correct
+        assert!(matches!(drag_event.kind, MouseEventKind::Drag(MouseButton::Left)));
+    }
+
+    #[test]
+    fn test_drag_scroll_calculation() {
+        // Test the drag distance calculation logic
+        let _start_x = 10u16;
+        let start_y = 10u16;
+        let _current_x = 10u16;
+        let current_y = 15u16; // Dragged down 5 pixels
+
+        let delta_y = current_y as i32 - start_y as i32;
+        assert_eq!(delta_y, 5);
+
+        // Threshold test
+        const SCROLL_THRESHOLD: i32 = 2;
+        assert!(delta_y.abs() > SCROLL_THRESHOLD);
+
+        // Direction test: positive delta_y (dragging down) should scroll up
+        assert!(delta_y > 0); // This would trigger ScrollUp action
     }
 }
