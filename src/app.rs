@@ -196,6 +196,11 @@ impl App {
                 && y >= rect.y
                 && y < rect.y + rect.height
             {
+                // Special handling for LedgerMode widget - clicking on tabs should switch active tab
+                if *slot == WidgetSlot::LedgerMode {
+                    self.handle_tab_click(x, *rect)?;
+                }
+
                 // Only change focus if it's different from current focus to avoid unnecessary updates
                 if self.app_state.slot_focus != *slot {
                     trace!(
@@ -207,6 +212,38 @@ impl App {
                 break; // Found the widget, no need to check others
             }
         }
+        Ok(())
+    }
+
+    fn handle_tab_click(&mut self, x: u16, rect: Rect) -> Result<()> {
+        // Calculate which tab was clicked based on x-coordinate
+        // The tabs are rendered equally spaced across the widget width
+        let tab_count = self.app_state.ledger_mode.len();
+        if tab_count == 0 {
+            return Ok(());
+        }
+
+        // Account for border (1 character on each side)
+        let inner_width = rect.width.saturating_sub(2);
+        let click_x = x.saturating_sub(rect.x + 1); // Relative to inner area
+
+        if click_x < inner_width {
+            // Calculate which tab was clicked
+            let tab_width = inner_width / tab_count as u16;
+            let clicked_tab_index = (click_x / tab_width) as usize;
+            
+            // Ensure the index is valid
+            if clicked_tab_index < tab_count {
+                // Set the ledger mode to the clicked tab
+                self.app_state.ledger_mode.set_index(clicked_tab_index);
+                trace!("Tab click: switched to tab index {}", clicked_tab_index);
+                
+                // Trigger a layout update since switching modes may change the search bar visibility
+                let action_tx = self.action_tx.clone();
+                action_tx.send(Action::UpdateLayout(self.app_state.frame_area))?;
+            }
+        }
+
         Ok(())
     }
 
@@ -445,5 +482,33 @@ mod tests {
 
         // Direction test: positive delta_y (dragging down) should scroll up
         assert!(delta_y > 0); // This would trigger ScrollUp action
+    }
+
+    #[test]
+    fn test_tab_click_calculation() {
+        // Test the tab click calculation logic
+        use ratatui::layout::Rect;
+        
+        let rect = Rect::new(5, 5, 20, 3); // x=5, y=5, width=20, height=3
+        let tab_count = 2; // Browse and Search tabs
+        
+        // Account for border (1 character on each side)
+        let inner_width = rect.width.saturating_sub(2); // 18
+        assert_eq!(inner_width, 18);
+        
+        let tab_width = inner_width / tab_count as u16; // 9
+        assert_eq!(tab_width, 9);
+        
+        // Test clicking on first tab (Browse)
+        let click_x_first = 6u16; // x=6 is within the first tab (5+1=6 to 5+1+9=15)
+        let relative_x_first = click_x_first.saturating_sub(rect.x + 1); // 0
+        let clicked_tab_first = (relative_x_first / tab_width) as usize; // 0
+        assert_eq!(clicked_tab_first, 0);
+        
+        // Test clicking on second tab (Search)
+        let click_x_second = 16u16; // x=16 is within the second tab (15 to 24)
+        let relative_x_second = click_x_second.saturating_sub(rect.x + 1); // 10
+        let clicked_tab_second = (relative_x_second / tab_width) as usize; // 1
+        assert_eq!(clicked_tab_second, 1);
     }
 }
