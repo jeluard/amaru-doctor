@@ -1,7 +1,7 @@
 #![allow(dead_code)] // Remove this once you start using the code
 
 use std::{
-    io::{Stdout, stdout},
+    io::stdout,
     ops::{Deref, DerefMut},
     time::Duration,
 };
@@ -16,11 +16,13 @@ use crossterm::{
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
 use futures::{FutureExt, StreamExt};
-use ratatui::backend::CrosstermBackend as Backend;
+use ratatui::{
+    Terminal,
+    prelude::{Backend, CrosstermBackend},
+};
 use serde::{Deserialize, Serialize};
 use tokio::{
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
-    task::JoinHandle,
     time::interval,
 };
 use tokio_util::sync::CancellationToken;
@@ -42,9 +44,9 @@ pub enum Event {
     Resize(u16, u16),
 }
 
-pub struct Tui {
-    pub terminal: ratatui::Terminal<Backend<Stdout>>,
-    pub task: JoinHandle<()>,
+pub struct Tui<B: Backend> {
+    pub terminal: Terminal<B>,
+    pub task: tokio::task::JoinHandle<()>,
     pub cancellation_token: CancellationToken,
     pub event_rx: UnboundedReceiver<Event>,
     pub event_tx: UnboundedSender<Event>,
@@ -52,11 +54,55 @@ pub struct Tui {
     pub paste: bool,
 }
 
-impl Tui {
-    pub fn new() -> Result<Self> {
+async fn event_loop(event_tx: UnboundedSender<Event>, cancellation_token: CancellationToken) {
+    let mut event_stream = EventStream::new();
+    let mut tick_interval = interval(Duration::from_secs_f64(1.0 / 4.0));
+    let mut render_interval = interval(Duration::from_secs_f64(1.0 / 60.0));
+
+    // if this fails, then it's likely a bug in the calling code
+    event_tx
+        .send(Event::Init)
+        .expect("failed to send init event");
+    loop {
+        let event = tokio::select! {
+            _ = cancellation_token.cancelled() => {
+                break;
+            }
+            _ = tick_interval.tick() => Event::Tick,
+            _ = render_interval.tick() => Event::Render,
+            crossterm_event = event_stream.next().fuse() => match crossterm_event {
+                Some(Ok(event)) => match event {
+                    CrosstermEvent::Key(key) if key.kind == KeyEventKind::Press => Event::Key(key),
+                    CrosstermEvent::Mouse(mouse) => Event::Mouse(mouse),
+                    CrosstermEvent::Resize(x, y) => Event::Resize(x, y),
+                    CrosstermEvent::FocusLost => Event::FocusLost,
+                    CrosstermEvent::FocusGained => Event::FocusGained,
+                    CrosstermEvent::Paste(s) => Event::Paste(s),
+                    _ => continue, // ignore other events
+                }
+                Some(Err(_)) => Event::Error,
+                None => break, // the event stream has stopped and will not produce any more events
+            },
+        };
+        if event_tx.send(event).is_err() {
+            // the receiver has been dropped, so there's no point in continuing the loop
+            break;
+        }
+    }
+    cancellation_token.cancel();
+}
+
+impl Default for Tui<CrosstermBackend<std::io::Stdout>> {
+    fn default() -> Self {
+        Self::new(CrosstermBackend::new(stdout())).unwrap()
+    }
+}
+
+impl<B: Backend> Tui<B> {
+    pub fn new(backend: B) -> Result<Self> {
         let (event_tx, event_rx) = mpsc::unbounded_channel();
         Ok(Self {
-            terminal: ratatui::Terminal::new(Backend::new(stdout()))?,
+            terminal: Terminal::new(backend)?,
             task: tokio::spawn(async {}),
             cancellation_token: CancellationToken::new(),
             event_rx,
@@ -79,48 +125,12 @@ impl Tui {
     pub fn start(&mut self) {
         self.cancel(); // Cancel any existing task
         self.cancellation_token = CancellationToken::new();
-        let event_loop = Self::event_loop(self.event_tx.clone(), self.cancellation_token.clone());
+        let event_tx = self.event_tx.clone();
+        let cancellation_token = self.cancellation_token.clone();
+        let event_loop = event_loop(event_tx, cancellation_token);
         self.task = tokio::spawn(async {
             event_loop.await;
         });
-    }
-
-    async fn event_loop(event_tx: UnboundedSender<Event>, cancellation_token: CancellationToken) {
-        let mut event_stream = EventStream::new();
-        let mut tick_interval = interval(Duration::from_secs_f64(1.0 / 4.0));
-        let mut render_interval = interval(Duration::from_secs_f64(1.0 / 60.0));
-
-        // if this fails, then it's likely a bug in the calling code
-        event_tx
-            .send(Event::Init)
-            .expect("failed to send init event");
-        loop {
-            let event = tokio::select! {
-                _ = cancellation_token.cancelled() => {
-                    break;
-                }
-                _ = tick_interval.tick() => Event::Tick,
-                _ = render_interval.tick() => Event::Render,
-                crossterm_event = event_stream.next().fuse() => match crossterm_event {
-                    Some(Ok(event)) => match event {
-                        CrosstermEvent::Key(key) if key.kind == KeyEventKind::Press => Event::Key(key),
-                        CrosstermEvent::Mouse(mouse) => Event::Mouse(mouse),
-                        CrosstermEvent::Resize(x, y) => Event::Resize(x, y),
-                        CrosstermEvent::FocusLost => Event::FocusLost,
-                        CrosstermEvent::FocusGained => Event::FocusGained,
-                        CrosstermEvent::Paste(s) => Event::Paste(s),
-                        _ => continue, // ignore other events
-                    }
-                    Some(Err(_)) => Event::Error,
-                    None => break, // the event stream has stopped and will not produce any more events
-                },
-            };
-            if event_tx.send(event).is_err() {
-                // the receiver has been dropped, so there's no point in continuing the loop
-                break;
-            }
-        }
-        cancellation_token.cancel();
     }
 
     pub fn stop(&self) -> Result<()> {
@@ -190,21 +200,21 @@ impl Tui {
     }
 }
 
-impl Deref for Tui {
-    type Target = ratatui::Terminal<Backend<Stdout>>;
+impl<B: Backend> Deref for Tui<B> {
+    type Target = ratatui::Terminal<B>;
 
     fn deref(&self) -> &Self::Target {
         &self.terminal
     }
 }
 
-impl DerefMut for Tui {
+impl<B: Backend> DerefMut for Tui<B> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.terminal
     }
 }
 
-impl Drop for Tui {
+impl<B: Backend> Drop for Tui<B> {
     fn drop(&mut self) {
         self.exit().unwrap();
     }

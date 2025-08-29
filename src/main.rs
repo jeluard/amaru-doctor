@@ -93,7 +93,7 @@ async fn main() -> Result<()> {
 
     let args = Cli::parse();
 
-    let mut tui = Tui::new()?.mouse(true);
+    let mut tui = Tui::default().mouse(true);
 
     let mut app: App = App::new(
         open_ledger_db(&args)?,

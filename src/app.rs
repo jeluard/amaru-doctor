@@ -10,7 +10,7 @@ use crate::{
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
 use color_eyre::Result;
 use crossterm::event::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
-use ratatui::prelude::Rect;
+use ratatui::prelude::{Backend, Rect};
 use serde::{Deserialize, Serialize};
 use std::{io::Error, sync::Arc};
 use tokio::sync::mpsc;
@@ -65,7 +65,7 @@ impl App {
         })
     }
 
-    pub async fn run(&mut self, tui: &mut Tui) -> Result<()> {
+    pub async fn run<B: Backend>(&mut self, tui: &mut Tui<B>) -> Result<()> {
         tui.terminal.clear()?;
         tui.enter()?;
 
@@ -88,7 +88,7 @@ impl App {
         Ok(())
     }
 
-    async fn handle_events(&mut self, tui: &mut Tui) -> Result<()> {
+    async fn handle_events<B: Backend>(&mut self, tui: &mut Tui<B>) -> Result<()> {
         let Some(event) = tui.next_event().await else {
             return Ok(());
         };
@@ -186,7 +186,7 @@ impl App {
         Ok(())
     }
 
-    fn handle_actions(&mut self, tui: &mut Tui) -> Result<()> {
+    fn handle_actions<B: Backend>(&mut self, tui: &mut Tui<B>) -> Result<()> {
         while let Ok(action) = self.action_rx.try_recv() {
             if !matches!(action, Action::Tick | Action::Render) {
                 debug!("{action:?}");
@@ -238,12 +238,12 @@ impl App {
         Ok(())
     }
 
-    fn handle_resize(&mut self, tui: &mut Tui, w: u16, h: u16) -> Result<()> {
+    fn handle_resize<B: Backend>(&mut self, tui: &mut Tui<B>, w: u16, h: u16) -> Result<()> {
         tui.resize(Rect::new(0, 0, w, h))?;
         self.render(tui)
     }
 
-    fn render(&mut self, tui: &mut Tui) -> Result<()> {
+    fn render<B: Backend>(&mut self, tui: &mut Tui<B>) -> Result<()> {
         tui.try_draw(|f| -> std::result::Result<(), _> {
             let frame_area = f.area();
             if frame_area != self.app_state.frame_area
