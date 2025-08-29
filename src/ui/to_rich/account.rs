@@ -42,14 +42,6 @@ impl ToRichText for Row {
         let mut lines = Vec::new();
 
         lines.extend(labeled(
-            "Delegatee".to_string(),
-            self.delegatee
-                .map(|pool_id| RichText::Single(Span::raw(pool_id.to_string())))
-                .unwrap_or_else(|| RichText::Single(Span::raw("None"))),
-            Style::default().fg(Color::Yellow),
-        ));
-
-        lines.extend(labeled(
             "Deposit".to_string(),
             RichText::Single(Span::raw(format!("{} lovelace", self.deposit))),
             Style::default(),

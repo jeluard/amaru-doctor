@@ -1,4 +1,4 @@
-use crate::ui::{RichText, ToRichText, labeled_default, labeled_default_opt};
+use crate::ui::{labeled_default, labeled_default_opt, labeled_default_single, RichText, ToRichText};
 use amaru_kernel::{Header, HeaderBody};
 use pallas_primitives::{VrfCert, conway::OperationalCert};
 
@@ -31,8 +31,8 @@ impl ToRichText for HeaderBody {
 impl ToRichText for VrfCert {
     fn to_rich_text(&self) -> RichText {
         let mut lines = Vec::new();
-        lines.extend(labeled_default("0", &self.0));
-        lines.extend(labeled_default("1", &self.1));
+        lines.extend(labeled_default_single("0", &self.0));
+        lines.extend(labeled_default_single("1", &self.1));
         RichText::Lines(lines)
     }
 }

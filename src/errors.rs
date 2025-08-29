@@ -3,8 +3,6 @@ use std::env;
 use color_eyre::Result;
 use tracing::error;
 
-use crate::tui::Tui;
-
 pub fn init() -> Result<()> {
     let (panic_hook, eyre_hook) = color_eyre::config::HookBuilder::default()
         .panic_section(format!(
@@ -17,10 +15,6 @@ pub fn init() -> Result<()> {
         .into_hooks();
     eyre_hook.install()?;
     std::panic::set_hook(Box::new(move |panic_info| {
-        if let Err(r) = Tui::default().exit() {
-            error!("Unable to exit Terminal: {:?}", r);
-        }
-
         #[cfg(not(debug_assertions))]
         {
             use human_panic::{handle_dump, metadata, print_msg};

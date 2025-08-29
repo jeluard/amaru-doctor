@@ -1,9 +1,9 @@
 use crate::ui::{RichText, ToRichText, labeled, labeled_default, labeled_default_single};
 use amaru_kernel::{Nullable, PoolId, PoolMetadata, PoolParams, Relay};
 use amaru_ledger::store::columns::pools::Row;
+use amaru_slot_arithmetic::Epoch;
 use ratatui::style::Style;
 use ratatui::text::{Line, Span};
-use slot_arithmetic::Epoch;
 use std::fmt;
 
 pub struct PoolIdDisplay(pub PoolId);

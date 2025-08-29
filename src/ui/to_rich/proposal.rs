@@ -3,8 +3,7 @@ use crate::ui::{
     labeled_default_opt_single, labeled_default_single, to_list_item::ProposalItem,
 };
 use amaru_kernel::{
-    CostModel, CostModels, ExUnitPrices, ExUnits, GovAction, PoolVotingThresholds, Proposal,
-    ProposalId, ProposalPointer, ProtocolParamUpdate, TransactionPointer,
+    ComparableProposalId, CostModel, CostModels, ExUnitPrices, ExUnits, GovAction, PoolVotingThresholds, Proposal, ProposalId, ProposalPointer, ProtocolParamUpdate, TransactionPointer
 };
 use amaru_ledger::store::columns::proposals;
 use ratatui::text::Span;
@@ -25,12 +24,27 @@ impl ToRichText for ProposalId {
     }
 }
 
+#[derive(Clone)]
+pub struct ComparableProposalIdDisplay<'a>(pub &'a ComparableProposalId);
+
+impl<'a> fmt::Display for ComparableProposalIdDisplay<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.0.inner.transaction_id, self.0.inner.action_index)
+    }
+}
+
+impl ToRichText for ComparableProposalId {
+    fn to_rich_text(&self) -> RichText {
+        RichText::Single(Span::raw(ComparableProposalIdDisplay(self).to_string()))
+    }
+}
+
 impl ToRichText for ProposalItem {
     fn to_rich_text(&self) -> RichText {
         let mut lines = Vec::new();
         lines.extend(labeled_default_single(
             "Proposal",
-            ProposalIdDisplay(&self.0),
+            ComparableProposalIdDisplay(&self.0),
         ));
         lines.extend(self.1.to_rich_text().unwrap_lines());
         RichText::Lines(lines)
