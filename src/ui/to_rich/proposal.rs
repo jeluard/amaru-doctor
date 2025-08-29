@@ -3,7 +3,9 @@ use crate::ui::{
     labeled_default_opt_single, labeled_default_single, to_list_item::ProposalItem,
 };
 use amaru_kernel::{
-    ComparableProposalId, CostModel, CostModels, ExUnitPrices, ExUnits, GovAction, PoolVotingThresholds, Proposal, ProposalId, ProposalPointer, ProtocolParamUpdate, TransactionPointer
+    ComparableProposalId, CostModel, CostModels, ExUnitPrices, ExUnits, GovAction,
+    PoolVotingThresholds, Proposal, ProposalId, ProposalPointer, ProtocolParamUpdate,
+    TransactionPointer,
 };
 use amaru_ledger::store::columns::proposals;
 use ratatui::text::Span;
@@ -29,7 +31,11 @@ pub struct ComparableProposalIdDisplay<'a>(pub &'a ComparableProposalId);
 
 impl<'a> fmt::Display for ComparableProposalIdDisplay<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}", self.0.inner.transaction_id, self.0.inner.action_index)
+        write!(
+            f,
+            "{}:{}",
+            self.0.inner.transaction_id, self.0.inner.action_index
+        )
     }
 }
 

@@ -1,4 +1,6 @@
-use crate::ui::{labeled_default, labeled_default_opt, labeled_default_single, RichText, ToRichText};
+use crate::ui::{
+    RichText, ToRichText, labeled_default, labeled_default_opt, labeled_default_single,
+};
 use amaru_kernel::{Header, HeaderBody};
 use pallas_primitives::{VrfCert, conway::OperationalCert};
 

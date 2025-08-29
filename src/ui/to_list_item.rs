@@ -2,7 +2,8 @@ use amaru_ledger::store::columns::{accounts, dreps, pools, proposals, slots, utx
 use ratatui::widgets::ListItem;
 
 use crate::ui::to_rich::{
-    account::StakeCredentialDisplay, proposal::{ComparableProposalIdDisplay}, utxo::TransactionInputDisplay,
+    account::StakeCredentialDisplay, proposal::ComparableProposalIdDisplay,
+    utxo::TransactionInputDisplay,
 };
 
 pub trait ToListItem {

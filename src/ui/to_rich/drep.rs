@@ -1,6 +1,6 @@
 use crate::ui::{
-    RichText, ToRichText, labeled_default, labeled_default_opt,
-    labeled_default_single, to_list_item::DRepItem, to_rich::account::StakeCredentialDisplay,
+    RichText, ToRichText, labeled_default, labeled_default_opt, labeled_default_single,
+    to_list_item::DRepItem, to_rich::account::StakeCredentialDisplay,
 };
 use amaru_kernel::Anchor;
 use amaru_ledger::store::columns::dreps;
@@ -23,10 +23,7 @@ impl ToRichText for dreps::Row {
         lines.extend(labeled_default_single("Deposit", self.deposit));
         lines.extend(labeled_default_opt("Anchor", self.anchor.as_ref()));
         lines.extend(labeled_default("Registered At", &self.registered_at));
-        lines.extend(labeled_default_single(
-            "Valid Until",
-            self.valid_until,
-        ));
+        lines.extend(labeled_default_single("Valid Until", self.valid_until));
         lines.extend(labeled_default_opt(
             "Previous Deregistration",
             self.previous_deregistration.as_ref(),
