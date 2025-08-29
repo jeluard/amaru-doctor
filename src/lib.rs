@@ -1,9 +1,13 @@
 pub mod app;
 mod app_state;
+pub mod cli;
 mod config;
 mod controller;
+pub mod detection;
+pub mod errors;
+pub mod logging;
 mod model;
-mod otel;
+pub mod otel;
 mod states;
 mod store;
 pub mod tui;

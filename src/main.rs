@@ -1,5 +1,6 @@
-use crate::{
+use amaru_doctor::{
     app::App,
+    cli::Cli,
     detection::{AMARU_CHAIN_DB_ENV, AMARU_LEDGER_DB_ENV, detect_amaru_process},
     otel::{TraceCollector, TraceReceiver},
     tui::Tui,
@@ -10,30 +11,12 @@ use amaru_stores::rocksdb::{
     consensus::{ReadOnlyChainDB, RocksDBStore},
 };
 use clap::Parser;
-use cli::Cli;
 use color_eyre::Result;
 use core::panic;
 use opentelemetry_proto::tonic::collector::trace::v1::trace_service_server::TraceServiceServer;
 use std::{path::PathBuf, sync::Arc};
 use tokio::task;
 use tonic::transport::Server;
-
-mod app;
-mod app_state;
-mod cli;
-mod config;
-mod controller;
-mod detection;
-mod errors;
-mod logging;
-mod model;
-mod otel;
-mod states;
-mod store;
-mod tui;
-mod ui;
-mod update;
-mod view;
 
 fn default_db_name(name: &str, network: NetworkName) -> String {
     format!("{}.{}.db", name, network)
@@ -77,8 +60,8 @@ pub fn open_chain_db(args: &Cli) -> Result<ReadOnlyChainDB> {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    crate::errors::init()?;
-    crate::logging::init()?;
+    amaru_doctor::errors::init()?;
+    amaru_doctor::logging::init()?;
 
     let collector = Arc::new(TraceCollector::new(10_000, 5_000));
     let collector_clone = collector.clone();
