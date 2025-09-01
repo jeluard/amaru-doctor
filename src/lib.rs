@@ -4,7 +4,6 @@ pub mod cli;
 mod config;
 mod controller;
 pub mod detection;
-pub mod errors;
 pub mod logging;
 mod model;
 pub mod otel;

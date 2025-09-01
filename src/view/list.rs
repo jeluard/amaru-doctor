@@ -1,5 +1,5 @@
 use crate::{model::window::WindowState, ui::to_list_item::ToListItem};
-use color_eyre::Result;
+use anyhow::Result;
 use ratatui::{
     Frame,
     layout::Rect,

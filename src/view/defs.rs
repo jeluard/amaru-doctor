@@ -12,7 +12,7 @@ use crate::{
 };
 use amaru_consensus::Nonces;
 use amaru_kernel::{Header, RawBlock};
-use color_eyre::Result;
+use anyhow::Result;
 use ratatui::{Frame, layout::Rect};
 
 pub struct InspectTabs;

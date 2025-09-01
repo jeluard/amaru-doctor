@@ -5,7 +5,7 @@ use crate::{
     states::{InspectOption, LedgerMode, WidgetSlot},
 };
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
-use color_eyre::Result;
+use anyhow::Result;
 use ratatui::layout::Rect;
 use std::sync::Arc;
 

@@ -2,7 +2,7 @@
 
 use std::{collections::HashMap, env, path::PathBuf};
 
-use color_eyre::Result;
+use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use derive_deref::{Deref, DerefMut};
 use directories::ProjectDirs;

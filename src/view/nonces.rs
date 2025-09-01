@@ -1,6 +1,6 @@
 use crate::ui::{RichText, ToRichText};
 use amaru_consensus::Nonces;
-use color_eyre::eyre::Result;
+use anyhow::Result;
 use ratatui::{
     Frame,
     layout::Rect,

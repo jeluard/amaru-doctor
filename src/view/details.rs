@@ -1,6 +1,6 @@
 use crate::ui::RichText;
 use crate::{model::window::WindowState, ui::ToRichText};
-use color_eyre::Result;
+use anyhow::Result;
 use ratatui::{
     Frame,
     layout::Rect,

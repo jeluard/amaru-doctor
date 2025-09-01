@@ -1,4 +1,4 @@
-use color_eyre::Result;
+use anyhow::Result;
 use ratatui::{Frame, layout::Rect, widgets::Paragraph};
 
 pub fn render_line(frame: &mut Frame, area: Rect, line: String) -> Result<()> {

@@ -1,5 +1,5 @@
 use crate::model::cursor::Cursor;
-use color_eyre::Result;
+use anyhow::Result;
 use ratatui::{
     Frame,
     layout::Rect,

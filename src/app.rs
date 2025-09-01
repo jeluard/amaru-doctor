@@ -8,11 +8,11 @@ use crate::{
     view::{SlotViews, compute_slot_views},
 };
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
-use color_eyre::Result;
+use anyhow::Result;
 use crossterm::event::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::prelude::{Backend, Rect};
 use serde::{Deserialize, Serialize};
-use std::{io::Error, sync::Arc};
+use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::{debug, info, trace};
 
@@ -65,8 +65,8 @@ impl App {
         })
     }
 
-    pub async fn run<B: Backend>(&mut self, tui: &mut Tui<B>) -> Result<()> {
-        tui.terminal.clear()?;
+    pub async fn run<B: Backend + Send>(&mut self, tui: &mut Tui<B>) -> Result<()> {
+        tui.terminal.clear().map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?;
         tui.enter()?;
 
         let action_tx = self.action_tx.clone();
@@ -201,7 +201,7 @@ impl App {
                 Action::Quit => self.should_quit = true,
                 Action::Suspend => self.should_suspend = true,
                 Action::Resume => self.should_suspend = false,
-                Action::ClearScreen => tui.clear()?,
+                Action::ClearScreen => tui.clear().map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?,
                 Action::Resize(w, h) => self.handle_resize(tui, w, h)?,
                 Action::Render => self.render(tui)?,
                 Action::Mouse(x, y) => {
@@ -239,12 +239,12 @@ impl App {
     }
 
     fn handle_resize<B: Backend>(&mut self, tui: &mut Tui<B>, w: u16, h: u16) -> Result<()> {
-        tui.resize(Rect::new(0, 0, w, h))?;
+        tui.resize(Rect::new(0, 0, w, h)).map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?;
         self.render(tui)
     }
 
     fn render<B: Backend>(&mut self, tui: &mut Tui<B>) -> Result<()> {
-        tui.try_draw(|f| -> std::result::Result<(), _> {
+        tui.draw(|f| {
             let frame_area = f.area();
             if frame_area != self.app_state.frame_area
                 || self.app_state.inspect_option.current() != &self.last_store_option
@@ -253,7 +253,7 @@ impl App {
 
                 // Synchronously update the layout
                 let action = Action::UpdateLayout(frame_area);
-                self.run_updates(&action).map_err(Error::other)?;
+                let _ = self.run_updates(&action);
 
                 self.last_store_option = self.app_state.inspect_option.current().clone();
             }
@@ -268,10 +268,9 @@ impl App {
                     trace!("Found no view for slot {}", slot);
                 }
             }
-            Ok::<(), std::io::Error>(())
         })
         .map(|_| ())
-        .map_err(Into::into)
+        .map_err(|e| anyhow::Error::msg(format!("{:?}", e)))
     }
 }
 

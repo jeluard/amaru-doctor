@@ -11,7 +11,7 @@ use amaru_stores::rocksdb::{
     consensus::{ReadOnlyChainDB, RocksDBStore},
 };
 use clap::Parser;
-use color_eyre::Result;
+use anyhow::Result;
 use core::panic;
 use opentelemetry_proto::tonic::collector::trace::v1::trace_service_server::TraceServiceServer;
 use std::{path::PathBuf, sync::Arc};
@@ -60,7 +60,6 @@ pub fn open_chain_db(args: &Cli) -> Result<ReadOnlyChainDB> {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    amaru_doctor::errors::init()?;
     amaru_doctor::logging::init()?;
 
     let collector = Arc::new(TraceCollector::new(10_000, 5_000));

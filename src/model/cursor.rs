@@ -1,4 +1,4 @@
-use color_eyre::eyre::{Result, eyre};
+use anyhow::{Result};
 use std::slice::Iter;
 use strum::IntoEnumIterator;
 
@@ -9,9 +9,9 @@ pub struct Cursor<T> {
 
 impl<T> Cursor<T> {
     pub fn new(vec: Vec<T>) -> Result<Self> {
-        if vec.is_empty() {
+       /*  if vec.is_empty() {
             return Err(eyre!("Empty vec not allowed"));
-        }
+        }*/
         Ok(Self { vec, idx: 0 })
     }
 

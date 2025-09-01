@@ -6,7 +6,7 @@ use std::{
     time::Duration,
 };
 
-use color_eyre::Result;
+use anyhow::Result;
 use crossterm::{
     cursor,
     event::{
@@ -99,10 +99,10 @@ impl Default for Tui<CrosstermBackend<std::io::Stdout>> {
 }
 
 impl<B: Backend> Tui<B> {
-    pub fn new(backend: B) -> Result<Self> {
+    pub fn new(backend: B) -> Result<Self>{
         let (event_tx, event_rx) = mpsc::unbounded_channel();
         Ok(Self {
-            terminal: Terminal::new(backend)?,
+            terminal: Terminal::new(backend).map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?,
             task: tokio::spawn(async {}),
             cancellation_token: CancellationToken::new(),
             event_rx,
@@ -166,7 +166,7 @@ impl<B: Backend> Tui<B> {
     pub fn exit(&mut self) -> Result<()> {
         self.stop()?;
         if crossterm::terminal::is_raw_mode_enabled()? {
-            self.flush()?;
+            self.flush().map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?;
             if self.paste {
                 crossterm::execute!(stdout(), DisableBracketedPaste)?;
             }

@@ -1,5 +1,5 @@
 use crate::{app_state::AppState, states::WidgetSlot, view::defs::*};
-use color_eyre::Result;
+use anyhow::Result;
 use ratatui::{Frame, layout::Rect};
 use std::collections::HashMap;
 
