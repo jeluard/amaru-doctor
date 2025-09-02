@@ -35,7 +35,10 @@ fn prepend_path(opt_base: Option<PathBuf>, name: &str) -> PathBuf {
         .unwrap_or_else(|| PathBuf::from(name))
 }
 
-pub fn open_ledger_db(ledger_db: &Option<PathBuf>, network: &NetworkName) -> Result<ReadOnlyRocksDB> {
+pub fn open_ledger_db(
+    ledger_db: &Option<PathBuf>,
+    network: &NetworkName,
+) -> Result<ReadOnlyRocksDB> {
     if let Some(path) = ledger_db.as_deref() {
         ReadOnlyRocksDB::new(path).map_err(Into::into)
     } else {
@@ -50,7 +53,7 @@ pub fn open_ledger_db(ledger_db: &Option<PathBuf>, network: &NetworkName) -> Res
     }
 }
 
-pub fn open_chain_db(chain_db: &Option<PathBuf>,  network: &NetworkName) -> Result<ReadOnlyChainDB> {
+pub fn open_chain_db(chain_db: &Option<PathBuf>, network: &NetworkName) -> Result<ReadOnlyChainDB> {
     if let Some(path) = chain_db.as_deref() {
         RocksDBStore::open_for_readonly(&path.into()).map_err(Into::into)
     } else {
