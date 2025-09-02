@@ -32,8 +32,8 @@ async fn main() -> Result<()> {
     let mut tui = Tui::default().mouse(true);
 
     let mut app: App = App::new(
-        open_ledger_db(&args)?,
-        open_chain_db(&args)?,
+        open_ledger_db(&args.ledger_db, &args.network)?,
+        open_chain_db(&args.chain_db, &args.network)?,
         collector_clone,
         tui.get_frame().area(),
     )?;

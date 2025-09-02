@@ -65,14 +65,28 @@ impl App {
         })
     }
 
-    pub async fn run<B: Backend + Send>(&mut self, tui: &mut Tui<B>) -> Result<()> {
+    pub fn enter<B: Backend>(&mut self, tui: &mut Tui<B>) -> Result<()> {
         tui.terminal
             .clear()
             .map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?;
         tui.enter()?;
+        Ok(())
+    }
 
+    pub async fn run<B: Backend + Send>(&mut self, tui: &mut Tui<B>) -> Result<()> {
+        self.enter(tui)?;
         let action_tx = self.action_tx.clone();
         loop {
+            let should_continue = self.run_once(tui, action_tx.clone()).await?;
+            if !should_continue {
+                break;
+            }
+        }
+        tui.exit()?;
+        Ok(())
+    }
+
+    pub async fn run_once<B: Backend + Send>(&mut self, tui: &mut Tui<B>, action_tx: mpsc::UnboundedSender<Action>) -> Result<bool> {
             self.handle_events(tui).await?;
             self.handle_actions(tui)?;
             if self.should_suspend {
@@ -83,11 +97,10 @@ impl App {
                 tui.enter()?;
             } else if self.should_quit {
                 tui.stop()?;
-                break;
+                return Ok(false);
             }
-        }
-        tui.exit()?;
-        Ok(())
+
+        Ok(true)
     }
 
     async fn handle_events<B: Backend>(&mut self, tui: &mut Tui<B>) -> Result<()> {
