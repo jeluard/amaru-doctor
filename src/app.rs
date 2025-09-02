@@ -73,7 +73,7 @@ impl App {
         Ok(())
     }
 
-    pub async fn run<B: Backend + Send>(&mut self, tui: &mut Tui<B>) -> Result<()> {
+    pub async fn run<B: Backend>(&mut self, tui: &mut Tui<B>) -> Result<()> {
         self.enter(tui)?;
         let action_tx = self.action_tx.clone();
         loop {
@@ -86,7 +86,7 @@ impl App {
         Ok(())
     }
 
-    pub async fn run_once<B: Backend + Send>(&mut self, tui: &mut Tui<B>, action_tx: mpsc::UnboundedSender<Action>) -> Result<bool> {
+    pub async fn run_once<B: Backend>(&mut self, tui: &mut Tui<B>, action_tx: mpsc::UnboundedSender<Action>) -> Result<bool> {
             self.handle_events(tui).await?;
             self.handle_actions(tui)?;
             if self.should_suspend {
