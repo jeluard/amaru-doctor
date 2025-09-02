@@ -1,7 +1,7 @@
 use crate::otel::SpanEvent;
+use anyhow::Result;
 use chrono::TimeZone;
 use chrono::Utc;
-use anyhow::Result;
 use ratatui::layout::Constraint;
 use ratatui::widgets::{Cell, Row, Table};
 use ratatui::{

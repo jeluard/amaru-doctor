@@ -66,7 +66,9 @@ impl App {
     }
 
     pub async fn run<B: Backend + Send>(&mut self, tui: &mut Tui<B>) -> Result<()> {
-        tui.terminal.clear().map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?;
+        tui.terminal
+            .clear()
+            .map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?;
         tui.enter()?;
 
         let action_tx = self.action_tx.clone();
@@ -201,7 +203,9 @@ impl App {
                 Action::Quit => self.should_quit = true,
                 Action::Suspend => self.should_suspend = true,
                 Action::Resume => self.should_suspend = false,
-                Action::ClearScreen => tui.clear().map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?,
+                Action::ClearScreen => tui
+                    .clear()
+                    .map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?,
                 Action::Resize(w, h) => self.handle_resize(tui, w, h)?,
                 Action::Render => self.render(tui)?,
                 Action::Mouse(x, y) => {
@@ -239,7 +243,8 @@ impl App {
     }
 
     fn handle_resize<B: Backend>(&mut self, tui: &mut Tui<B>, w: u16, h: u16) -> Result<()> {
-        tui.resize(Rect::new(0, 0, w, h)).map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?;
+        tui.resize(Rect::new(0, 0, w, h))
+            .map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?;
         self.render(tui)
     }
 

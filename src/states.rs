@@ -2,9 +2,7 @@ use std::collections::HashSet;
 
 use crate::ui::to_list_item::ToListItem;
 use crossterm::event::KeyCode;
-use ratatui::{
-    layout::Rect, prelude::Line, text::ToLine, widgets::ListItem,
-};
+use ratatui::{layout::Rect, prelude::Line, text::ToLine, widgets::ListItem};
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter, IntoEnumIterator};
 

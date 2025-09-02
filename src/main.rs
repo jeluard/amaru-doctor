@@ -1,8 +1,12 @@
 use amaru_doctor::{
-    app::App, cli::Cli, open_chain_db, open_ledger_db, otel::{TraceCollector, TraceReceiver}, tui::Tui
+    app::App,
+    cli::Cli,
+    open_chain_db, open_ledger_db,
+    otel::{TraceCollector, TraceReceiver},
+    tui::Tui,
 };
-use clap::Parser;
 use anyhow::Result;
+use clap::Parser;
 use opentelemetry_proto::tonic::collector::trace::v1::trace_service_server::TraceServiceServer;
 use std::sync::Arc;
 use tokio::task;

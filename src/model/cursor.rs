@@ -1,4 +1,4 @@
-use anyhow::{Result};
+use anyhow::{Result, anyhow};
 use std::slice::Iter;
 use strum::IntoEnumIterator;
 
@@ -9,9 +9,9 @@ pub struct Cursor<T> {
 
 impl<T> Cursor<T> {
     pub fn new(vec: Vec<T>) -> Result<Self> {
-       /*  if vec.is_empty() {
-            return Err(eyre!("Empty vec not allowed"));
-        }*/
+        if vec.is_empty() {
+            return Err(anyhow!("Empty vec not allowed"));
+        }
         Ok(Self { vec, idx: 0 })
     }
 

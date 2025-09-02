@@ -1,10 +1,16 @@
 use std::path::PathBuf;
 
 use amaru_kernel::network::NetworkName;
-use amaru_stores::rocksdb::{consensus::{ReadOnlyChainDB, RocksDBStore}, ReadOnlyRocksDB};
+use amaru_stores::rocksdb::{
+    ReadOnlyRocksDB,
+    consensus::{ReadOnlyChainDB, RocksDBStore},
+};
 use anyhow::Result;
 
-use crate::{cli::Cli, detection::{detect_amaru_process, AMARU_CHAIN_DB_ENV, AMARU_LEDGER_DB_ENV}};
+use crate::{
+    cli::Cli,
+    detection::{AMARU_CHAIN_DB_ENV, AMARU_LEDGER_DB_ENV, detect_amaru_process},
+};
 
 pub mod app;
 mod app_state;

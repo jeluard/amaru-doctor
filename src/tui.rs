@@ -99,7 +99,7 @@ impl Default for Tui<CrosstermBackend<std::io::Stdout>> {
 }
 
 impl<B: Backend> Tui<B> {
-    pub fn new(backend: B) -> Result<Self>{
+    pub fn new(backend: B) -> Result<Self> {
         let (event_tx, event_rx) = mpsc::unbounded_channel();
         Ok(Self {
             terminal: Terminal::new(backend).map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?,
@@ -166,7 +166,8 @@ impl<B: Backend> Tui<B> {
     pub fn exit(&mut self) -> Result<()> {
         self.stop()?;
         if crossterm::terminal::is_raw_mode_enabled()? {
-            self.flush().map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?;
+            self.flush()
+                .map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?;
             if self.paste {
                 crossterm::execute!(stdout(), DisableBracketedPaste)?;
             }
