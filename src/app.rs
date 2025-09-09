@@ -75,9 +75,8 @@ impl App {
 
     pub async fn run<B: Backend>(&mut self, tui: &mut Tui<B>) -> Result<()> {
         self.enter(tui)?;
-        let action_tx = self.action_tx.clone();
         loop {
-            let should_continue = self.run_once(tui, action_tx.clone()).await?;
+            let should_continue = self.run_once(tui).await?;
             if !should_continue {
                 break;
             }
@@ -89,14 +88,13 @@ impl App {
     pub async fn run_once<B: Backend>(
         &mut self,
         tui: &mut Tui<B>,
-        action_tx: mpsc::UnboundedSender<Action>,
     ) -> Result<bool> {
         self.handle_events(tui).await?;
         self.handle_actions(tui)?;
         if self.should_suspend {
             tui.suspend()?;
-            action_tx.send(Action::Resume)?;
-            action_tx.send(Action::ClearScreen)?;
+            self.action_tx.send(Action::Resume)?;
+            self.action_tx.send(Action::ClearScreen)?;
             // tui.mouse(true);
             tui.enter()?;
         } else if self.should_quit {
