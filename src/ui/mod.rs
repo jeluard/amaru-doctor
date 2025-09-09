@@ -112,7 +112,7 @@ impl ToRichText for RationalNumber {
     }
 }
 
-impl<D: fmt::Display> ToRichText for Vec<D> {
+impl<D: fmt::Display> ToRichText for [D] {
     fn to_rich_text(&self) -> RichText {
         let mut spans = Vec::with_capacity(self.len().saturating_mul(2).saturating_sub(1));
         let mut iter = self.iter().peekable();
