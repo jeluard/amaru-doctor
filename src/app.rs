@@ -85,10 +85,7 @@ impl App {
         Ok(())
     }
 
-    pub async fn run_once<B: Backend>(
-        &mut self,
-        tui: &mut Tui<B>,
-    ) -> Result<bool> {
+    pub async fn run_once<B: Backend>(&mut self, tui: &mut Tui<B>) -> Result<bool> {
         self.handle_events(tui).await?;
         self.handle_actions(tui)?;
         if self.should_suspend {
@@ -159,7 +156,8 @@ impl App {
 
         match mouse.kind {
             MouseEventKind::Down(MouseButton::Left) => {
-                // Send mouse click action with coordinates for potential widget-specific handling
+                // Send mouse click action with coordinates for potential widget-specific
+                // handling
                 action_tx.send(Action::Mouse(mouse.column, mouse.row))?;
 
                 // Check if mouse click is on a focusable widget and switch focus
@@ -172,8 +170,9 @@ impl App {
                 action_tx.send(Action::MouseMove(mouse.column, mouse.row))?;
             }
             _ => {
-                // Ignore other mouse events for now (right click, drag, scroll, etc.)
-                // These could be implemented in the future for additional functionality
+                // Ignore other mouse events for now (right click, drag, scroll,
+                // etc.) These could be implemented in the
+                // future for additional functionality
             }
         }
         Ok(())
@@ -181,7 +180,8 @@ impl App {
 
     fn handle_mouse_focus(&mut self, x: u16, y: u16) -> Result<()> {
         // Find which widget slot contains the mouse coordinates
-        // This implements click-to-focus functionality similar to modern GUI applications
+        // This implements click-to-focus functionality similar to modern GUI
+        // applications
         for (slot, rect) in &self.app_state.layout {
             if WidgetSlot::focusable().contains(slot)
                 && x >= rect.x
@@ -189,7 +189,8 @@ impl App {
                 && y >= rect.y
                 && y < rect.y + rect.height
             {
-                // Only change focus if it's different from current focus to avoid unnecessary updates
+                // Only change focus if it's different from current focus to avoid unnecessary
+                // updates
                 if self.app_state.slot_focus != *slot {
                     trace!(
                         "Mouse focus change from {} to {}",

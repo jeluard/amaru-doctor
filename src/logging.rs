@@ -15,9 +15,10 @@ pub fn init() -> Result<()> {
     let log_path = directory.join(LOG_FILE.clone());
     let log_file = std::fs::File::create(log_path)?;
     let env_filter = EnvFilter::builder().with_default_directive(tracing::Level::TRACE.into());
-    // If the `RUST_LOG` environment variable is set, use that as the default, otherwise use the
-    // value of the `LOG_ENV` environment variable. If the `LOG_ENV` environment variable contains
-    // errors, then this will return an error.
+    // If the `RUST_LOG` environment variable is set, use that as the default,
+    // otherwise use the value of the `LOG_ENV` environment variable. If the
+    // `LOG_ENV` environment variable contains errors, then this will return an
+    // error.
     let env_filter = env_filter
         .try_from_env()
         .or_else(|_| env_filter.with_env_var(LOG_ENV.clone()).from_env())?
