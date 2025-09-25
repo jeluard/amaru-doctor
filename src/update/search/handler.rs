@@ -6,7 +6,7 @@ use crate::{
     ui::to_list_item::UtxoItem,
     update::search::{SearchHandler, SearchState},
 };
-use amaru_consensus::{Nonces, consensus::store::ReadOnlyChainStore};
+use amaru_consensus::{Nonces, ReadOnlyChainStore};
 use amaru_kernel::{Address, Hash, Header, RawBlock};
 use tracing::trace;
 
