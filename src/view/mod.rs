@@ -10,7 +10,6 @@ pub mod header;
 pub mod line;
 pub mod list;
 pub mod nonces;
-pub mod otel;
 pub mod search;
 pub mod tabs;
 
@@ -44,7 +43,7 @@ static VIEW_DEFS: &[&dyn View] = &[
     &ChainSearchHeader,
     &ChainSearchBlock,
     &ChainSearchNonces,
-    &OtelDetails,
+    // &OtelDetails,
     &BottomLine,
 ];
 

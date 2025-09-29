@@ -1,6 +1,5 @@
 use crate::view::block::render_block;
 use crate::view::nonces::render_nonces;
-use crate::view::otel::render_otel_snapshot;
 use crate::{
     app_state::AppState,
     controller::is_widget_focused,
@@ -312,27 +311,27 @@ impl View for LedgerSearchUtxoDetails {
     }
 }
 
-pub struct OtelDetails;
-impl View for OtelDetails {
-    fn slot(&self) -> WidgetSlot {
-        WidgetSlot::Details
-    }
+// pub struct OtelDetails;
+// impl View for OtelDetails {
+//     fn slot(&self) -> WidgetSlot {
+//         WidgetSlot::Details
+//     }
 
-    fn is_visible(&self, s: &AppState) -> bool {
-        *s.inspect_option.current() == InspectOption::Otel
-    }
+//     fn is_visible(&self, s: &AppState) -> bool {
+//         *s.inspect_option.current() == InspectOption::Otel
+//     }
 
-    fn render(&self, frame: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
-        let spans = s.collector.snapshot();
-        render_otel_snapshot(
-            frame,
-            area,
-            "Otel",
-            spans,
-            is_widget_focused(s, self.slot()),
-        )
-    }
-}
+//     fn render(&self, frame: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
+//         let spans = s.collector.snapshot();
+//         render_otel_snapshot(
+//             frame,
+//             area,
+//             "Otel",
+//             spans,
+//             is_widget_focused(s, self.slot()),
+//         )
+//     }
+// }
 
 pub struct BottomLine;
 impl View for BottomLine {

@@ -1,31 +1,29 @@
 use amaru_doctor::{
     app::App,
     cli::Cli,
-    open_chain_db, open_ledger_db,
-    otel::{TraceCollector, TraceReceiver},
+    open_chain_db,
+    open_ledger_db,
+    // otel::{TraceCollector, TraceReceiver},
     tui::Tui,
 };
 use anyhow::Result;
 use clap::Parser;
-use opentelemetry_proto::tonic::collector::trace::v1::trace_service_server::TraceServiceServer;
-use std::sync::Arc;
-use tokio::task;
-use tonic::transport::Server;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     amaru_doctor::logging::init()?;
 
-    let collector = Arc::new(TraceCollector::new(10_000, 5_000));
-    let collector_clone = collector.clone();
-    task::spawn(async move {
-        let addr = "0.0.0.0:4317".parse().unwrap();
-        Server::builder()
-            .add_service(TraceServiceServer::new(TraceReceiver::new(collector)))
-            .serve(addr)
-            .await
-            .unwrap();
-    });
+    // TODO: Reintroduce OTEL reading and TraceGraph rendering
+    // let collector = Arc::new(TraceCollector::new(10_000, 5_000));
+    // let collector_clone = collector.clone();
+    // task::spawn(async move {
+    //     let addr = "0.0.0.0:4317".parse().unwrap();
+    //     Server::builder()
+    //         .add_service(TraceServiceServer::new(TraceReceiver::new(collector)))
+    //         .serve(addr)
+    //         .await
+    //         .unwrap();
+    // });
 
     let args = Cli::parse();
 
@@ -34,7 +32,7 @@ async fn main() -> Result<()> {
     let mut app: App = App::new(
         open_ledger_db(&args.ledger_db, &args.network)?,
         open_chain_db(&args.chain_db, &args.network)?,
-        collector_clone,
+        // collector_clone,
         tui.get_frame().area(),
     )?;
     app.run(&mut tui).await?;
