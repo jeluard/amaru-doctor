@@ -1,7 +1,7 @@
 use crate::{
     app_state::AppState,
     config::Config,
-    otel::TraceCollector,
+    // otel::TraceCollector,
     states::{Action, InspectOption, WidgetSlot},
     tui::{Event, Tui},
     update::{UPDATE_DEFS, UpdateList},
@@ -12,7 +12,6 @@ use anyhow::Result;
 use crossterm::event::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::prelude::{Backend, Rect};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::{debug, info, trace};
 
@@ -40,12 +39,13 @@ impl App {
     pub fn new(
         ledger_db: ReadOnlyRocksDB,
         chain_db: ReadOnlyChainDB,
-        collector: Arc<TraceCollector>,
+        // collector: Arc<TraceCollector>,
         frame_area: Rect,
     ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
 
-        let app_state = AppState::new(ledger_db, chain_db, collector)?;
+        let app_state = AppState::new(ledger_db, chain_db)?;
+        // collector)?;
         action_tx.send(Action::UpdateLayout(frame_area))?;
         let last_inspect_option = app_state.inspect_option.current().clone();
         let slot_views = compute_slot_views(&app_state);

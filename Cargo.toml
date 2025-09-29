@@ -16,6 +16,7 @@ amaru-ledger = { git = "https://github.com/pragma-org/amaru.git" }
 amaru-slot-arithmetic = { git = "https://github.com/pragma-org/amaru.git" }
 amaru-stores = { git = "https://github.com/pragma-org/amaru.git" }
 anyhow = "1.0.100"
+arc-swap = "1.7.1"
 better-panic = "0.3.0"
 cbor-diag = "0.1.12"
 chrono = "0.4.42"

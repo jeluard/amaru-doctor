@@ -78,6 +78,7 @@ dependencies = [
  "amaru-slot-arithmetic",
  "amaru-stores",
  "anyhow",
+ "arc-swap",
  "better-panic",
  "cbor-diag",
  "chrono",

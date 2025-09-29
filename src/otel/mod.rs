@@ -1,117 +1,79 @@
-use crate::otel::batch_processor::BatchProcessor;
-use crate::otel::bounded_queue::BoundedQueue;
-use crate::otel::rate_limit::RateLimiter;
-use opentelemetry_proto::tonic::collector::trace::v1::{
-    ExportTraceServiceRequest, ExportTraceServiceResponse, trace_service_server::TraceService,
-};
-use opentelemetry_proto::tonic::trace::v1::Span;
-use std::sync::{Arc, RwLock};
-use tokio::sync::mpsc;
-use tokio::task;
-use tonic::{Request, Response, Status};
+use std::collections::BTreeMap;
+use std::sync::Arc;
+use std::time::{Duration, SystemTime};
 
-pub mod batch_processor;
-pub mod bounded_queue;
-pub mod rate_limit;
+pub mod ancestor_iter;
+pub mod evictor;
+pub mod graph;
+pub mod ingestor;
+pub mod orphanage;
+pub mod processor;
+pub mod service;
+pub mod span_ext;
+pub mod store;
+pub mod trace_iter;
 
-#[derive(Clone, Debug)]
-pub struct SpanEvent {
-    pub trace_id: String,
-    pub name: String,
-    pub start_unix_nano: u64,
-    pub duration_us: u64,
+pub type TraceId = [u8; 16];
+pub type SpanId = [u8; 8];
+pub type RootId = SpanId;
+
+/// The start and end times for a trace tree.
+#[derive(Copy, Clone, Debug)]
+pub struct TreeBounds {
+    start: SystemTime,
+    end: SystemTime,
 }
 
-impl From<Span> for SpanEvent {
-    fn from(span: Span) -> SpanEvent {
-        SpanEvent {
-            trace_id: hex::encode(span.trace_id),
-            name: span.name,
-            start_unix_nano: span.start_time_unix_nano,
-            duration_us: span
-                .end_time_unix_nano
-                .saturating_sub(span.start_time_unix_nano)
-                / 1000,
-        }
+impl TreeBounds {
+    pub fn start(&self) -> &SystemTime {
+        &self.start
+    }
+
+    pub fn duration(&self) -> Duration {
+        self.end.duration_since(self.start).unwrap_or_default()
     }
 }
 
-pub struct TraceCollector {
-    batch_tx: mpsc::Sender<Vec<Span>>,
-    batch_rate_limiter: RateLimiter,
-    events: Arc<RwLock<BoundedQueue<SpanEvent>>>,
+/// A sub-tree in a trace's tree. Contains the start and end of this sub-tree
+/// (bounds) and a sorted map of the span's children, by start their time.
+#[derive(Debug, Clone)]
+pub struct SubTree {
+    bounds: TreeBounds,
+    /// A map of start times to the respective SpanIds in this SubTree. We use
+    /// Vec<SpanId> in the unlikely case that multiple spans have the same start time.
+    children: BTreeMap<SystemTime, Vec<SpanId>>,
 }
 
-impl TraceCollector {
-    pub fn new(max_batches_per_sec: usize, queue_capacity: usize) -> Self {
-        let (tx, mut rx) = mpsc::channel::<Vec<Span>>(10);
-        let events = Arc::new(RwLock::new(BoundedQueue::<SpanEvent>::new(queue_capacity)));
-        let events_clone = events.clone();
-        let batch_rate_limiter = RateLimiter::new(max_batches_per_sec);
-
-        let mut processor = BatchProcessor::new(queue_capacity);
-
-        task::spawn(async move {
-            // Block waiting for a batch
-            while let Some(batch) = rx.recv().await {
-                processor.push_batch(batch);
-                // Drain the queue of batches
-                while let Ok(batch) = rx.try_recv() {
-                    processor.push_batch(batch);
-                    if processor.is_full(queue_capacity) {
-                        break;
-                    }
-                }
-
-                let mut es_q = events_clone.write().unwrap();
-                processor.drain_filtered_into(&mut es_q);
-                es_q.maybe_shrink();
-            }
-        });
-
-        Self {
-            events,
-            batch_tx: tx,
-            batch_rate_limiter,
-        }
+impl SubTree {
+    pub fn new(start: SystemTime, end: SystemTime) -> Arc<Self> {
+        Arc::new(Self {
+            bounds: TreeBounds { start, end },
+            children: BTreeMap::new(),
+        })
     }
 
-    pub fn submit_spans(&self, spans: Vec<Span>) {
-        if self.batch_rate_limiter.allow() && self.batch_tx.try_send(spans).is_err() {
-            // Drop span silently
-        }
+    pub fn bounds(&self) -> &TreeBounds {
+        &self.bounds
     }
 
-    pub fn snapshot(&self) -> Vec<SpanEvent> {
-        let q = self.events.read().expect("event queue lock is poisoned");
-        q.iter().take(1000).cloned().collect()
+    pub fn children(&self) -> &BTreeMap<SystemTime, Vec<SpanId>> {
+        &self.children
     }
 }
 
-pub struct TraceReceiver {
-    collector: Arc<TraceCollector>,
+#[derive(Clone, Debug, Default)]
+pub struct TraceMeta {
+    /// The RootIds for the Trace, sorted by start time. We use Vec<RootId> in the
+    /// unlikely case that multiple roots have the same start time.
+    roots: BTreeMap<SystemTime, Vec<RootId>>,
 }
 
-impl TraceReceiver {
-    pub fn new(collector: Arc<TraceCollector>) -> Self {
-        Self { collector }
+impl TraceMeta {
+    pub fn roots(&self) -> &BTreeMap<SystemTime, Vec<RootId>> {
+        &self.roots
     }
-}
 
-#[tonic::async_trait]
-impl TraceService for TraceReceiver {
-    async fn export(
-        &self,
-        req: Request<ExportTraceServiceRequest>,
-    ) -> Result<Response<ExportTraceServiceResponse>, Status> {
-        let export = req.into_inner();
-
-        for resource_span in export.resource_spans {
-            for scope_span in resource_span.scope_spans {
-                self.collector.submit_spans(scope_span.spans);
-            }
-        }
-
-        Ok(Response::new(ExportTraceServiceResponse::default()))
+    pub fn start_time(&self) -> Option<SystemTime> {
+        self.roots.first_key_value().map(|(time, _)| *time)
     }
 }
