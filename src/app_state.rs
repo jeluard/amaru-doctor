@@ -1,7 +1,6 @@
 use crate::{
     controller::SlotLayout,
     model::{chain_view::ChainViewState, cursor::Cursor, ledger_view::LedgerViewState},
-    // otel::TraceCollector,
     states::{InspectOption, LedgerMode, WidgetSlot},
 };
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
@@ -22,15 +21,10 @@ pub struct AppState {
 
     pub ledger_view: LedgerViewState,
     pub chain_view: ChainViewState,
-    // pub collector: Arc<TraceCollector>,
 }
 
 impl AppState {
-    pub fn new(
-        ledger_db: ReadOnlyRocksDB,
-        chain_db: ReadOnlyChainDB,
-        // collector: Arc<TraceCollector>,
-    ) -> Result<Self> {
+    pub fn new(ledger_db: ReadOnlyRocksDB, chain_db: ReadOnlyChainDB) -> Result<Self> {
         let ledger_db_arc = Arc::new(ledger_db);
         let chain_db_arc = Arc::new(chain_db);
         Ok(Self {
@@ -43,7 +37,6 @@ impl AppState {
             ledger_mode: Cursor::default(),
             ledger_view: LedgerViewState::new(ledger_db_arc),
             chain_view: ChainViewState::new(),
-            // collector,
         })
     }
 }
