@@ -8,10 +8,10 @@ pub mod defs;
 pub mod details;
 pub mod header;
 pub mod line;
-pub mod list;
 pub mod nonces;
 pub mod search;
 pub mod tabs;
+pub mod window;
 
 pub trait View: Sync {
     fn slot(&self) -> WidgetSlot;
@@ -43,7 +43,6 @@ static VIEW_DEFS: &[&dyn View] = &[
     &ChainSearchHeader,
     &ChainSearchBlock,
     &ChainSearchNonces,
-    // &OtelDetails,
     &BottomLine,
 ];
 

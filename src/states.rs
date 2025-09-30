@@ -1,9 +1,8 @@
-use std::collections::HashSet;
-
 use crate::ui::to_list_item::ToListItem;
 use crossterm::event::KeyCode;
 use ratatui::{layout::Rect, prelude::Line, text::ToLine, widgets::ListItem};
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use strum::{Display, EnumIter, IntoEnumIterator};
 
 #[derive(Debug, Clone, PartialEq, Eq, Display, Serialize, Deserialize)]
@@ -28,6 +27,7 @@ pub enum Action {
     UpdateLayout(Rect),
     Mouse(u16, u16),     // Mouse click at coordinates
     MouseMove(u16, u16), // Mouse movement
+    SyncTraceGraph,
 }
 
 #[derive(Clone, Debug, Default, EnumIter, Display, PartialEq, Eq, Serialize, Deserialize)]
@@ -69,8 +69,9 @@ pub enum WidgetSlot {
     LedgerMode,
     SearchBar,
     LedgerOptions,
-    LedgerList,
+    List,
     Details,
+    SubDetails,
     LedgerHeaderDetails,
     LedgerBlockDetails,
     LedgerNoncesDetails,

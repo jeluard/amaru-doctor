@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use amaru_kernel::network::NetworkName;
 use amaru_stores::rocksdb::{
-    ReadOnlyRocksDB,
+    ReadOnlyRocksDB, RocksDbConfig,
     consensus::{ReadOnlyChainDB, RocksDBStore},
 };
 use anyhow::Result;
@@ -39,30 +39,32 @@ pub fn open_ledger_db(
     ledger_db: &Option<PathBuf>,
     network: &NetworkName,
 ) -> Result<ReadOnlyRocksDB> {
-    if let Some(path) = ledger_db.as_deref() {
-        ReadOnlyRocksDB::new(path).map_err(Into::into)
+    if let Some(path) = ledger_db {
+        ReadOnlyRocksDB::new(RocksDbConfig::new(path.into())).map_err(Into::into)
     } else {
         if let Some((cwd, envs)) = detect_amaru_process() {
             let path = envs
                 .get(AMARU_LEDGER_DB_ENV)
                 .cloned()
                 .unwrap_or_else(|| default_db_name("ledger", network));
-            return ReadOnlyRocksDB::new(&prepend_path(cwd, &path)).map_err(Into::into);
+            return ReadOnlyRocksDB::new(RocksDbConfig::new(prepend_path(cwd, &path)))
+                .map_err(Into::into);
         }
         panic!("No ledger db provided, either through env or args");
     }
 }
 
 pub fn open_chain_db(chain_db: &Option<PathBuf>, network: &NetworkName) -> Result<ReadOnlyChainDB> {
-    if let Some(path) = chain_db.as_deref() {
-        RocksDBStore::open_for_readonly(&path.into()).map_err(Into::into)
+    if let Some(path) = chain_db {
+        RocksDBStore::open_for_readonly(RocksDbConfig::new(path.into())).map_err(Into::into)
     } else {
         if let Some((cwd, envs)) = detect_amaru_process() {
             let path = envs
                 .get(AMARU_CHAIN_DB_ENV)
                 .cloned()
                 .unwrap_or_else(|| default_db_name("chain", network));
-            return RocksDBStore::open_for_readonly(&prepend_path(cwd, &path)).map_err(Into::into);
+            return RocksDBStore::open_for_readonly(RocksDbConfig::new(prepend_path(cwd, &path)))
+                .map_err(Into::into);
         }
         panic!("No chain db provided, either through env or args");
     }

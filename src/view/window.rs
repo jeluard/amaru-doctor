@@ -8,7 +8,7 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
 };
 
-pub fn render_list<T: ToListItem>(
+pub fn render_window<T: ToListItem>(
     frame: &mut Frame,
     area: Rect,
     title: &str,

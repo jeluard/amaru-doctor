@@ -30,7 +30,7 @@ static WINDOW_DEFS: &[WindowSizeDef] = &[
         ],
     },
     WindowSizeDef {
-        slot: WidgetSlot::LedgerList,
+        slot: WidgetSlot::List,
         handlers: &[
             |s, size| {
                 s.ledger_view.list_window_size = size;
