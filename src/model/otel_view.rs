@@ -5,6 +5,7 @@ use crate::{
 use arc_swap::ArcSwap;
 use opentelemetry_proto::tonic::trace::v1::Span;
 use std::{cmp::Reverse, sync::Arc};
+use tracing::debug;
 
 /// Manages the rendering state for the OTEL tab of the TUI.
 ///
@@ -64,6 +65,7 @@ impl OtelViewState {
         if !has_changed {
             return false;
         }
+        debug!("TraceGraph changes found, updating");
 
         // Get the latest trace ids, sort them by start, and set them in the trace list
         // for display

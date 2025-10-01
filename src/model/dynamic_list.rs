@@ -31,7 +31,7 @@ impl<T: Clone + PartialEq> DynamicList<T> {
     }
 
     /// Returns a reference to the items as a slice.
-    pub fn items(&self) -> &[T] {
+    pub fn _items(&self) -> &[T] {
         &self.items
     }
 

@@ -3,6 +3,7 @@ use crate::{
     states::Action,
     update::{
         focus::FocusUpdate, layout::LayoutUpdate, scroll::ScrollUpdate, search::SearchUpdate,
+        select_span::SelectSpanUpdate, tick::TickUpdate, trace_graph::TraceGraphUpdate,
         window::WindowSizeUpdate,
     },
 };
@@ -11,6 +12,9 @@ pub mod focus;
 pub mod layout;
 pub mod scroll;
 pub mod search;
+pub mod select_span;
+pub mod tick;
+pub mod trace_graph;
 pub mod window;
 
 pub type UpdateList = Vec<&'static dyn Update>;
@@ -24,4 +28,7 @@ pub static UPDATE_DEFS: &[&dyn Update] = &[
     &WindowSizeUpdate,
     &SearchUpdate,
     &LayoutUpdate,
+    &TickUpdate,
+    &TraceGraphUpdate,
+    &SelectSpanUpdate,
 ];
