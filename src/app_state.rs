@@ -1,10 +1,15 @@
 use crate::{
     controller::SlotLayout,
-    model::{chain_view::ChainViewState, cursor::Cursor, ledger_view::LedgerViewState},
+    model::{
+        chain_view::ChainViewState, cursor::Cursor, ledger_view::LedgerViewState,
+        otel_view::OtelViewState,
+    },
+    otel::graph::TraceGraph,
     states::{InspectOption, LedgerMode, WidgetSlot},
 };
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
 use anyhow::Result;
+use arc_swap::ArcSwap;
 use ratatui::layout::Rect;
 use std::sync::Arc;
 
@@ -21,10 +26,16 @@ pub struct AppState {
 
     pub ledger_view: LedgerViewState,
     pub chain_view: ChainViewState,
+
+    pub otel_view: OtelViewState,
 }
 
 impl AppState {
-    pub fn new(ledger_db: ReadOnlyRocksDB, chain_db: ReadOnlyChainDB) -> Result<Self> {
+    pub fn new(
+        ledger_db: ReadOnlyRocksDB,
+        chain_db: ReadOnlyChainDB,
+        trace_graph: Arc<ArcSwap<TraceGraph>>,
+    ) -> Result<Self> {
         let ledger_db_arc = Arc::new(ledger_db);
         let chain_db_arc = Arc::new(chain_db);
         Ok(Self {
@@ -37,6 +48,7 @@ impl AppState {
             ledger_mode: Cursor::default(),
             ledger_view: LedgerViewState::new(ledger_db_arc),
             chain_view: ChainViewState::new(),
+            otel_view: OtelViewState::new(trace_graph),
         })
     }
 }
