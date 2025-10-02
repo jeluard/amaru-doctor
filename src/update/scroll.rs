@@ -3,7 +3,7 @@ use crate::{
     model::{
         cursor::Cursor, ledger_view::LedgerViewState, otel_view::OtelViewState, window::WindowState,
     },
-    otel::{SpanId, graph::TraceGraph, span_ext::SpanExt},
+    otel::{graph::TraceGraph, id::SpanId, span_ext::SpanExt},
     states::{Action, InspectOption, LedgerBrowse, LedgerMode, WidgetSlot},
     update::Update,
 };
@@ -89,7 +89,7 @@ impl Update for ScrollUpdate {
                     let new_focused_span = s
                         .otel_view
                         .trace_list
-                        .selection()
+                        .selected_item()
                         .and_then(|trace_id| graph.traces.get(trace_id))
                         .and_then(|trace_meta| trace_meta.roots().first_key_value())
                         .and_then(|(_, root_ids)| root_ids.first())
@@ -195,7 +195,7 @@ fn get_ordered_spans_for_view(data: &TraceGraph, otel_view: &OtelViewState) -> O
         // There's no selected span, render the selected trace's entire tree
         otel_view
             .trace_list
-            .selection()
+            .selected_item()
             .map(|trace_id| data.trace_iter(trace_id).collect())
     }
 }

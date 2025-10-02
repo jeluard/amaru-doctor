@@ -1,5 +1,8 @@
 use crate::view::block::render_block;
+use crate::view::flame_graph::render_flame_graph;
 use crate::view::nonces::render_nonces;
+use crate::view::span::render_span;
+use crate::view::trace_list::render_traces;
 use crate::{
     app_state::AppState,
     controller::is_widget_focused,
@@ -308,6 +311,56 @@ impl View for LedgerSearchUtxoDetails {
             s.ledger_view.utxos_by_addr_search.get_current_res(),
             is_widget_focused(s, self.slot()),
         )
+    }
+}
+
+pub struct TraceList;
+impl View for TraceList {
+    fn slot(&self) -> WidgetSlot {
+        WidgetSlot::List
+    }
+
+    fn is_visible(&self, s: &AppState) -> bool {
+        *s.inspect_option.current() == InspectOption::Otel
+    }
+
+    fn render(&self, frame: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
+        render_traces(
+            frame,
+            area,
+            &s.otel_view.trace_list,
+            is_widget_focused(s, self.slot()),
+        )
+    }
+}
+
+pub struct FlameGraphDetails;
+impl View for FlameGraphDetails {
+    fn slot(&self) -> WidgetSlot {
+        WidgetSlot::Details
+    }
+
+    fn is_visible(&self, s: &AppState) -> bool {
+        *s.inspect_option.current() == InspectOption::Otel
+    }
+
+    fn render(&self, frame: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
+        render_flame_graph(frame, area, &s.otel_view, is_widget_focused(s, self.slot()))
+    }
+}
+
+pub struct SpanDetails;
+impl View for SpanDetails {
+    fn slot(&self) -> WidgetSlot {
+        WidgetSlot::SubDetails
+    }
+
+    fn is_visible(&self, s: &AppState) -> bool {
+        *s.inspect_option.current() == InspectOption::Otel
+    }
+
+    fn render(&self, frame: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
+        render_span(frame, area, &s.otel_view, is_widget_focused(s, self.slot()))
     }
 }
 

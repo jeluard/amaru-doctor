@@ -4,11 +4,20 @@ use crate::update::scroll::{ScrollDirection, ScrollableList};
 /// change. To that end this
 /// 1. Efficiently scrolls up and down and
 /// 2. Retains the currently selected item
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct DynamicList<T: Clone + PartialEq> {
     items: Vec<T>,
     /// The index of the selected item.
     selected_index: Option<usize>,
+}
+
+impl<T: Clone + PartialEq> Default for DynamicList<T> {
+    fn default() -> Self {
+        Self {
+            items: Vec::new(),
+            selected_index: None,
+        }
+    }
 }
 
 impl<T: Clone + PartialEq> DynamicList<T> {
@@ -16,7 +25,7 @@ impl<T: Clone + PartialEq> DynamicList<T> {
     /// (by value) if the item still exists in the new list.
     pub fn set_items(&mut self, items: Vec<T>) {
         // Get the value of the current selection before replacing the items.
-        let old_selection = self.selection().cloned();
+        let old_selection = self.selected_item().cloned();
         self.items = items;
 
         // After updating items, find the old selection in the new list.
@@ -25,13 +34,17 @@ impl<T: Clone + PartialEq> DynamicList<T> {
             .and_then(|selected| self.items.iter().position(|item| item == selected));
     }
 
+    pub fn selected_index(&self) -> Option<usize> {
+        self.selected_index
+    }
+
     /// Returns a reference to the currently selected item.
-    pub fn selection(&self) -> Option<&T> {
+    pub fn selected_item(&self) -> Option<&T> {
         self.selected_index.and_then(|i| self.items.get(i))
     }
 
     /// Returns a reference to the items as a slice.
-    pub fn _items(&self) -> &[T] {
+    pub fn items(&self) -> &[T] {
         &self.items
     }
 
