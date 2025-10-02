@@ -1,7 +1,6 @@
 {
   "keybindings": {
     "Home": {
-      "Esc": "Quit", // Quit
       "<Ctrl-d>": "Quit", // Another way to quit
       "<Ctrl-c>": "Quit", // Yet another way to quit
       "<Ctrl-z>": "Suspend", // Suspend the application
@@ -11,10 +10,11 @@
       "<Shift-Down>": "FocusDown",
       "<Shift-Left>": "FocusLeft",
       "<Shift-Right>": "FocusRight",
-      "k": "FocusUp",
-      "j": "FocusDown",
-      "h": "FocusLeft",
-      "l": "FocusRight",
+      // TODO: Add a mode so that these keys don't interrupt Search
+      // "k": "FocusUp",
+      // "j": "FocusDown",
+      // "h": "FocusLeft",
+      // "l": "FocusRight",
     },
   }
 }
