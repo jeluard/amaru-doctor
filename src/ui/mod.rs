@@ -2,6 +2,7 @@ use amaru_kernel::{Bytes, CertificatePointer, Hash, KeyValuePairs, Nullable, Rat
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use std::fmt;
+use std::time::Duration;
 
 pub mod to_list_item;
 pub mod to_rich;
@@ -225,5 +226,20 @@ impl ToRichText for CertificatePointer {
             Style::default(),
         ));
         RichText::Lines(lines)
+    }
+}
+
+/// Formats a duration for human-reading.
+/// If (1 second <= the duration), it formats as seconds;
+/// If (1 millisecond <= the duration < 1 second), it formats as milliseconds;
+/// and otherwise it formats as microseconds.
+pub fn format_duration(duration: Duration) -> String {
+    let micros = duration.as_micros();
+    if micros >= 1_000_000 {
+        format!("{:.3} s", duration.as_secs_f64())
+    } else if micros >= 1000 {
+        format!("{:.3} ms", micros as f64 / 1000.0)
+    } else {
+        format!("{} µs", micros)
     }
 }

@@ -1,6 +1,10 @@
 use crate::{
     model::dynamic_list::DynamicList,
-    otel::{SpanId, TraceId, graph::TraceGraph, span_ext::SpanExt},
+    otel::{
+        graph::TraceGraph,
+        id::{SpanId, TraceId},
+        span_ext::SpanExt,
+    },
 };
 use arc_swap::ArcSwap;
 use opentelemetry_proto::tonic::trace::v1::Span;
@@ -74,7 +78,7 @@ impl OtelViewState {
             .sort_unstable_by_key(|id| Reverse(latest_data.traces.get(id).unwrap().start_time()));
         self.trace_list.set_items(trace_ids);
 
-        if self.trace_list.selection().is_none() {
+        if self.trace_list.selected_item().is_none() {
             // Trace selection was lost (because the trace was evicted), clear the
             // dependent span states
             self.focused_span = None;
@@ -99,7 +103,7 @@ impl OtelViewState {
             // Check if the currently selected trace contains the span
             if self
                 .trace_list
-                .selection()
+                .selected_item()
                 .is_some_and(|trace_id| is_span_in_trace(data, trace_id, &span.span_id()))
             {
                 // It's still valid (in the trace), put it back

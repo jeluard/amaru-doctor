@@ -1,7 +1,8 @@
 use crate::otel::ancestor_iter::AncestorIter;
+use crate::otel::id::{SpanId, TraceId};
 use crate::otel::span_ext::SpanExt;
 use crate::otel::trace_iter::TraceIter;
-use crate::otel::{SpanId, SubTree, TraceId, TraceMeta};
+use crate::otel::{SubTree, TraceMeta};
 use opentelemetry_proto::tonic::trace::v1::Span;
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
@@ -81,11 +82,7 @@ impl TraceGraph {
                 .or_default()
                 .push(span_id);
         } else {
-            error!(
-                "Unexpected: no parent {} for child {}",
-                hex::encode(parent_id),
-                hex::encode(span_id)
-            );
+            error!("Unexpected: no parent {} for child {}", parent_id, span_id);
         }
 
         // Add the span to subtrees
@@ -113,7 +110,7 @@ impl TraceGraph {
                     break;
                 }
             } else {
-                error!("Unexpected: no span {}", hex::encode(span_id));
+                error!("Unexpected: no span {}", span_id);
                 break;
             }
         }
@@ -125,7 +122,7 @@ impl TraceGraph {
 
         if ids_to_remove.is_empty() {
             if self.traces.remove(trace_id).is_none() {
-                error!("Unexpected: no trace meta {}", hex::encode(trace_id));
+                error!("Unexpected: no trace meta {}", trace_id);
             }
             return Vec::new();
         }

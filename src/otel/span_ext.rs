@@ -1,4 +1,4 @@
-use crate::otel::{SpanId, TraceId};
+use crate::otel::id::{SpanId, TraceId};
 use opentelemetry_proto::tonic::trace::v1::Span;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -14,18 +14,18 @@ pub trait SpanExt {
 
 impl SpanExt for Span {
     fn span_id(&self) -> SpanId {
-        self.span_id.clone().try_into().unwrap_or_default()
+        self.span_id.clone().try_into().unwrap()
     }
 
     fn trace_id(&self) -> TraceId {
-        self.trace_id.clone().try_into().unwrap_or_default()
+        self.trace_id.clone().try_into().unwrap()
     }
 
     fn parent_id(&self) -> Option<SpanId> {
         if self.parent_span_id.is_empty() {
             None
         } else {
-            Some(self.parent_span_id.clone().try_into().unwrap_or_default())
+            Some(self.parent_span_id.clone().try_into().unwrap())
         }
     }
 

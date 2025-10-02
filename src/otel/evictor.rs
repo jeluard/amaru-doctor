@@ -1,5 +1,5 @@
-use crate::otel::TraceId;
 use crate::otel::graph::{TraceGraph, TraceInfo};
+use crate::otel::id::TraceId;
 use crate::otel::orphanage::Orphanage;
 use std::collections::BTreeMap;
 use std::time::{Duration, SystemTime};

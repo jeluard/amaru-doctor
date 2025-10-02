@@ -2,9 +2,13 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
+use crate::otel::graph::TraceGraph;
+use crate::otel::id::{RootId, SpanId};
+
 pub mod ancestor_iter;
 pub mod evictor;
 pub mod graph;
+pub mod id;
 pub mod ingestor;
 pub mod orphanage;
 pub mod processor;
@@ -13,15 +17,11 @@ pub mod span_ext;
 pub mod store;
 pub mod trace_iter;
 
-pub type TraceId = [u8; 16];
-pub type SpanId = [u8; 8];
-pub type RootId = SpanId;
-
 /// The start and end times for a trace tree.
 #[derive(Copy, Clone, Debug)]
 pub struct TreeBounds {
-    start: SystemTime,
-    end: SystemTime,
+    pub start: SystemTime,
+    pub end: SystemTime,
 }
 
 impl TreeBounds {
@@ -75,5 +75,18 @@ impl TraceMeta {
 
     pub fn start_time(&self) -> Option<SystemTime> {
         self.roots.first_key_value().map(|(time, _)| *time)
+    }
+
+    // TODO: Consider calc'ing this as Spans are added to the trace and caching it
+    pub fn end_time(&self, graph: &TraceGraph) -> Option<SystemTime> {
+        let mut max_end = self.start_time()?;
+
+        for root_id in self.roots.values().flatten() {
+            if let Some(subtree) = graph.subtrees.get(root_id) {
+                max_end = max_end.max(subtree.bounds().end);
+            }
+        }
+
+        Some(max_end)
     }
 }

@@ -1,10 +1,9 @@
+use crate::otel::graph::TraceGraph;
+use crate::otel::id::SpanId;
+use crate::otel::span_ext::SpanExt;
 use opentelemetry_proto::tonic::trace::v1::Span;
 use std::collections::HashMap;
 use std::sync::Arc;
-
-use crate::otel::SpanId;
-use crate::otel::graph::TraceGraph;
-use crate::otel::span_ext::SpanExt;
 
 /// An iterator that walks *up* the span's ancestor trace starting with its
 /// parent (unlike TraceIter).

@@ -152,9 +152,25 @@ fn build_otel_header_ls(_s: &AppState) -> LayoutSpec {
     }
 }
 
-fn build_otel_body_ls(_s: &AppState) -> LayoutSpec {
+fn build_otel_body_ls(app_state: &AppState) -> LayoutSpec {
     LayoutSpec {
-        direction: Direction::Vertical,
-        constraints: vec![(Constraint::Fill(1), Left(WidgetSlot::Details))],
+        direction: Direction::Horizontal,
+        constraints: vec![
+            (Constraint::Percentage(10), Left(WidgetSlot::List)),
+            (
+                Constraint::Percentage(90),
+                Right(build_otel_details_ls(app_state)),
+            ),
+        ],
+    }
+}
+
+fn build_otel_details_ls(_s: &AppState) -> LayoutSpec {
+    LayoutSpec {
+        direction: Direction::Horizontal,
+        constraints: vec![
+            (Constraint::Percentage(70), Left(WidgetSlot::Details)),
+            (Constraint::Percentage(30), Left(WidgetSlot::SubDetails)),
+        ],
     }
 }
