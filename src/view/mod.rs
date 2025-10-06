@@ -10,6 +10,7 @@ pub mod flame_graph;
 pub mod header;
 pub mod line;
 pub mod nonces;
+pub mod prom_metrics;
 pub mod search;
 pub mod span;
 pub mod span_bar;
@@ -51,6 +52,7 @@ static VIEW_DEFS: &[&dyn View] = &[
     &FlameGraphDetails,
     &SpanDetails,
     &BottomLine,
+    &PromMetrics,
 ];
 
 pub type SlotViews = HashMap<WidgetSlot, &'static dyn View>;

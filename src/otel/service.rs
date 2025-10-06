@@ -1,43 +1,41 @@
-use crate::otel::ingestor::TraceIngestor;
-use opentelemetry_proto::tonic::collector::trace::v1::{
-    ExportTraceServiceRequest, ExportTraceServiceResponse, trace_service_server::TraceService,
-};
-use tonic::{Request, Response, Status};
+use crate::otel::{TraceGraphSnapshot, ingestor::TraceIngestor, trace_service::AmaruTraceService};
+use anyhow::Result;
+use opentelemetry_proto::tonic::collector::trace::v1::trace_service_server::TraceServiceServer;
+use std::{net::SocketAddr, time::Duration};
+use tokio::task::{self, JoinHandle};
+use tonic::transport::Server;
 
-pub struct AmaruTraceService {
-    ingestor: TraceIngestor,
+pub struct OtelCollectorService {
+    addr: SocketAddr,
 }
 
-impl AmaruTraceService {
-    pub fn new(collector: TraceIngestor) -> Self {
+pub struct OtelCollectorHandle {
+    pub snapshot: TraceGraphSnapshot,
+    pub task_handle: JoinHandle<Result<()>>,
+}
+
+impl OtelCollectorService {
+    pub fn new(addr: &str) -> Self {
         Self {
-            ingestor: collector,
+            addr: addr.parse().expect("Invalid address for OTEL service"),
         }
     }
-}
 
-/// The main entry-point for accepting amaru OTEL data.
-#[tonic::async_trait]
-impl TraceService for AmaruTraceService {
-    async fn export(
-        &self,
-        req: Request<ExportTraceServiceRequest>,
-    ) -> Result<Response<ExportTraceServiceResponse>, Status> {
-        // Flatten spans into a single Vec
-        let mut all_spans = Vec::new();
-        for r_spans in req.into_inner().resource_spans {
-            for s_spans in r_spans.scope_spans {
-                all_spans.extend(s_spans.spans);
-            }
+    pub fn start(self) -> OtelCollectorHandle {
+        let collector = TraceIngestor::new(10_000, Duration::from_secs(10 * 60));
+        let snapshot = collector.snapshot();
+        let trace_service = AmaruTraceService::new(collector);
+        let task_handle = task::spawn(async move {
+            Server::builder()
+                .add_service(TraceServiceServer::new(trace_service))
+                .serve(self.addr)
+                .await?;
+            Ok(())
+        });
+
+        OtelCollectorHandle {
+            snapshot,
+            task_handle,
         }
-
-        if !all_spans.is_empty() {
-            self.ingestor
-                .ingest(all_spans)
-                .await
-                .map_err(|e| Status::from_error(Box::new(e)))?;
-        }
-
-        Ok(Response::new(ExportTraceServiceResponse::default()))
     }
 }

@@ -2,9 +2,10 @@ use crate::{
     controller::SlotLayout,
     model::{
         chain_view::ChainViewState, cursor::Cursor, ledger_view::LedgerViewState,
-        otel_view::OtelViewState,
+        otel_view::OtelViewState, prom_metrics::PromMetricsViewState,
     },
     otel::graph::TraceGraph,
+    prometheus::model::NodeMetrics,
     states::{InspectOption, LedgerMode, WidgetSlot},
 };
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
@@ -12,6 +13,7 @@ use anyhow::Result;
 use arc_swap::ArcSwap;
 use ratatui::layout::Rect;
 use std::sync::Arc;
+use tokio::sync::mpsc::Receiver;
 
 /// Holds ALL the app's state. Does not self-mutate.
 pub struct AppState {
@@ -28,6 +30,7 @@ pub struct AppState {
     pub chain_view: ChainViewState,
 
     pub otel_view: OtelViewState,
+    pub prom_metrics: PromMetricsViewState,
 }
 
 impl AppState {
@@ -35,6 +38,7 @@ impl AppState {
         ledger_db: ReadOnlyRocksDB,
         chain_db: ReadOnlyChainDB,
         trace_graph: Arc<ArcSwap<TraceGraph>>,
+        prom_metrics: Receiver<NodeMetrics>,
     ) -> Result<Self> {
         let ledger_db_arc = Arc::new(ledger_db);
         let chain_db_arc = Arc::new(chain_db);
@@ -49,6 +53,7 @@ impl AppState {
             ledger_view: LedgerViewState::new(ledger_db_arc),
             chain_view: ChainViewState::new(),
             otel_view: OtelViewState::new(trace_graph),
+            prom_metrics: PromMetricsViewState::new(prom_metrics),
         })
     }
 }

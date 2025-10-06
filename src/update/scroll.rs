@@ -101,11 +101,13 @@ impl Update for ScrollUpdate {
                     s.otel_view.selected_span = None;
                 }
                 InspectOption::Chain => { /* There's no list widget in the Chain tab */ }
+                InspectOption::Prometheus => { /* There's no list widget in the Prometheus tab */ }
             },
             WidgetSlot::Details => match s.inspect_option.current() {
                 InspectOption::Otel => scroll_trace_details(&mut s.otel_view, direction),
                 InspectOption::Ledger => { /* TODO: Impl item details scroll */ }
                 InspectOption::Chain => {}
+                InspectOption::Prometheus => { /* TODO: Impl metrics scroll */ }
             },
             _ => trace!("No scroll logic for slot {:?}", s.slot_focus),
         }

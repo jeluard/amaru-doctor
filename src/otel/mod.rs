@@ -1,9 +1,9 @@
+use crate::otel::graph::TraceGraph;
+use crate::otel::id::{RootId, SpanId};
+use arc_swap::ArcSwap;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
-
-use crate::otel::graph::TraceGraph;
-use crate::otel::id::{RootId, SpanId};
 
 pub mod ancestor_iter;
 pub mod evictor;
@@ -16,6 +16,9 @@ pub mod service;
 pub mod span_ext;
 pub mod store;
 pub mod trace_iter;
+pub mod trace_service;
+
+pub type TraceGraphSnapshot = Arc<ArcSwap<TraceGraph>>;
 
 /// The start and end times for a trace tree.
 #[derive(Copy, Clone, Debug)]
