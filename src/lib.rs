@@ -18,6 +18,7 @@ pub mod detection;
 pub mod logging;
 mod model;
 pub mod otel;
+pub mod prometheus;
 mod states;
 mod store;
 pub mod tui;

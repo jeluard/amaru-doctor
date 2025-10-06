@@ -1,9 +1,8 @@
-use std::sync::Arc;
-
 use crate::{
     app_state::AppState,
     config::Config,
-    otel::graph::TraceGraph,
+    otel::TraceGraphSnapshot,
+    prometheus::model::NodeMetrics,
     states::{Action, InspectOption, WidgetSlot},
     tui::{Event, Tui},
     update::{UPDATE_DEFS, UpdateList},
@@ -11,11 +10,10 @@ use crate::{
 };
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
 use anyhow::Result;
-use arc_swap::ArcSwap;
 use crossterm::event::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::prelude::{Backend, Rect};
 use serde::{Deserialize, Serialize};
-use tokio::sync::mpsc;
+use tokio::sync::mpsc::{self, Receiver};
 use tracing::{debug, info, trace};
 
 pub struct App {
@@ -42,12 +40,13 @@ impl App {
     pub fn new(
         ledger_db: ReadOnlyRocksDB,
         chain_db: ReadOnlyChainDB,
-        trace_graph: Arc<ArcSwap<TraceGraph>>,
+        trace_graph: TraceGraphSnapshot,
+        prom_metrics: Receiver<NodeMetrics>,
         frame_area: Rect,
     ) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
 
-        let app_state = AppState::new(ledger_db, chain_db, trace_graph)?;
+        let app_state = AppState::new(ledger_db, chain_db, trace_graph, prom_metrics)?;
         action_tx.send(Action::UpdateLayout(frame_area))?;
         let last_inspect_option = app_state.inspect_option.current().clone();
         let slot_views = compute_slot_views(&app_state);

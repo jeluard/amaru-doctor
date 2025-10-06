@@ -28,6 +28,7 @@ pub enum Action {
     Mouse(u16, u16),     // Mouse click at coordinates
     MouseMove(u16, u16), // Mouse movement
     SyncTraceGraph,
+    SyncPromMetrics,
 }
 
 #[derive(Clone, Debug, Default, EnumIter, Display, PartialEq, Eq, Serialize, Deserialize)]
@@ -104,6 +105,7 @@ pub enum InspectOption {
     Ledger,
     Chain,
     Otel,
+    Prometheus,
 }
 
 impl ToLine for InspectOption {

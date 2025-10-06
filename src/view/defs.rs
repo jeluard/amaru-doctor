@@ -1,6 +1,7 @@
 use crate::view::block::render_block;
 use crate::view::flame_graph::render_flame_graph;
 use crate::view::nonces::render_nonces;
+use crate::view::prom_metrics::render_prom_metrics;
 use crate::view::span::render_span;
 use crate::view::trace_list::render_traces;
 use crate::{
@@ -65,6 +66,7 @@ impl View for SearchBar {
             InspectOption::Ledger => true,
             InspectOption::Chain => true,
             InspectOption::Otel => false,
+            InspectOption::Prometheus => false,
         }
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
@@ -81,6 +83,7 @@ impl View for SearchBar {
                 },
                 InspectOption::Chain => &s.chain_view.chain_search.builder,
                 InspectOption::Otel => "",
+                InspectOption::Prometheus => "",
             },
             is_widget_focused(s, self.slot()),
         )
@@ -361,6 +364,26 @@ impl View for SpanDetails {
 
     fn render(&self, frame: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
         render_span(frame, area, &s.otel_view, is_widget_focused(s, self.slot()))
+    }
+}
+
+pub struct PromMetrics;
+impl View for PromMetrics {
+    fn slot(&self) -> WidgetSlot {
+        WidgetSlot::Details
+    }
+
+    fn is_visible(&self, s: &AppState) -> bool {
+        *s.inspect_option.current() == InspectOption::Prometheus
+    }
+
+    fn render(&self, frame: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
+        render_prom_metrics(
+            frame,
+            area,
+            &s.prom_metrics,
+            is_widget_focused(s, self.slot()),
+        )
     }
 }
 
