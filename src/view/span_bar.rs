@@ -145,5 +145,7 @@ fn get_bar_text(span: &Arc<OtelSpan>, bar_width: usize) -> Result<String> {
         return Ok(format!("{:<width$}", label, width = bar_width));
     }
 
-    Ok(format!("{}…", &label[..bar_width - 1]))
+    // Truncate by character
+    let truncated_label: String = label.chars().take(bar_width.saturating_sub(1)).collect();
+    Ok(format!("{}…", truncated_label))
 }
