@@ -14,7 +14,8 @@ async fn main() -> Result<()> {
     let otel_service = OtelCollectorService::new("0.0.0.0:4317");
     let otel_handle = otel_service.start();
 
-    let metrics_service = MetricsPoller::new("http://0.0.0.0:8889/metrics", Duration::from_secs(1));
+    let metrics_service =
+        MetricsPoller::new("http://0.0.0.0:8889/metrics", Duration::from_millis(100));
     let metrics_handle = metrics_service.start();
 
     let args = Cli::parse();

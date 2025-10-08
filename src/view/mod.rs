@@ -15,6 +15,7 @@ pub mod search;
 pub mod span;
 pub mod span_bar;
 pub mod tabs;
+pub mod time_series;
 pub mod trace_list;
 pub mod window;
 

@@ -1,28 +1,31 @@
 use anyhow::{Result, anyhow};
+use chrono::{DateTime, Utc};
 use prometheus_parse::{Sample, Scrape, Value};
 use std::collections::HashMap;
+
+pub type Timestamp = DateTime<Utc>;
 
 /// Represents the metrics scraped from the node's Prometheus endpoint.
 #[derive(Debug, Clone, PartialEq)]
 pub struct NodeMetrics {
     // Block metrics
-    pub block_number: u64,
-    pub density: f64,
-    pub epoch: u64,
-    pub slot_in_epoch: u64,
-    pub slot_num: u64,
-    pub transactions_processed: u64,
+    pub block_number: (u64, Timestamp),
+    pub density: (f64, Timestamp),
+    pub epoch: (u64, Timestamp),
+    pub slot_in_epoch: (u64, Timestamp),
+    pub slot_num: (u64, Timestamp),
+    pub transactions_processed: (u64, Timestamp),
 
     // General process metrics
-    pub cpu_percent_util: f64,
-    pub disk_read_bytes: u64,
-    pub disk_write_bytes: u64,
-    pub disk_total_read_bytes: u64,
-    pub disk_total_write_bytes: u64,
-    pub mem_available_virtual_bytes: u64,
-    pub mem_live_resident_bytes: u64,
-    pub open_files: u64,
-    pub runtime_seconds: u64,
+    pub cpu_percent_util: (f64, Timestamp),
+    pub disk_live_read_bytes: (u64, Timestamp),
+    pub disk_live_write_bytes: (u64, Timestamp),
+    pub disk_total_read_bytes: (u64, Timestamp),
+    pub disk_total_write_bytes: (u64, Timestamp),
+    pub mem_available_virtual_bytes: (u64, Timestamp),
+    pub mem_live_resident_bytes: (u64, Timestamp),
+    pub open_files: (u64, Timestamp),
+    pub runtime_seconds: (u64, Timestamp),
 }
 
 /// A helper struct to simplify accessing metrics from a scrape.
@@ -51,19 +54,21 @@ impl<'a> MetricParser<'a> {
     }
 
     /// Gets a metric value and casts it to u64.
-    fn get_u64(&self, name: &str) -> Result<u64> {
+    fn get_u64(&self, name: &str) -> Result<(u64, Timestamp)> {
         let sample = self.get_sample(name)?;
         match sample.value {
-            Value::Counter(v) | Value::Gauge(v) | Value::Untyped(v) => Ok(v as u64),
+            Value::Counter(v) | Value::Gauge(v) | Value::Untyped(v) => {
+                Ok((v as u64, sample.timestamp))
+            }
             _ => Err(anyhow!("Metric '{}' has unexpected type for u64", name)),
         }
     }
 
     /// Gets a metric value and casts it to f64.
-    fn get_f64(&self, name: &str) -> Result<f64> {
+    fn get_f64(&self, name: &str) -> Result<(f64, Timestamp)> {
         let sample = self.get_sample(name)?;
         match sample.value {
-            Value::Counter(v) | Value::Gauge(v) | Value::Untyped(v) => Ok(v),
+            Value::Counter(v) | Value::Gauge(v) | Value::Untyped(v) => Ok((v, sample.timestamp)),
             _ => Err(anyhow!("Metric '{}' has unexpected type for f64", name)),
         }
     }
@@ -86,8 +91,8 @@ impl TryFrom<Scrape> for NodeMetrics {
 
             // Process
             cpu_percent_util: parser.get_f64("process_cpu_live")?,
-            disk_read_bytes: parser.get_u64("process_disk_live_read")?,
-            disk_write_bytes: parser.get_u64("process_disk_live_write")?,
+            disk_live_read_bytes: parser.get_u64("process_disk_live_read")?,
+            disk_live_write_bytes: parser.get_u64("process_disk_live_write")?,
             disk_total_read_bytes: parser.get_u64("process_disk_total_read")?,
             disk_total_write_bytes: parser.get_u64("process_disk_total_write")?,
             mem_available_virtual_bytes: parser.get_u64("process_memory_available_virtual")?,
