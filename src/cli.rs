@@ -16,6 +16,9 @@ pub struct Cli {
 
     #[arg(short, long, value_name = "FLOAT", env = "AMARU_CHAIN_DB")]
     pub chain_db: Option<PathBuf>,
+
+    #[arg(short, long, value_name = "STRING", env = "AMARU_DR_BACKEND")]
+    pub backend: Option<String>,
 }
 
 const VERSION_MESSAGE: &str = concat!(
