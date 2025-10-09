@@ -31,10 +31,10 @@ clap = { version = "4.5.48", features = [
 ] }
 config = "0.15.17"
 crossterm = { version = "0.28.1", features = ["serde", "event-stream"] }
-delegate = "0.13"
 derive_deref = "1.1.1"
 directories = "6.0.0"
 either = "1.15"
+embedded-graphics-simulator = "0.7.0"
 futures = "0.3.31"
 hex = "0.4.3"
 human-panic = "2.0.3"
@@ -42,6 +42,7 @@ json5 = "0.4.1"
 lazy_static = "1.5.0"
 libc = "0.2.176"
 minicbor = { version = "0.25.1", features = ["alloc"] }
+mousefood = "0.2.1"
 opentelemetry-proto = "0.30.0"
 ordered-float = "5.1.0"
 pallas-codec = "0.33.0"
