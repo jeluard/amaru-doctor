@@ -1,6 +1,7 @@
 use crate::{
     app_state::AppState,
     config::Config,
+    model::button::InputEvent,
     otel::TraceGraphSnapshot,
     prometheus::model::NodeMetrics,
     states::{Action, InspectOption, WidgetSlot},
@@ -13,7 +14,7 @@ use anyhow::Result;
 use crossterm::event::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::prelude::{Backend, Rect};
 use serde::{Deserialize, Serialize};
-use tokio::sync::mpsc::{self, Receiver};
+use tokio::sync::mpsc::{Receiver, UnboundedReceiver, UnboundedSender, unbounded_channel};
 use tracing::{debug, info, trace};
 
 pub struct App {
@@ -26,8 +27,8 @@ pub struct App {
     should_suspend: bool,
     mode: Mode,
     last_tick_key_events: Vec<KeyEvent>,
-    action_tx: mpsc::UnboundedSender<Action>,
-    action_rx: mpsc::UnboundedReceiver<Action>,
+    action_tx: UnboundedSender<Action>,
+    action_rx: UnboundedReceiver<Action>,
 }
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -42,11 +43,18 @@ impl App {
         chain_db: ReadOnlyChainDB,
         trace_graph: TraceGraphSnapshot,
         prom_metrics: Receiver<NodeMetrics>,
+        button_events: std::sync::mpsc::Receiver<InputEvent>,
         frame_area: Rect,
     ) -> Result<Self> {
-        let (action_tx, action_rx) = mpsc::unbounded_channel();
+        let (action_tx, action_rx) = unbounded_channel();
 
-        let app_state = AppState::new(ledger_db, chain_db, trace_graph, prom_metrics)?;
+        let app_state = AppState::new(
+            ledger_db,
+            chain_db,
+            trace_graph,
+            prom_metrics,
+            button_events,
+        )?;
         action_tx.send(Action::UpdateLayout(frame_area))?;
         let last_inspect_option = app_state.inspect_option.current().clone();
         let slot_views = compute_slot_views(&app_state);
@@ -207,7 +215,7 @@ impl App {
 
     fn handle_actions<B: Backend>(&mut self, tui: &mut Tui<B>) -> Result<()> {
         while let Ok(action) = self.action_rx.try_recv() {
-            if !matches!(action, Action::Tick | Action::Render) {
+            if !action.is_system_tick() {
                 debug!("{action:?}");
             }
 

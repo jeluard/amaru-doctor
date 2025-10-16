@@ -35,15 +35,17 @@ impl LedgerViewState {
     pub fn new(ledger_db_arc: Arc<ReadOnlyRocksDB>) -> Self {
         Self {
             options_window_size: 0,
-            browse_options: WindowState::from_iter(LedgerBrowse::iter()),
-            search_options: WindowState::from_iter(LedgerSearch::iter()),
+            browse_options: WindowState::from_static_iter(LedgerBrowse::iter()),
+            search_options: WindowState::from_static_iter(LedgerSearch::iter()),
             list_window_size: 0,
-            accounts: WindowState::from_iter(OwnedAccountIter::new(ledger_db_arc.clone())),
-            block_issuers: WindowState::from_iter(OwnedBlockIssuerIter::new(ledger_db_arc.clone())),
-            dreps: WindowState::from_iter(OwnedDRepIter::new(ledger_db_arc.clone())),
-            pools: WindowState::from_iter(OwnedPoolIter::new(ledger_db_arc.clone())),
-            proposals: WindowState::from_iter(OwnedProposalIter::new(ledger_db_arc.clone())),
-            utxos: WindowState::from_iter(OwnedUtxoIter::new(ledger_db_arc)),
+            accounts: WindowState::from_static_iter(OwnedAccountIter::new(ledger_db_arc.clone())),
+            block_issuers: WindowState::from_static_iter(OwnedBlockIssuerIter::new(
+                ledger_db_arc.clone(),
+            )),
+            dreps: WindowState::from_static_iter(OwnedDRepIter::new(ledger_db_arc.clone())),
+            pools: WindowState::from_static_iter(OwnedPoolIter::new(ledger_db_arc.clone())),
+            proposals: WindowState::from_static_iter(OwnedProposalIter::new(ledger_db_arc.clone())),
+            utxos: WindowState::from_static_iter(OwnedUtxoIter::new(ledger_db_arc)),
             utxos_by_addr_search: SearchState::default(),
         }
     }

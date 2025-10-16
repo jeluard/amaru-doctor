@@ -11,6 +11,10 @@ impl Update for TickUpdate {
         };
         // The list of actions that should happen each tick. We assume that each
         // corresponding Update impls its own 'efficiency' guard.
-        vec![Action::SyncTraceGraph, Action::SyncPromMetrics]
+        vec![
+            Action::SyncTraceGraph,
+            Action::SyncPromMetrics,
+            Action::GetButtonEvents,
+        ]
     }
 }

@@ -1,11 +1,14 @@
-use crate::prometheus::{client::MetricsClient, model::NodeMetrics};
+use crate::prometheus::{
+    client::{MetricsClient, MetricsClientError},
+    model::NodeMetrics,
+};
 use std::time::Duration;
 use tokio::{
     sync::mpsc,
     task::{self, JoinHandle},
     time,
 };
-use tracing::error;
+use tracing::{error, warn};
 
 pub struct MetricsPoller {
     endpoint: &'static str,
@@ -37,6 +40,14 @@ impl MetricsPoller {
                             error!("Metrics receiver dropped. Stopping polling task.");
                             break;
                         }
+                    }
+                    Err(MetricsClientError::Connection(e)) => {
+                        warn!(
+                            "Metrics client connection error: {:?}. Have you started the otlp connector?",
+                            e
+                        );
+                        // Wait for the user to start the otlp connector
+                        time::sleep(Duration::from_secs(20)).await;
                     }
                     Err(e) => {
                         error!("Failed to fetch metrics: {:?}", e);

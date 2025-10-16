@@ -6,8 +6,8 @@ use crate::{
     ui::to_list_item::UtxoItem,
     update::search::{SearchHandler, SearchState},
 };
-use amaru_consensus::{Nonces, ReadOnlyChainStore};
-use amaru_kernel::{Address, Hash, Header, RawBlock};
+use amaru_consensus::{BlockHeader, Nonces, ReadOnlyChainStore};
+use amaru_kernel::{Address, Hash, RawBlock};
 use tracing::trace;
 
 #[derive(Default)]
@@ -41,7 +41,7 @@ impl SearchHandler for LedgerUtxosByAddr {
         let owned_query = query.clone();
         let iter = OwnedUtxoIter::new(s.ledger_db.clone())
             .filter(move |(_, out): &UtxoItem| out.address == owned_query);
-        let mut window = WindowState::from_iter(iter);
+        let mut window = WindowState::from_static_iter(iter);
         window.set_window_size(s.ledger_view.list_window_size);
         window
     }
@@ -51,7 +51,7 @@ impl SearchHandler for LedgerUtxosByAddr {
 pub struct ChainSearch;
 impl SearchHandler for ChainSearch {
     type Query = Hash<32>;
-    type Result = Option<(Header, RawBlock, Nonces)>;
+    type Result = Option<(BlockHeader, RawBlock, Nonces)>;
 
     fn debug_name(&self) -> &'static str {
         "ChainSearch"
@@ -74,14 +74,14 @@ impl SearchHandler for ChainSearch {
     }
 
     fn compute(&self, s: &AppState, query: &Self::Query) -> Self::Result {
-        let header: Header = match s.chain_db.load_header(query) {
+        let header: BlockHeader = match s.chain_db.load_header(query) {
             Some(h) => h,
             None => {
                 trace!("{} Found no header for query {}", self.debug_name(), query);
                 return None;
             }
         };
-        let block = match ReadOnlyChainStore::<Header>::load_block(&*s.chain_db, query) {
+        let block = match ReadOnlyChainStore::<BlockHeader>::load_block(&*s.chain_db, query) {
             Ok(b) => b,
             Err(e) => {
                 trace!(
@@ -93,7 +93,7 @@ impl SearchHandler for ChainSearch {
                 return None;
             }
         };
-        let nonces = match ReadOnlyChainStore::<Header>::get_nonces(&*s.chain_db, query) {
+        let nonces = match ReadOnlyChainStore::<BlockHeader>::get_nonces(&*s.chain_db, query) {
             Some(n) => n,
             None => {
                 trace!("{} Found no nonces for query {}", self.debug_name(), query);

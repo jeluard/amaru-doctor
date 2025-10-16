@@ -1,6 +1,7 @@
 use crate::ui::{
     RichText, ToRichText, labeled_default, labeled_default_opt, labeled_default_single,
 };
+use amaru_consensus::{BlockHeader, IsHeader};
 use amaru_kernel::{Header, HeaderBody};
 use pallas_primitives::{VrfCert, conway::OperationalCert};
 
@@ -9,6 +10,21 @@ impl ToRichText for Header {
         let mut lines = Vec::new();
         lines.extend(labeled_default("Header body", &self.header_body));
         lines.extend(labeled_default("Body signature", &self.body_signature));
+        RichText::Lines(lines)
+    }
+}
+
+impl ToRichText for BlockHeader {
+    fn to_rich_text(&self) -> RichText {
+        let mut lines = Vec::new();
+        lines.extend(labeled_default("Hash", &self.hash()));
+        lines.extend(labeled_default_opt("Parent", self.parent().as_ref()));
+        lines.extend(labeled_default("Block Height", &self.block_height()));
+        lines.extend(labeled_default("Slot", &self.slot()));
+        lines.extend(labeled_default(
+            "Extended VRF Nonce Output",
+            &self.extended_vrf_nonce_output(),
+        ));
         RichText::Lines(lines)
     }
 }

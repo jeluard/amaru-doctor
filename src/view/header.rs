@@ -1,5 +1,5 @@
 use crate::ui::{RichText, ToRichText};
-use amaru_kernel::Header;
+use amaru_consensus::BlockHeader;
 use anyhow::Result;
 use ratatui::{
     Frame,
@@ -13,7 +13,7 @@ pub fn render_header(
     frame: &mut Frame,
     area: Rect,
     title: &str,
-    header_opt_opt: Option<Option<&Header>>,
+    header_opt_opt: Option<Option<&BlockHeader>>,
     is_focused: bool,
 ) -> Result<()> {
     let mut block = Block::default().title(title).borders(Borders::ALL);

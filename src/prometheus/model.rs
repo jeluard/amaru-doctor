@@ -1,4 +1,3 @@
-use anyhow::{Result, anyhow};
 use chrono::{DateTime, Utc};
 use prometheus_parse::{Sample, Scrape, Value};
 use std::collections::HashMap;
@@ -30,56 +29,64 @@ pub struct NodeMetrics {
 
 /// A helper struct to simplify accessing metrics from a scrape.
 /// It builds a HashMap for quick lookups by metric name.
-struct MetricParser<'a> {
-    map: HashMap<&'a str, &'a Sample>,
+struct MetricParser {
+    map: HashMap<String, Sample>,
 }
 
-impl<'a> MetricParser<'a> {
+#[derive(Debug, thiserror::Error)]
+pub enum MetricParserError {
+    #[error("Metric '{0}' not found")]
+    MetricNotFound(String),
+
+    #[error("Unexpected type for metric '{0}'")]
+    UnexpectedType(String),
+}
+
+impl MetricParser {
     /// Creates a new MetricParser from a prometheus_parse::Scrape.
-    fn new(scrape: &'a Scrape) -> Self {
+    fn new(scrape: Scrape) -> Self {
         let map = scrape
             .samples
-            .iter()
-            .map(|s| (s.metric.as_str(), s))
+            .into_iter()
+            .map(|s| (s.metric.clone(), s))
             .collect();
         Self { map }
     }
 
     /// Gets a raw Sample by metric name.
-    fn get_sample(&self, name: &str) -> Result<&'a Sample> {
+    fn get_sample(&self, name: &str) -> Result<&Sample, MetricParserError> {
         self.map
             .get(name)
-            .copied()
-            .ok_or_else(|| anyhow!("Metric '{}' not found", name))
+            .ok_or_else(|| MetricParserError::MetricNotFound(name.to_string()))
     }
 
     /// Gets a metric value and casts it to u64.
-    fn get_u64(&self, name: &str) -> Result<(u64, Timestamp)> {
+    fn get_u64(&self, name: &str) -> Result<(u64, Timestamp), MetricParserError> {
         let sample = self.get_sample(name)?;
         match sample.value {
             Value::Counter(v) | Value::Gauge(v) | Value::Untyped(v) => {
                 Ok((v as u64, sample.timestamp))
             }
-            _ => Err(anyhow!("Metric '{}' has unexpected type for u64", name)),
+            _ => Err(MetricParserError::UnexpectedType(name.to_string())),
         }
     }
 
     /// Gets a metric value and casts it to f64.
-    fn get_f64(&self, name: &str) -> Result<(f64, Timestamp)> {
+    fn get_f64(&self, name: &str) -> Result<(f64, Timestamp), MetricParserError> {
         let sample = self.get_sample(name)?;
         match sample.value {
             Value::Counter(v) | Value::Gauge(v) | Value::Untyped(v) => Ok((v, sample.timestamp)),
-            _ => Err(anyhow!("Metric '{}' has unexpected type for f64", name)),
+            _ => Err(MetricParserError::UnexpectedType(name.to_string())),
         }
     }
 }
 
 /// Implementation to convert a Scrape into our NodeMetrics struct.
 impl TryFrom<Scrape> for NodeMetrics {
-    type Error = anyhow::Error;
+    type Error = MetricParserError;
 
     fn try_from(scrape: Scrape) -> Result<Self, Self::Error> {
-        let parser = MetricParser::new(&scrape);
+        let parser = MetricParser::new(scrape);
         Ok(Self {
             // Block
             block_number: parser.get_u64("cardano_node_metrics_blockNum_int")?,

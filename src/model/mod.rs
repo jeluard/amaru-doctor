@@ -1,3 +1,4 @@
+pub mod button;
 pub mod chain_view;
 pub mod cursor;
 pub mod dynamic_list;
