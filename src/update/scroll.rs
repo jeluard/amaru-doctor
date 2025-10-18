@@ -36,7 +36,7 @@ impl<T> ScrollableList for Cursor<T> {
                 self.next_back();
             }
             ScrollDirection::Down => {
-                self.next();
+                self.non_empty_next();
             }
         }
     }

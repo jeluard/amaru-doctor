@@ -16,7 +16,7 @@ mod config;
 mod controller;
 pub mod detection;
 pub mod logging;
-mod model;
+pub mod model;
 pub mod otel;
 pub mod prometheus;
 mod states;

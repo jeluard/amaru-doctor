@@ -13,8 +13,8 @@ use crate::{
         search::render_search_query, tabs::render_tabs, window::render_window,
     },
 };
-use amaru_consensus::Nonces;
-use amaru_kernel::{Header, RawBlock};
+use amaru_consensus::{BlockHeader, Nonces};
+use amaru_kernel::RawBlock;
 use anyhow::Result;
 use ratatui::{Frame, layout::Rect};
 
@@ -119,7 +119,7 @@ impl View for ChainSearchHeader {
         *s.inspect_option.current() == InspectOption::Chain
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) -> Result<()> {
-        let header_opt: Option<Option<&Header>> = s
+        let header_opt: Option<Option<&BlockHeader>> = s
             .chain_view
             .chain_search
             .get_current_res()

@@ -23,7 +23,7 @@ impl<T> WindowState<T> {
         s
     }
 
-    pub fn from_iter<I: Iterator<Item = T> + 'static>(iter: I) -> Self {
+    pub fn from_static_iter<I: Iterator<Item = T> + 'static>(iter: I) -> Self {
         WindowState::from_box(Box::new(iter))
     }
 
@@ -48,6 +48,10 @@ impl<T> WindowState<T> {
         } else {
             usize::MAX
         }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.exhausted && self.buffer.is_empty()
     }
 
     pub fn set_window_size(&mut self, new_size: usize) {

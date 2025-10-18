@@ -1,10 +1,8 @@
-use crate::{
-    model::prom_metrics::PromMetricsViewState, ui::ToRichText, view::time_series::render_chart,
-};
+use crate::{model::prom_metrics::PromMetricsViewState, view::time_series::render_chart};
 use anyhow::Result;
 use ratatui::{
     prelude::*,
-    widgets::{Block, Borders, Paragraph},
+    widgets::{Block, Borders},
 };
 
 pub fn render_prom_metrics(
@@ -20,16 +18,17 @@ pub fn render_prom_metrics(
         block = block.border_style(Style::default().fg(Color::Blue));
     }
 
-    let text_lines = match state.metrics() {
-        Some(metrics) => metrics.to_rich_text().unwrap_lines(),
-        None => vec!["No metrics.".into()],
-    };
-    let text_height = text_lines.len() as u16;
-
-    let top_and_bottom = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(text_height), Constraint::Fill(1)])
-        .split(block.inner(area));
+    // TODO: Come back to this and make it pretty
+    //
+    // let text_lines = match state.metrics() {
+    //     Some(metrics) => metrics.to_rich_text().unwrap_lines(),
+    //     None => vec!["No metrics.".into()],
+    // };
+    // let text_height = text_lines.len() as u16;
+    // let top_and_bottom = Layout::default()
+    //     .direction(Direction::Vertical)
+    //     .constraints([Constraint::Length(text_height), Constraint::Fill(1)])
+    //     .split(block.inner(area));
 
     let chart_chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -39,10 +38,10 @@ pub fn render_prom_metrics(
             Constraint::Fill(1),
             Constraint::Fill(1),
         ])
-        .split(top_and_bottom[1]);
+        .split(area);
 
     frame.render_widget(&block, area);
-    frame.render_widget(Paragraph::new(text_lines), top_and_bottom[0]);
+    // frame.render_widget(Paragraph::new(text_lines), top_and_bottom[0]);
     render_chart(
         frame,
         chart_chunks[0],

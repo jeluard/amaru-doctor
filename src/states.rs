@@ -23,12 +23,30 @@ pub enum Action {
     FocusRight,
     ScrollUp,
     ScrollDown,
+    Up,
+    Down,
+    Forward,
+    Back,
     Key(KeyCode),
     UpdateLayout(Rect),
     Mouse(u16, u16),     // Mouse click at coordinates
     MouseMove(u16, u16), // Mouse movement
     SyncTraceGraph,
     SyncPromMetrics,
+    GetButtonEvents,
+}
+
+impl Action {
+    pub fn is_system_tick(&self) -> bool {
+        matches!(
+            self,
+            Self::Tick
+                | Self::Render
+                | Self::SyncPromMetrics
+                | Self::SyncTraceGraph
+                | Self::GetButtonEvents
+        )
+    }
 }
 
 #[derive(Clone, Debug, Default, EnumIter, Display, PartialEq, Eq, Serialize, Deserialize)]
@@ -102,10 +120,10 @@ impl ToListItem for LedgerSearch {
 #[derive(Clone, Debug, EnumIter, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum InspectOption {
+    Prometheus,
     Ledger,
     Chain,
     Otel,
-    Prometheus,
 }
 
 impl ToLine for InspectOption {

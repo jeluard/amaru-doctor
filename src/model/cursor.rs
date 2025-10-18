@@ -29,7 +29,7 @@ impl<T> Cursor<T> {
         self.current()
     }
 
-    pub fn next(&mut self) -> &T {
+    pub fn non_empty_next(&mut self) -> &T {
         self.idx = (self.idx + 1) % self.vec.len();
         self.current()
     }

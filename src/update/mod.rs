@@ -2,12 +2,14 @@ use crate::{
     app_state::AppState,
     states::Action,
     update::{
-        focus::FocusUpdate, layout::LayoutUpdate, prom_metrics::PromMetricsUpdate,
-        scroll::ScrollUpdate, search::SearchUpdate, select_span::SelectSpanUpdate,
-        tick::TickUpdate, trace_graph::TraceGraphUpdate, window::WindowSizeUpdate,
+        button::GetButtonEventsUpdate, focus::FocusUpdate, layout::LayoutUpdate,
+        prom_metrics::PromMetricsUpdate, scroll::ScrollUpdate, search::SearchUpdate,
+        select_span::SelectSpanUpdate, tick::TickUpdate, trace_graph::TraceGraphUpdate,
+        window::WindowSizeUpdate,
     },
 };
 
+pub mod button;
 pub mod focus;
 pub mod layout;
 pub mod prom_metrics;
@@ -33,4 +35,5 @@ pub static UPDATE_DEFS: &[&dyn Update] = &[
     &TraceGraphUpdate,
     &SelectSpanUpdate,
     &PromMetricsUpdate,
+    &GetButtonEventsUpdate,
 ];
