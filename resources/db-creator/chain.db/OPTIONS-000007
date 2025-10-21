@@ -138,7 +138,7 @@
   compression=kSnappyCompression
   level0_file_num_compaction_trigger=4
   block_protection_bytes_per_key=0
-  prefix_extractor=rocksdb.FixedPrefix.4
+  prefix_extractor=rocksdb.FixedPrefix.5
   max_bytes_for_level_multiplier=10.000000
   write_buffer_size=67108864
   uncache_aggressiveness=0

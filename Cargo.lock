@@ -1126,6 +1126,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2a2330da5de22e8a3cb63252ce2abb30116bf5265e89c0e01bc17015ce30a476"
 
 [[package]]
+name = "db-creator"
+version = "0.1.0"
+dependencies = [
+ "amaru-kernel",
+ "amaru-ledger",
+ "amaru-stores",
+ "hex",
+]
+
+[[package]]
 name = "delegate"
 version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"

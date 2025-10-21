@@ -65,7 +65,7 @@ Set Height 600
 Set CursorBlink false
 
 Hide
-Type "./target/release/amaru-doctor"
+Type "amaru-doctor"
 Show
 Enter
 Sleep 500ms

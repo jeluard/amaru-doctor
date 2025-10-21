@@ -60,6 +60,12 @@ jobs:
         run: cargo doc --no-deps --document-private-items --all-features --workspace --examples
       - name: Build
         run: cargo build --release
+      - name: Generate dbs
+        run: cargo run
+        working-directory: resources/db-creator 
+      - name: Copy binary
+        run: |
+          cp target/release/amaru-doctor .
       - name: 🚀 Setup Go
         uses: actions/setup-go@v5.5.0
       - name: 🧪 Generate gifs

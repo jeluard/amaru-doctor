@@ -1,0 +1,10 @@
+[package]
+name = "db-creator"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+amaru-kernel = { git = "https://github.com/pragma-org/amaru.git" }
+amaru-ledger = { git = "https://github.com/pragma-org/amaru.git" }
+amaru-stores = { git = "https://github.com/pragma-org/amaru.git" }
+hex = "0.4.3"
