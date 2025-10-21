@@ -65,7 +65,7 @@ jobs:
         working-directory: resources/db-creator 
       - name: Copy binary
         run: |
-          cp target/release/amaru-doctor .
+          cp target/release/amaru-doctor resources/
           cp -R resources/db-creator/*.db resources/
       - name: 🚀 Setup Go
         uses: actions/setup-go@v5.5.0
@@ -74,6 +74,7 @@ jobs:
           sudo apt update
           sudo apt install -y ffmpeg ttyd
           go install github.com/charmbracelet/vhs@latest
+          export PATH=$PATH:./resources
           vhs resources/demo.tape
         env:
           AMARU_CHAIN_DB: 'resources/chain.db'
