@@ -66,6 +66,7 @@ jobs:
       - name: Copy binary
         run: |
           cp target/release/amaru-doctor .
+          cp -R resources/db-creator/*.db resources/
       - name: 🚀 Setup Go
         uses: actions/setup-go@v5.5.0
       - name: 🧪 Generate gifs

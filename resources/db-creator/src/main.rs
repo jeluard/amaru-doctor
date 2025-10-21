@@ -38,7 +38,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let protocol_parameters = &PREVIEW_INITIAL_PROTOCOL_PARAMETERS;
     let point = &Point::Origin;
 
-    let db = RocksDB::empty(RocksDbConfig::new("../ledger.db".into()))?;
+    let db = RocksDB::empty(RocksDbConfig::new("ledger.db".into()))?;
     let tx = db.create_transaction();
 
     let utxos: Vec<(TransactionInput, MemoizedTransactionOutput)> = vec![
@@ -76,7 +76,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         iter::empty(),
     )?;
 
-    let _consensus_store = RocksDBStore::new(RocksDbConfig::new("../chain.db".into()))?;
+    let _consensus_store = RocksDBStore::new(RocksDbConfig::new("chain.db".into()))?;
 
     Ok(())
 }
