@@ -1,9 +1,7 @@
 use std::{error::Error, iter};
 
 use amaru_kernel::{
-    Bytes, Hash, MemoizedTransactionOutput, Point, PostAlonzoTransactionOutput, TransactionInput,
-    TransactionOutput, Value, from_cbor, network::NetworkName,
-    protocol_parameters::PREVIEW_INITIAL_PROTOCOL_PARAMETERS, to_cbor,
+    from_cbor, network::NetworkName, protocol_parameters::PREVIEW_INITIAL_PROTOCOL_PARAMETERS, to_cbor, Bytes, Epoch, Hash, MemoizedTransactionOutput, Point, PostAlonzoTransactionOutput, TransactionInput, TransactionOutput, Value
 };
 use amaru_ledger::store::{self, GovernanceActivity, Store, TransactionalContext};
 use amaru_stores::rocksdb::{RocksDB, RocksDbConfig, consensus::RocksDBStore};
@@ -75,6 +73,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         Default::default(),
         iter::empty(),
     )?;
+    db.next_snapshot(Epoch::from(5))?;
+    db.next_snapshot(Epoch::from(6))?;
 
     let _consensus_store = RocksDBStore::new(RocksDbConfig::new("chain.db".into()))?;
 
