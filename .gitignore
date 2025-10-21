@@ -1,4 +1,4 @@
 .data/*.log
 /chaindb
 /target
-resources/*.db
+#resources/**/*.db
