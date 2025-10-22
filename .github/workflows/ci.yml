@@ -59,7 +59,7 @@ jobs:
           RUSTDOCFLAGS: -D warnings
         run: cargo doc --no-deps --document-private-items --all-features --workspace --examples
       - name: Build
-        run: cargo build --release
+        run: make build
       - name: Generate dbs
         run: cargo run
         working-directory: resources/db-creator 
