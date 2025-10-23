@@ -14,6 +14,7 @@ pub mod cli;
 mod config;
 mod controller;
 pub mod detection;
+mod effects;
 pub mod logging;
 pub mod model;
 pub mod otel;
