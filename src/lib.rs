@@ -1,13 +1,12 @@
 use std::path::PathBuf;
 
+use crate::detection::{AMARU_CHAIN_DB_ENV, AMARU_LEDGER_DB_ENV, detect_amaru_process};
 use amaru_kernel::network::NetworkName;
 use amaru_stores::rocksdb::{
     ReadOnlyRocksDB, RocksDbConfig,
     consensus::{ReadOnlyChainDB, RocksDBStore},
 };
 use anyhow::Result;
-
-use crate::detection::{AMARU_CHAIN_DB_ENV, AMARU_LEDGER_DB_ENV, detect_amaru_process};
 
 pub mod app;
 mod app_state;
@@ -25,6 +24,12 @@ pub mod tui;
 mod ui;
 mod update;
 mod view;
+
+#[derive(Clone, Copy)]
+pub enum ScreenMode {
+    Large,
+    Small,
+}
 
 fn default_db_name(name: &str, network: &NetworkName) -> String {
     format!("{}.{}.db", name, network)

@@ -1,4 +1,5 @@
 use crate::{
+    ScreenMode,
     controller::{SlotLayout, compute_slot_layout},
     states::{InspectOption, LedgerMode, WidgetSlot},
 };
@@ -33,9 +34,14 @@ pub struct LayoutModel {
 }
 
 impl LayoutModel {
-    pub fn new(inspect_tabs: InspectOption, ledger_mode: LedgerMode, frame_area: Rect) -> Self {
+    pub fn new(
+        screen_mode: ScreenMode,
+        inspect_tabs: InspectOption,
+        ledger_mode: LedgerMode,
+        frame_area: Rect,
+    ) -> Self {
         Self {
-            layout: compute_slot_layout(inspect_tabs, ledger_mode, frame_area),
+            layout: compute_slot_layout(screen_mode, inspect_tabs, ledger_mode, frame_area),
             focus: WidgetSlot::default(),
         }
     }

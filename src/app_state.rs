@@ -1,4 +1,5 @@
 use crate::{
+    ScreenMode,
     model::{
         button::InputEvent, chain_view::ChainViewState, layout::LayoutModel,
         ledger_view::LedgerModelViewState, otel_view::OtelViewState,
@@ -19,6 +20,8 @@ use tokio::sync::mpsc::Receiver;
 
 /// Holds ALL the app's state. Does not self-mutate.
 pub struct AppState {
+    pub screen_mode: ScreenMode,
+
     pub ledger_db: Arc<ReadOnlyRocksDB>,
     pub chain_db: Arc<ReadOnlyChainDB>,
 
@@ -47,11 +50,16 @@ impl AppState {
         prom_metrics: Receiver<NodeMetrics>,
         button_events: std::sync::mpsc::Receiver<InputEvent>,
         frame_area: Rect,
+        screen_mode: ScreenMode,
     ) -> Result<Self> {
         let ledger_db_arc = Arc::new(ledger_db);
         let chain_db_arc = Arc::new(chain_db);
-        let layout_model =
-            LayoutModel::new(InspectOption::default(), LedgerMode::default(), frame_area);
+        let layout_model = LayoutModel::new(
+            screen_mode,
+            InspectOption::default(),
+            LedgerMode::default(),
+            frame_area,
+        );
         let options_height: usize = layout_model
             .get_layout()
             .get(&WidgetSlot::LedgerOptions)
@@ -66,6 +74,7 @@ impl AppState {
             .height
             .into();
         Ok(Self {
+            screen_mode,
             ledger_db: ledger_db_arc.clone(),
             chain_db: chain_db_arc.clone(),
             frame_area: Rect::default(),

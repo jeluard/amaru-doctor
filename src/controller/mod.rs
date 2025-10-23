@@ -1,4 +1,5 @@
 use crate::{
+    ScreenMode,
     controller::layout::build_layout_spec,
     states::{
         InspectOption, LedgerMode,
@@ -19,11 +20,12 @@ pub struct LayoutSpec {
 }
 
 pub fn compute_slot_layout(
+    screen_mode: ScreenMode,
     inspect_tabs: InspectOption,
     ledger_mode: LedgerMode,
     area: Rect,
 ) -> SlotLayout {
-    let spec = build_layout_spec(inspect_tabs, ledger_mode);
+    let spec = build_layout_spec(screen_mode, inspect_tabs, ledger_mode);
     let mut out = HashMap::new();
     walk_layout(&mut out, &spec, area);
     out

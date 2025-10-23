@@ -47,7 +47,7 @@ impl<T: Clone + PartialEq> DynamicList<T> {
     }
 
     /// Scrolls down using the cached index
-    fn scroll_down(&mut self) {
+    pub fn scroll_down(&mut self) {
         if self.items.is_empty() {
             self.selected_index = None;
             return;
@@ -61,7 +61,7 @@ impl<T: Clone + PartialEq> DynamicList<T> {
     }
 
     /// Scrolls up using the cached index
-    fn scroll_up(&mut self) {
+    pub fn scroll_up(&mut self) {
         if self.items.is_empty() {
             self.selected_index = None;
             return;
