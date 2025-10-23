@@ -34,6 +34,12 @@ impl<T> Cursor<T> {
         self.current()
     }
 
+    pub fn select_index(&mut self, idx: usize) {
+        if idx < self.vec.len() {
+            self.idx = idx;
+        }
+    }
+
     pub fn iter(&self) -> Iter<'_, T> {
         self.vec.iter()
     }

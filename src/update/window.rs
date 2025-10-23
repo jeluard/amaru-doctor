@@ -19,13 +19,13 @@ static WINDOW_DEFS: &[WindowSizeDef] = &[
         slot: WidgetSlot::LedgerOptions,
         handlers: &[
             |s, size| {
-                s.ledger_view.options_window_size = size;
+                s.ledger_mvs.options_window_height = size;
             },
             |s, size| {
-                s.ledger_view.browse_options.set_window_size(size);
+                s.ledger_mvs.browse_options.set_height(size);
             },
             |s, size| {
-                s.ledger_view.search_options.set_window_size(size);
+                s.ledger_mvs.search_options.set_height(size);
             },
         ],
     },
@@ -33,29 +33,29 @@ static WINDOW_DEFS: &[WindowSizeDef] = &[
         slot: WidgetSlot::List,
         handlers: &[
             |s, size| {
-                s.ledger_view.list_window_size = size;
+                s.ledger_mvs.list_window_height = size;
             },
             |s, size| {
-                s.ledger_view.accounts.set_window_size(size);
+                s.ledger_mvs.accounts.set_height(size);
             },
             |s, size| {
-                s.ledger_view.block_issuers.set_window_size(size);
+                s.ledger_mvs.block_issuers.set_height(size);
             },
             |s, size| {
-                s.ledger_view.dreps.set_window_size(size);
+                s.ledger_mvs.dreps.set_height(size);
             },
             |s, size| {
-                s.ledger_view.pools.set_window_size(size);
+                s.ledger_mvs.pools.set_height(size);
             },
             |s, size| {
-                s.ledger_view.proposals.set_window_size(size);
+                s.ledger_mvs.proposals.set_height(size);
             },
             |s, size| {
-                s.ledger_view.utxos.set_window_size(size);
+                s.ledger_mvs.utxos.set_height(size);
             },
             |s, size| {
-                for w in s.ledger_view.utxos_by_addr_search.results.values_mut() {
-                    w.set_window_size(size);
+                for w in s.ledger_mvs.utxos_by_addr_search.results.values_mut() {
+                    w.set_height(size);
                 }
             },
         ],

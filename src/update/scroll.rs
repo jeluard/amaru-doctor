@@ -1,14 +1,12 @@
 use crate::{
     app_state::AppState,
-    model::{
-        cursor::Cursor, ledger_view::LedgerViewState, otel_view::OtelViewState, window::WindowState,
-    },
+    model::{ledger_view::LedgerModelViewState, otel_view::OtelViewState},
     otel::{graph::TraceGraph, id::SpanId, span_ext::SpanExt},
     states::{Action, InspectOption, LedgerBrowse, LedgerMode, WidgetSlot},
     update::Update,
 };
 use strum::Display;
-use tracing::trace;
+use tracing::{debug, trace};
 
 #[derive(Display, Debug, Clone, Copy)]
 pub enum ScrollDirection {
@@ -16,34 +14,7 @@ pub enum ScrollDirection {
     Down,
 }
 
-pub trait ScrollableList {
-    fn scroll(&mut self, direction: ScrollDirection);
-}
-
-impl<T> ScrollableList for WindowState<T> {
-    fn scroll(&mut self, direction: ScrollDirection) {
-        match direction {
-            ScrollDirection::Up => self.scroll_up(),
-            ScrollDirection::Down => self.scroll_down(),
-        }
-    }
-}
-
-impl<T> ScrollableList for Cursor<T> {
-    fn scroll(&mut self, direction: ScrollDirection) {
-        match direction {
-            ScrollDirection::Up => {
-                self.next_back();
-            }
-            ScrollDirection::Down => {
-                self.non_empty_next();
-            }
-        }
-    }
-}
-
 pub struct ScrollUpdate;
-
 impl Update for ScrollUpdate {
     fn update(&self, action: &Action, s: &mut AppState) -> Vec<Action> {
         let Some(direction) = (match action {
@@ -54,27 +25,43 @@ impl Update for ScrollUpdate {
             return Vec::new();
         };
 
-        trace!("Scrolling {:?} {:?}", s.slot_focus, direction);
-
-        match s.slot_focus {
-            WidgetSlot::InspectOption => s.inspect_option.scroll(direction),
+        match s.layout_model.get_focus() {
+            WidgetSlot::InspectOption => {
+                match direction {
+                    ScrollDirection::Up => s.inspect_tabs.cursor.next_back(),
+                    ScrollDirection::Down => s.inspect_tabs.cursor.non_empty_next(),
+                };
+            }
             WidgetSlot::LedgerMode => {
-                s.ledger_mode.scroll(direction);
-                // This widget triggers a layout update on scroll to add or remove the
-                // search bar
+                match direction {
+                    ScrollDirection::Up => s.ledger_tabs.cursor.next_back(),
+                    ScrollDirection::Down => s.ledger_tabs.cursor.non_empty_next(),
+                };
                 return vec![Action::UpdateLayout(s.frame_area)];
             }
             WidgetSlot::LedgerOptions => {
-                let mode = s.ledger_mode.current();
-                match mode {
-                    LedgerMode::Browse => s.ledger_view.browse_options.scroll(direction),
-                    LedgerMode::Search => s.ledger_view.search_options.scroll(direction),
+                let mode = s.ledger_tabs.cursor.current();
+                match (mode, direction) {
+                    (LedgerMode::Browse, ScrollDirection::Up) => {
+                        s.ledger_mvs.browse_options.cursor_back()
+                    }
+                    (LedgerMode::Browse, ScrollDirection::Down) => {
+                        s.ledger_mvs.browse_options.cursor_next()
+                    }
+                    (LedgerMode::Search, ScrollDirection::Up) => {
+                        s.ledger_mvs.search_options.cursor_back()
+                    }
+                    (LedgerMode::Search, ScrollDirection::Down) => {
+                        s.ledger_mvs.search_options.cursor_next()
+                    }
                 }
             }
-            WidgetSlot::List => match s.inspect_option.current() {
+            WidgetSlot::List => match s.inspect_tabs.cursor.current() {
                 InspectOption::Ledger => {
-                    let mode = s.ledger_mode.current();
-                    scroll_ledger_list(&mut s.ledger_view, direction, mode);
+                    if *s.ledger_tabs.cursor.current() == LedgerMode::Browse {
+                        scroll_ledger_list(&mut s.ledger_mvs, direction);
+                    }
+                    // TODO: Add similar unified logic for LedgerMode::Search
                 }
                 InspectOption::Otel => {
                     // TODO: Make this logic simpler by taking advantage of the
@@ -103,48 +90,43 @@ impl Update for ScrollUpdate {
                 InspectOption::Chain => { /* There's no list widget in the Chain tab */ }
                 InspectOption::Prometheus => { /* There's no list widget in the Prometheus tab */ }
             },
-            WidgetSlot::Details => match s.inspect_option.current() {
+            WidgetSlot::Details => match s.inspect_tabs.cursor.current() {
                 InspectOption::Otel => scroll_trace_details(&mut s.otel_view, direction),
                 InspectOption::Ledger => { /* TODO: Impl item details scroll */ }
                 InspectOption::Chain => {}
                 InspectOption::Prometheus => { /* TODO: Impl metrics scroll */ }
             },
-            _ => trace!("No scroll logic for slot {:?}", s.slot_focus),
+            _ => trace!("No scroll logic for slot {:?}", s.layout_model.get_focus()),
         }
         Vec::new()
     }
 }
 
 /// Scrolls the list within the ledger view.
-fn scroll_ledger_list(
-    ledger_view: &mut LedgerViewState,
-    direction: ScrollDirection,
-    mode: &LedgerMode,
-) {
-    if let Some(list) = get_ledger_list(ledger_view, mode) {
-        list.scroll(direction);
-    }
-}
-
-/// Helper to get a mutable reference to the currently active list in ledger view for
-/// scrolling.
-fn get_ledger_list<'a>(
-    ledger_view: &'a mut LedgerViewState,
-    mode: &'a LedgerMode,
-) -> Option<&'a mut dyn ScrollableList> {
-    match mode {
-        LedgerMode::Browse => match ledger_view.browse_options.selected()? {
-            LedgerBrowse::Accounts => Some(&mut ledger_view.accounts),
-            LedgerBrowse::BlockIssuers => Some(&mut ledger_view.block_issuers),
-            LedgerBrowse::DReps => Some(&mut ledger_view.dreps),
-            LedgerBrowse::Pools => Some(&mut ledger_view.pools),
-            LedgerBrowse::Proposals => Some(&mut ledger_view.proposals),
-            LedgerBrowse::Utxos => Some(&mut ledger_view.utxos),
-        },
-        LedgerMode::Search => ledger_view
-            .utxos_by_addr_search
-            .get_current_res_mut()
-            .map(|r| r as &mut dyn ScrollableList),
+fn scroll_ledger_list(ledger_mvs: &mut LedgerModelViewState, direction: ScrollDirection) {
+    if let Some(browse_option) = ledger_mvs.browse_options.selected_item() {
+        debug!(
+            "Scrolling ledger list cursor for browse option: {:?}",
+            browse_option
+        );
+        match (browse_option, direction) {
+            (LedgerBrowse::Accounts, ScrollDirection::Up) => ledger_mvs.accounts.cursor_back(),
+            (LedgerBrowse::Accounts, ScrollDirection::Down) => ledger_mvs.accounts.cursor_next(),
+            (LedgerBrowse::BlockIssuers, ScrollDirection::Up) => {
+                ledger_mvs.block_issuers.cursor_back()
+            }
+            (LedgerBrowse::BlockIssuers, ScrollDirection::Down) => {
+                ledger_mvs.block_issuers.cursor_next()
+            }
+            (LedgerBrowse::DReps, ScrollDirection::Up) => ledger_mvs.dreps.cursor_back(),
+            (LedgerBrowse::DReps, ScrollDirection::Down) => ledger_mvs.dreps.cursor_next(),
+            (LedgerBrowse::Pools, ScrollDirection::Up) => ledger_mvs.pools.cursor_back(),
+            (LedgerBrowse::Pools, ScrollDirection::Down) => ledger_mvs.pools.cursor_next(),
+            (LedgerBrowse::Proposals, ScrollDirection::Up) => ledger_mvs.proposals.cursor_back(),
+            (LedgerBrowse::Proposals, ScrollDirection::Down) => ledger_mvs.proposals.cursor_next(),
+            (LedgerBrowse::Utxos, ScrollDirection::Up) => ledger_mvs.utxos.cursor_back(),
+            (LedgerBrowse::Utxos, ScrollDirection::Down) => ledger_mvs.utxos.cursor_next(),
+        }
     }
 }
 

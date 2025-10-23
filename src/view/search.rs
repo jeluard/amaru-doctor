@@ -1,4 +1,3 @@
-use anyhow::Result;
 use ratatui::{
     Frame,
     layout::Rect,
@@ -13,7 +12,7 @@ pub fn render_search_query(
     title: &str,
     search_query: &str,
     is_focused: bool,
-) -> Result<()> {
+) {
     let mut block = Block::default().title(title).borders(Borders::ALL);
 
     if is_focused {
@@ -24,6 +23,4 @@ pub fn render_search_query(
 
     let paragraph = Paragraph::new(Line::from(Span::raw(search_query))).block(block);
     frame.render_widget(paragraph, area);
-
-    Ok(())
 }

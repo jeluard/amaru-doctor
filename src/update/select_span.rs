@@ -13,7 +13,8 @@ impl Update for SelectSpanUpdate {
             return Vec::new();
         }
 
-        if s.slot_focus != WidgetSlot::Details || *s.inspect_option.current() != InspectOption::Otel
+        if s.layout_model.get_focus() != WidgetSlot::Details
+            || *s.inspect_tabs.cursor.current() != InspectOption::Otel
         {
             return Vec::new();
         }

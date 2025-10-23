@@ -1,6 +1,5 @@
 use crate::{
     app_state::AppState,
-    controller::is_widget_focused,
     states::{Action, WidgetSlot},
     update::{
         Update,
@@ -101,29 +100,32 @@ impl Update for Search {
     }
 }
 
-fn update_search<H>(h: &H, a: &Action, s: &mut AppState) -> Vec<Action>
+fn update_search<H>(handler: &H, a: &Action, s: &mut AppState) -> Vec<Action>
 where
     H: SearchHandler,
     <H::Query as FromStr>::Err: Display,
 {
-    if !is_widget_focused(s, h.slot()) || !h.is_active(s) {
+    if !s.layout_model.is_focused(handler.slot()) || !handler.is_active(s) {
         return Vec::new();
     }
-    trace!("{} is focused and active, handling search", h.debug_name());
+    trace!(
+        "{} is focused and active, handling search",
+        handler.debug_name()
+    );
 
     match a {
         Action::Key(KeyCode::Char(c)) => {
-            h.state_mut(s).push_char(*c);
+            handler.state_mut(s).push_char(*c);
         }
         Action::Key(KeyCode::Backspace) => {
-            h.state_mut(s).pop_char();
+            handler.state_mut(s).pop_char();
         }
         Action::Key(KeyCode::Enter) => {
-            let input = h.state(s).builder.clone();
+            let input = handler.state(s).builder.clone();
             match H::Query::from_str(&input) {
                 Ok(query) => {
-                    let result = h.compute(s, &query);
-                    h.state_mut(s).cache_result(query, result);
+                    let result = handler.compute(s, &query);
+                    handler.state_mut(s).cache_result(query, result);
                 }
                 Err(e) => return vec![Action::Error(e.to_string())],
             }
