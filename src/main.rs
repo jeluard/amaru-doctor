@@ -1,5 +1,5 @@
 use amaru_doctor::{
-    app::App, cli::Cli, model::button::InputEvent, open_chain_db, open_ledger_db,
+    ScreenMode, app::App, cli::Cli, model::button::InputEvent, open_chain_db, open_ledger_db,
     otel::service::OtelCollectorService, prometheus::service::MetricsPoller, tui::Tui,
 };
 use anyhow::Result;
@@ -28,6 +28,7 @@ async fn main() -> Result<()> {
         metrics_handle.receiver,
         dummy_input_events,
         tui.get_frame().area(),
+        ScreenMode::Small,
     )?;
     app.run(&mut tui).await?;
 

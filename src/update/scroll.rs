@@ -68,7 +68,11 @@ impl Update for ScrollUpdate {
                     // DynamicList struct
 
                     // First scroll the trace list itself
-                    s.otel_view.trace_list.scroll(direction);
+                    match direction {
+                        ScrollDirection::Up => s.otel_view.trace_list.scroll_up(),
+                        ScrollDirection::Down => {}
+                    }
+
                     let graph = s.otel_view.trace_graph_source.load();
 
                     // Then find the new focused span--it's the first span (root) in the

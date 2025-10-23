@@ -1,4 +1,5 @@
 use crate::{
+    ScreenMode,
     app_state::AppState,
     config::Config,
     model::button::InputEvent,
@@ -45,6 +46,7 @@ impl App {
         prom_metrics: Receiver<NodeMetrics>,
         button_events: std::sync::mpsc::Receiver<InputEvent>,
         frame_area: Rect,
+        screen_mode: ScreenMode,
     ) -> Result<Self> {
         let (action_tx, action_rx) = unbounded_channel();
 
@@ -55,6 +57,7 @@ impl App {
             prom_metrics,
             button_events,
             frame_area,
+            screen_mode,
         )?;
         let last_inspect_tabs = *app_state.inspect_tabs.cursor.current();
         let slot_views = compute_slot_views(&app_state);
