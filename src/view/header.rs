@@ -1,6 +1,5 @@
 use crate::ui::{RichText, ToRichText};
 use amaru_consensus::BlockHeader;
-use anyhow::Result;
 use ratatui::{
     Frame,
     layout::Rect,
@@ -15,7 +14,7 @@ pub fn render_header(
     title: &str,
     header_opt_opt: Option<Option<&BlockHeader>>,
     is_focused: bool,
-) -> Result<()> {
+) {
     let mut block = Block::default().title(title).borders(Borders::ALL);
     if is_focused {
         block = block
@@ -36,6 +35,4 @@ pub fn render_header(
         .wrap(Wrap { trim: true })
         .block(block);
     frame.render_widget(widget, area);
-
-    Ok(())
 }

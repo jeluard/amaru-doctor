@@ -1,14 +1,15 @@
 use crate::{app_state::AppState, states::WidgetSlot, view::defs::*};
-use anyhow::Result;
 use ratatui::{Frame, layout::Rect};
 use std::collections::HashMap;
 
 pub mod block;
 pub mod defs;
-pub mod details;
+pub mod empty_list;
 pub mod flame_graph;
 pub mod header;
+pub mod item_details;
 pub mod line;
+pub mod list;
 pub mod nonces;
 pub mod prom_metrics;
 pub mod search;
@@ -17,12 +18,11 @@ pub mod span_bar;
 pub mod tabs;
 pub mod time_series;
 pub mod trace_list;
-pub mod window;
 
 pub trait View: Sync {
     fn slot(&self) -> WidgetSlot;
     fn is_visible(&self, s: &AppState) -> bool;
-    fn render(&self, frame: &mut Frame, area: Rect, s: &AppState) -> Result<()>;
+    fn render(&self, frame: &mut Frame, area: Rect, s: &AppState);
 }
 
 /// All views

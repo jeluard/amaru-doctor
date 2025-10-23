@@ -1,5 +1,3 @@
-use crate::update::scroll::{ScrollDirection, ScrollableList};
-
 /// A "dynamic list" struct that helps the UI when the underlying data is allowed to
 /// change. To that end this
 /// 1. Efficiently scrolls up and down and
@@ -72,14 +70,5 @@ impl<T: Clone + PartialEq> DynamicList<T> {
         let len = self.items.len();
         let next_index = self.selected_index.map_or(len - 1, |i| (i + len - 1) % len);
         self.selected_index = Some(next_index);
-    }
-}
-
-impl<T: Clone + PartialEq> ScrollableList for DynamicList<T> {
-    fn scroll(&mut self, direction: ScrollDirection) {
-        match direction {
-            ScrollDirection::Up => self.scroll_up(),
-            ScrollDirection::Down => self.scroll_down(),
-        }
     }
 }

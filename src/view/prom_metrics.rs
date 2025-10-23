@@ -1,5 +1,4 @@
 use crate::{model::prom_metrics::PromMetricsViewState, view::time_series::render_chart};
-use anyhow::Result;
 use ratatui::{
     prelude::*,
     widgets::{Block, Borders},
@@ -10,7 +9,7 @@ pub fn render_prom_metrics(
     area: Rect,
     state: &PromMetricsViewState,
     is_focused: bool,
-) -> Result<()> {
+) {
     let mut block = Block::default()
         .title("Prometheus Metrics")
         .borders(Borders::ALL);
@@ -70,6 +69,4 @@ pub fn render_prom_metrics(
         Color::LightYellow,
         state.disk_live_write(),
     );
-
-    Ok(())
 }

@@ -1,7 +1,9 @@
 use crate::{
-    app_state::AppState,
     controller::layout::build_layout_spec,
-    states::WidgetSlot::{self},
+    states::{
+        InspectOption, LedgerMode,
+        WidgetSlot::{self},
+    },
 };
 use either::Either::{self, Left, Right};
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
@@ -16,12 +18,12 @@ pub struct LayoutSpec {
     constraints: Vec<(Constraint, Either<WidgetSlot, LayoutSpec>)>,
 }
 
-pub fn is_widget_focused(app_state: &AppState, widget_slot: WidgetSlot) -> bool {
-    app_state.slot_focus == widget_slot
-}
-
-pub fn compute_slot_layout(app_state: &AppState, area: Rect) -> SlotLayout {
-    let spec = build_layout_spec(app_state);
+pub fn compute_slot_layout(
+    inspect_tabs: InspectOption,
+    ledger_mode: LedgerMode,
+    area: Rect,
+) -> SlotLayout {
+    let spec = build_layout_spec(inspect_tabs, ledger_mode);
     let mut out = HashMap::new();
     walk_layout(&mut out, &spec, area);
     out

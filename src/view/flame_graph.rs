@@ -17,12 +17,7 @@ use ratatui::{
 use std::{iter, sync::Arc};
 
 /// Renders the flame graph widget.
-pub fn render_flame_graph(
-    frame: &mut Frame,
-    area: Rect,
-    state: &OtelViewState,
-    is_focused: bool,
-) -> Result<()> {
+pub fn render_flame_graph(frame: &mut Frame, area: Rect, state: &OtelViewState, is_focused: bool) {
     let mut block = Block::default()
         .title("Trace Details")
         .borders(Borders::ALL);
@@ -30,11 +25,10 @@ pub fn render_flame_graph(
         block = block.border_style(Style::default().fg(Color::Blue));
     }
 
-    let lines = get_flame_graph_lines(state, area.width.saturating_sub(2) as usize)?;
+    let lines = get_flame_graph_lines(state, area.width.saturating_sub(2) as usize).unwrap();
 
     let paragraph = Paragraph::new(lines).block(block);
     frame.render_widget(paragraph, area);
-    Ok(())
 }
 
 /// Determines which view to render based on the app state.

@@ -1,6 +1,6 @@
 use crate::{
     app_state::AppState,
-    model::window::WindowState,
+    model::list_view::ListModelViewState,
     states::{InspectOption, LedgerSearch, WidgetSlot},
     store::owned_iter::OwnedUtxoIter,
     ui::to_list_item::UtxoItem,
@@ -14,7 +14,7 @@ use tracing::trace;
 pub struct LedgerUtxosByAddr;
 impl SearchHandler for LedgerUtxosByAddr {
     type Query = Address;
-    type Result = WindowState<UtxoItem>;
+    type Result = ListModelViewState<UtxoItem>;
 
     fn debug_name(&self) -> &'static str {
         "LedgerUtxosByAddr"
@@ -25,25 +25,23 @@ impl SearchHandler for LedgerUtxosByAddr {
     }
 
     fn is_active(&self, s: &AppState) -> bool {
-        *s.inspect_option.current() == InspectOption::Ledger
-            && s.ledger_view.search_options.selected() == Some(&LedgerSearch::UtxosByAddress)
+        *s.inspect_tabs.cursor.current() == InspectOption::Ledger
+            && s.ledger_mvs.search_options.selected_item() == Some(&LedgerSearch::UtxosByAddress)
     }
 
     fn state<'a>(&self, s: &'a AppState) -> &'a SearchState<Self::Query, Self::Result> {
-        &s.ledger_view.utxos_by_addr_search
+        &s.ledger_mvs.utxos_by_addr_search
     }
 
     fn state_mut<'a>(&self, s: &'a mut AppState) -> &'a mut SearchState<Self::Query, Self::Result> {
-        &mut s.ledger_view.utxos_by_addr_search
+        &mut s.ledger_mvs.utxos_by_addr_search
     }
 
     fn compute(&self, s: &AppState, query: &Self::Query) -> Self::Result {
         let owned_query = query.clone();
         let iter = OwnedUtxoIter::new(s.ledger_db.clone())
             .filter(move |(_, out): &UtxoItem| out.address == owned_query);
-        let mut window = WindowState::from_static_iter(iter);
-        window.set_window_size(s.ledger_view.list_window_size);
-        window
+        ListModelViewState::new("Utxos by Address", iter, s.ledger_mvs.list_window_height)
     }
 }
 
@@ -62,7 +60,7 @@ impl SearchHandler for ChainSearch {
     }
 
     fn is_active(&self, s: &AppState) -> bool {
-        *s.inspect_option.current() == InspectOption::Chain
+        *s.inspect_tabs.cursor.current() == InspectOption::Chain
     }
 
     fn state<'a>(&self, s: &'a AppState) -> &'a SearchState<Self::Query, Self::Result> {

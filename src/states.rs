@@ -1,6 +1,6 @@
 use crate::ui::to_list_item::ToListItem;
-use crossterm::event::KeyCode;
-use ratatui::{layout::Rect, prelude::Line, text::ToLine, widgets::ListItem};
+use crossterm::event::{KeyCode, MouseEvent};
+use ratatui::{layout::Rect, widgets::ListItem};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use strum::{Display, EnumIter, IntoEnumIterator};
@@ -23,21 +23,23 @@ pub enum Action {
     FocusRight,
     ScrollUp,
     ScrollDown,
+    MouseDragDown,
+    MouseDragUp,
     Up,
     Down,
     Forward,
     Back,
     Key(KeyCode),
     UpdateLayout(Rect),
-    Mouse(u16, u16),     // Mouse click at coordinates
-    MouseMove(u16, u16), // Mouse movement
+    MouseEvent(MouseEvent),
+    MouseClick(u16, u16),
     SyncTraceGraph,
     SyncPromMetrics,
     GetButtonEvents,
 }
 
 impl Action {
-    pub fn is_system_tick(&self) -> bool {
+    pub fn is_noisy(&self) -> bool {
         matches!(
             self,
             Self::Tick
@@ -45,11 +47,12 @@ impl Action {
                 | Self::SyncPromMetrics
                 | Self::SyncTraceGraph
                 | Self::GetButtonEvents
+                | Self::MouseEvent(_)
         )
     }
 }
 
-#[derive(Clone, Debug, Default, EnumIter, Display, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Display, EnumIter, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LedgerBrowse {
     #[default]
@@ -68,28 +71,30 @@ impl ToListItem for LedgerBrowse {
     }
 }
 
-#[derive(Clone, Debug, EnumIter, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Default, Display, EnumIter, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LedgerMode {
+    #[default]
     Browse,
     Search,
 }
 
-impl ToLine for LedgerMode {
-    fn to_line(&self) -> Line<'_> {
-        Line::from(serde_plain::to_string(self).unwrap().to_owned())
-    }
-}
-
-#[derive(Clone, Copy, Debug, Display, EnumIter, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(
+    Clone, Copy, Debug, Default, Display, EnumIter, Hash, PartialEq, Eq, Serialize, Deserialize,
+)]
 pub enum WidgetSlot {
     TopLine,
+    #[default] // Default focused slot
     InspectOption,
     LedgerMode,
     SearchBar,
+    // Either the LedgerBrowse (accounts, block issuers, etc.) or LedgerSearch (utxos by
+    // addr) options
     LedgerOptions,
+    // Listed items
     List,
     Details,
+    // Used for span details today
     SubDetails,
     LedgerHeaderDetails,
     LedgerBlockDetails,
@@ -117,17 +122,12 @@ impl ToListItem for LedgerSearch {
     }
 }
 
-#[derive(Clone, Debug, EnumIter, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Default, Display, EnumIter, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum InspectOption {
-    Prometheus,
+    #[default]
     Ledger,
     Chain,
     Otel,
-}
-
-impl ToLine for InspectOption {
-    fn to_line(&self) -> Line<'_> {
-        Line::from(serde_plain::to_string(self).unwrap().to_owned())
-    }
+    Prometheus,
 }

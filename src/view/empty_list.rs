@@ -1,5 +1,4 @@
-use crate::ui::{RichText, ToRichText};
-use amaru_consensus::Nonces;
+use crate::ui::RichText;
 use ratatui::{
     Frame,
     layout::Rect,
@@ -8,11 +7,11 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Wrap},
 };
 
-pub fn render_nonces(
+pub fn draw_empty_list(
     frame: &mut Frame<'_>,
     area: Rect,
     title: &str,
-    nonces_opt_opt: Option<Option<&Nonces>>,
+    text: &str,
     is_focused: bool,
 ) {
     let mut block = Block::default().title(title).borders(Borders::ALL);
@@ -22,15 +21,7 @@ pub fn render_nonces(
             .title_style(Style::default().fg(Color::White));
     }
 
-    let lines = match nonces_opt_opt {
-        Some(nonces_opt) => match nonces_opt {
-            Some(nonces) => nonces.to_rich_text(),
-            None => RichText::Single(Span::raw("No nonces found")),
-        },
-        None => RichText::Single(Span::raw(
-            "To search nonces, enter the hash in the search bar and press enter",
-        )),
-    };
+    let lines = RichText::Single(Span::raw(text.to_owned()));
     let widget = Paragraph::new(lines.unwrap_lines())
         .wrap(Wrap { trim: true })
         .block(block);

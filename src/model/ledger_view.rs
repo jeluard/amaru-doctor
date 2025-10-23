@@ -1,5 +1,5 @@
 use crate::{
-    model::window::WindowState,
+    model::list_view::ListModelViewState,
     states::{LedgerBrowse, LedgerSearch},
     store::owned_iter::{
         OwnedAccountIter, OwnedBlockIssuerIter, OwnedDRepIter, OwnedPoolIter, OwnedProposalIter,
@@ -13,39 +13,74 @@ use amaru_stores::rocksdb::ReadOnlyRocksDB;
 use std::sync::Arc;
 use strum::IntoEnumIterator;
 
-/// Holds all state related to the Ledger view.
-pub struct LedgerViewState {
+/// Holds the model state (underlying data) and view state (ui) for the Ledger page
+pub struct LedgerModelViewState {
     // Options: types of lists
-    pub options_window_size: usize,
-    pub browse_options: WindowState<LedgerBrowse>,
-    pub search_options: WindowState<LedgerSearch>,
+    pub options_window_height: usize,
+    pub browse_options: ListModelViewState<LedgerBrowse>,
+    pub search_options: ListModelViewState<LedgerSearch>,
 
     // Lists: lists to browse for items
-    pub list_window_size: usize,
-    pub accounts: WindowState<AccountItem>,
-    pub block_issuers: WindowState<BlockIssuerItem>,
-    pub dreps: WindowState<DRepItem>,
-    pub pools: WindowState<PoolItem>,
-    pub proposals: WindowState<ProposalItem>,
-    pub utxos: WindowState<UtxoItem>,
-    pub utxos_by_addr_search: SearchState<Address, WindowState<UtxoItem>>,
+    pub list_window_height: usize,
+    pub accounts: ListModelViewState<AccountItem>,
+    pub block_issuers: ListModelViewState<BlockIssuerItem>,
+    pub dreps: ListModelViewState<DRepItem>,
+    pub pools: ListModelViewState<PoolItem>,
+    pub proposals: ListModelViewState<ProposalItem>,
+    pub utxos: ListModelViewState<UtxoItem>,
+
+    pub utxos_by_addr_search: SearchState<Address, ListModelViewState<UtxoItem>>,
 }
 
-impl LedgerViewState {
-    pub fn new(ledger_db_arc: Arc<ReadOnlyRocksDB>) -> Self {
+impl LedgerModelViewState {
+    pub fn new(
+        ledger_db_arc: Arc<ReadOnlyRocksDB>,
+        options_window_height: usize,
+        list_window_height: usize,
+    ) -> Self {
         Self {
-            options_window_size: 0,
-            browse_options: WindowState::from_static_iter(LedgerBrowse::iter()),
-            search_options: WindowState::from_static_iter(LedgerSearch::iter()),
-            list_window_size: 0,
-            accounts: WindowState::from_static_iter(OwnedAccountIter::new(ledger_db_arc.clone())),
-            block_issuers: WindowState::from_static_iter(OwnedBlockIssuerIter::new(
-                ledger_db_arc.clone(),
-            )),
-            dreps: WindowState::from_static_iter(OwnedDRepIter::new(ledger_db_arc.clone())),
-            pools: WindowState::from_static_iter(OwnedPoolIter::new(ledger_db_arc.clone())),
-            proposals: WindowState::from_static_iter(OwnedProposalIter::new(ledger_db_arc.clone())),
-            utxos: WindowState::from_static_iter(OwnedUtxoIter::new(ledger_db_arc)),
+            options_window_height,
+            browse_options: ListModelViewState::new(
+                "Browse Options",
+                LedgerBrowse::iter(),
+                options_window_height,
+            ),
+            search_options: ListModelViewState::new(
+                "Search Options",
+                LedgerSearch::iter(),
+                options_window_height,
+            ),
+            list_window_height,
+            accounts: ListModelViewState::new(
+                "Accounts",
+                OwnedAccountIter::new(ledger_db_arc.clone()),
+                list_window_height,
+            ),
+            block_issuers: ListModelViewState::new(
+                "Block Issuers",
+                OwnedBlockIssuerIter::new(ledger_db_arc.clone()),
+                list_window_height,
+            ),
+            dreps: ListModelViewState::new(
+                "DReps",
+                OwnedDRepIter::new(ledger_db_arc.clone()),
+                list_window_height,
+            ),
+            pools: ListModelViewState::new(
+                "Pools",
+                OwnedPoolIter::new(ledger_db_arc.clone()),
+                list_window_height,
+            ),
+            proposals: ListModelViewState::new(
+                "Proposals",
+                OwnedProposalIter::new(ledger_db_arc.clone()),
+                list_window_height,
+            ),
+            utxos: ListModelViewState::new(
+                "Utxos",
+                OwnedUtxoIter::new(ledger_db_arc.clone()),
+                list_window_height,
+            ),
             utxos_by_addr_search: SearchState::default(),
         }
     }

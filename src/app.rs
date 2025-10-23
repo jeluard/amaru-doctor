@@ -4,14 +4,14 @@ use crate::{
     model::button::InputEvent,
     otel::TraceGraphSnapshot,
     prometheus::model::NodeMetrics,
-    states::{Action, InspectOption, WidgetSlot},
+    states::{Action, InspectOption},
     tui::{Event, Tui},
     update::{UPDATE_DEFS, UpdateList},
     view::{SlotViews, compute_slot_views},
 };
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
 use anyhow::Result;
-use crossterm::event::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
+use crossterm::event::KeyEvent;
 use ratatui::prelude::{Backend, Rect};
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::{Receiver, UnboundedReceiver, UnboundedSender, unbounded_channel};
@@ -54,15 +54,15 @@ impl App {
             trace_graph,
             prom_metrics,
             button_events,
+            frame_area,
         )?;
-        action_tx.send(Action::UpdateLayout(frame_area))?;
-        let last_inspect_option = app_state.inspect_option.current().clone();
+        let last_inspect_tabs = *app_state.inspect_tabs.cursor.current();
         let slot_views = compute_slot_views(&app_state);
 
         Ok(Self {
             app_state,
             updates: UPDATE_DEFS.to_vec(),
-            last_store_option: last_inspect_option,
+            last_store_option: last_inspect_tabs,
             slot_views,
             should_quit: false,
             should_suspend: false,
@@ -125,14 +125,13 @@ impl App {
                 action_tx.send(Action::Key(key.code))?;
                 self.handle_key_event(key)?
             }
-            Event::Mouse(mouse) => self.handle_mouse_event(mouse)?,
+            Event::Mouse(mouse) => action_tx.send(Action::MouseEvent(mouse))?,
             _ => {}
         }
         Ok(())
     }
 
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<()> {
-        trace!("App::handle_key_event - received: {:?}", key);
         let action_tx = self.action_tx.clone();
         let Some(keymap) = self.config.keybindings.get(&self.mode) else {
             trace!("App::handle_key_event - no keymap: {:?}", key);
@@ -159,67 +158,16 @@ impl App {
         Ok(())
     }
 
-    fn handle_mouse_event(&mut self, mouse: MouseEvent) -> Result<()> {
-        trace!("App::handle_mouse_event - received: {:?}", mouse);
-        let action_tx = self.action_tx.clone();
-
-        match mouse.kind {
-            MouseEventKind::Down(MouseButton::Left) => {
-                // Send mouse click action with coordinates for potential widget-specific
-                // handling
-                action_tx.send(Action::Mouse(mouse.column, mouse.row))?;
-
-                // Check if mouse click is on a focusable widget and switch focus
-                // This allows users to click on widgets to focus them, similar to modern GUIs
-                self.handle_mouse_focus(mouse.column, mouse.row)?;
-            }
-            MouseEventKind::Moved => {
-                // Send mouse move action for potential hover effects in the future
-                // This could be used to highlight widgets on hover or show tooltips
-                action_tx.send(Action::MouseMove(mouse.column, mouse.row))?;
-            }
-            _ => {
-                // Ignore other mouse events for now (right click, drag, scroll,
-                // etc.) These could be implemented in the
-                // future for additional functionality
-            }
-        }
-        Ok(())
-    }
-
-    fn handle_mouse_focus(&mut self, x: u16, y: u16) -> Result<()> {
-        // Find which widget slot contains the mouse coordinates
-        // This implements click-to-focus functionality similar to modern GUI
-        // applications
-        for (slot, rect) in &self.app_state.layout {
-            if WidgetSlot::focusable().contains(slot)
-                && x >= rect.x
-                && x < rect.x + rect.width
-                && y >= rect.y
-                && y < rect.y + rect.height
-            {
-                // Only change focus if it's different from current focus to avoid unnecessary
-                // updates
-                if self.app_state.slot_focus != *slot {
-                    trace!(
-                        "Mouse focus change from {} to {}",
-                        self.app_state.slot_focus, slot
-                    );
-                    self.app_state.slot_focus = *slot;
-                }
-                break; // Found the widget, no need to check others
-            }
-        }
-        Ok(())
-    }
-
     fn handle_actions<B: Backend>(&mut self, tui: &mut Tui<B>) -> Result<()> {
         while let Ok(action) = self.action_rx.try_recv() {
-            if !action.is_system_tick() {
+            if !action.is_noisy() {
                 debug!("{action:?}");
             }
 
-            let recompute_slot_widgets = matches!(action, Action::ScrollUp | Action::ScrollDown);
+            let recompute_slot_widgets = matches!(
+                action,
+                Action::ScrollUp | Action::ScrollDown | Action::MouseEvent(_)
+            );
 
             match action {
                 Action::Tick => {
@@ -233,16 +181,6 @@ impl App {
                     .map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?,
                 Action::Resize(w, h) => self.handle_resize(tui, w, h)?,
                 Action::Render => self.render(tui)?,
-                Action::Mouse(x, y) => {
-                    debug!("Mouse click at ({}, {})", x, y);
-                    // Mouse click actions are handled in handle_mouse_event
-                    // This is logged for debugging purposes
-                }
-                Action::MouseMove(x, y) => {
-                    // Mouse move can be used for hover effects in the future
-                    // For now, just trace it to avoid spam
-                    trace!("Mouse move at ({}, {})", x, y);
-                }
                 _ => {}
             }
 
@@ -277,85 +215,25 @@ impl App {
         tui.draw(|f| {
             let frame_area = f.area();
             if frame_area != self.app_state.frame_area
-                || self.app_state.inspect_option.current() != &self.last_store_option
+                || self.app_state.inspect_tabs.cursor.current() != &self.last_store_option
             {
-                trace!("Frame area or store option changed");
+                debug!("Frame area or store option changed");
 
-                // Synchronously update the layout
                 let action = Action::UpdateLayout(frame_area);
                 let _ = self.run_updates(&action);
 
-                self.last_store_option = self.app_state.inspect_option.current().clone();
+                self.last_store_option = *self.app_state.inspect_tabs.cursor.current();
             }
-            for (slot, area) in self.app_state.layout.iter() {
+
+            for (slot, area) in self.app_state.layout_model.get_layout().clone().iter() {
                 if let Some(view) = self.slot_views.get(slot) {
-                    if let Err(e) = view.render(f, *area, &self.app_state) {
-                        let _ = self
-                            .action_tx
-                            .send(Action::Error(format!("Failed to draw: {e:?}")));
-                    }
+                    view.render(f, *area, &self.app_state);
                 } else {
-                    trace!("Found no view for slot {}", slot);
+                    debug!("Found no view for slot {}", slot);
                 }
             }
         })
         .map(|_| ())
         .map_err(|e| anyhow::Error::msg(format!("{:?}", e)))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
-    use ratatui::layout::Rect;
-
-    #[tokio::test]
-    async fn test_mouse_action_creation() {
-        // Test that mouse actions can be created with coordinates
-        let mouse_click = Action::Mouse(10, 20);
-        let mouse_move = Action::MouseMove(15, 25);
-
-        assert!(matches!(mouse_click, Action::Mouse(10, 20)));
-        assert!(matches!(mouse_move, Action::MouseMove(15, 25)));
-    }
-
-    #[tokio::test]
-    async fn test_mouse_event_handling() {
-        // Create a mock mouse event
-        let mouse_event = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            column: 10,
-            row: 5,
-            modifiers: crossterm::event::KeyModifiers::empty(),
-        };
-
-        // Test the mouse event handling logic by checking the event kind
-        match mouse_event.kind {
-            MouseEventKind::Down(MouseButton::Left) => {
-                // This should trigger mouse focus and action sending
-                assert_eq!(mouse_event.column, 10);
-                assert_eq!(mouse_event.row, 5);
-            }
-            _ => panic!("Expected left mouse button down event"),
-        }
-    }
-
-    #[test]
-    fn test_mouse_focus_coordinates() {
-        // Test the coordinate checking logic for focus
-        let rect = Rect::new(5, 5, 10, 10); // x=5, y=5, width=10, height=10
-
-        // Point inside the rectangle
-        let inside_x = 7;
-        let inside_y = 8;
-        assert!(inside_x >= rect.x && inside_x < rect.x + rect.width);
-        assert!(inside_y >= rect.y && inside_y < rect.y + rect.height);
-
-        // Point outside the rectangle
-        let outside_x = 20;
-        let outside_y = 3;
-        assert!(!(outside_x >= rect.x && outside_x < rect.x + rect.width));
-        assert!(!(outside_y >= rect.y && outside_y < rect.y + rect.height));
     }
 }

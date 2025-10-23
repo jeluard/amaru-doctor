@@ -1,16 +1,10 @@
 use crate::{model::dynamic_list::DynamicList, otel::id::TraceId};
-use anyhow::Result;
 use ratatui::{
     prelude::*,
     widgets::{Block, Borders, List, ListItem, ListState},
 };
 
-pub fn render_traces(
-    frame: &mut Frame,
-    area: Rect,
-    list: &DynamicList<TraceId>,
-    is_focused: bool,
-) -> Result<()> {
+pub fn render_traces(frame: &mut Frame, area: Rect, list: &DynamicList<TraceId>, is_focused: bool) {
     let mut block = Block::default().title("Traces").borders(Borders::ALL);
     if is_focused {
         block = block.border_style(Style::default().fg(Color::Blue));
@@ -31,6 +25,4 @@ pub fn render_traces(
     let mut state = ListState::default();
     state.select(list.selected_index());
     frame.render_stateful_widget(widget, area, &mut state);
-
-    Ok(())
 }
