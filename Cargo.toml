@@ -10,11 +10,11 @@ repository = "https://github.com/jeluard/amaru-doctor"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-amaru-consensus = { git = "https://github.com/pragma-org/amaru.git" }
-amaru-kernel = { git = "https://github.com/pragma-org/amaru.git" }
-amaru-ledger = { git = "https://github.com/pragma-org/amaru.git" }
-amaru-slot-arithmetic = { git = "https://github.com/pragma-org/amaru.git" }
-amaru-stores = { git = "https://github.com/pragma-org/amaru.git" }
+amaru-consensus = { git = "https://github.com/pragma-org/amaru.git", rev = "6ded8dd394ab796d6ee54205eff0164a51acc992" }
+amaru-kernel = { git = "https://github.com/pragma-org/amaru.git", rev = "6ded8dd394ab796d6ee54205eff0164a51acc992" }
+amaru-ledger = { git = "https://github.com/pragma-org/amaru.git", rev = "6ded8dd394ab796d6ee54205eff0164a51acc992" }
+amaru-slot-arithmetic = { git = "https://github.com/pragma-org/amaru.git", rev = "6ded8dd394ab796d6ee54205eff0164a51acc992" }
+amaru-stores = { git = "https://github.com/pragma-org/amaru.git", rev = "6ded8dd394ab796d6ee54205eff0164a51acc992" }
 anyhow = "1.0.100"
 arc-swap = "1.7.1"
 better-panic = "0.3.0"

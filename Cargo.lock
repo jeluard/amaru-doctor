@@ -47,14 +47,14 @@ checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 [[package]]
 name = "amaru-consensus"
 version = "0.1.0"
-source = "git+https://github.com/pragma-org/amaru.git#3ca03de6d63a2fdb1527bdb9ed2caabae56f24e0"
+source = "git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992#6ded8dd394ab796d6ee54205eff0164a51acc992"
 dependencies = [
- "amaru-kernel",
- "amaru-metrics",
+ "amaru-kernel 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "amaru-metrics 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
  "amaru-ouroboros",
- "amaru-ouroboros-traits",
- "amaru-slot-arithmetic",
- "amaru-stores",
+ "amaru-ouroboros-traits 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "amaru-slot-arithmetic 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "amaru-stores 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
  "anyhow",
  "async-trait",
  "hex",
@@ -73,10 +73,10 @@ name = "amaru-doctor"
 version = "0.0.1"
 dependencies = [
  "amaru-consensus",
- "amaru-kernel",
- "amaru-ledger",
- "amaru-slot-arithmetic",
- "amaru-stores",
+ "amaru-kernel 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "amaru-ledger 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "amaru-slot-arithmetic 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "amaru-stores 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
  "anyhow",
  "arc-swap",
  "better-panic",
@@ -124,6 +124,14 @@ dependencies = [
 [[package]]
 name = "amaru-iter-borrow"
 version = "0.1.0"
+source = "git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992#6ded8dd394ab796d6ee54205eff0164a51acc992"
+dependencies = [
+ "minicbor",
+]
+
+[[package]]
+name = "amaru-iter-borrow"
+version = "0.1.0"
 source = "git+https://github.com/pragma-org/amaru.git#3ca03de6d63a2fdb1527bdb9ed2caabae56f24e0"
 dependencies = [
  "minicbor",
@@ -132,10 +140,32 @@ dependencies = [
 [[package]]
 name = "amaru-kernel"
 version = "0.1.0"
+source = "git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992#6ded8dd394ab796d6ee54205eff0164a51acc992"
+dependencies = [
+ "amaru-minicbor-extra 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "amaru-slot-arithmetic 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "bech32 0.11.0",
+ "hex",
+ "itertools 0.14.0",
+ "pallas-addresses",
+ "pallas-codec",
+ "pallas-crypto",
+ "pallas-math",
+ "pallas-primitives",
+ "pallas-traverse",
+ "serde",
+ "serde_json",
+ "sha3",
+ "thiserror 2.0.17",
+]
+
+[[package]]
+name = "amaru-kernel"
+version = "0.1.0"
 source = "git+https://github.com/pragma-org/amaru.git#3ca03de6d63a2fdb1527bdb9ed2caabae56f24e0"
 dependencies = [
- "amaru-minicbor-extra",
- "amaru-slot-arithmetic",
+ "amaru-minicbor-extra 0.1.0 (git+https://github.com/pragma-org/amaru.git)",
+ "amaru-slot-arithmetic 0.1.0 (git+https://github.com/pragma-org/amaru.git)",
  "bech32 0.11.0",
  "hex",
  "itertools 0.14.0",
@@ -154,14 +184,14 @@ dependencies = [
 [[package]]
 name = "amaru-ledger"
 version = "0.1.0"
-source = "git+https://github.com/pragma-org/amaru.git#3ca03de6d63a2fdb1527bdb9ed2caabae56f24e0"
+source = "git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992#6ded8dd394ab796d6ee54205eff0164a51acc992"
 dependencies = [
- "amaru-iter-borrow",
- "amaru-kernel",
- "amaru-metrics",
- "amaru-ouroboros-traits",
- "amaru-progress-bar",
- "amaru-slot-arithmetic",
+ "amaru-iter-borrow 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "amaru-kernel 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "amaru-metrics 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "amaru-ouroboros-traits 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "amaru-progress-bar 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "amaru-slot-arithmetic 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
  "anyhow",
  "async-trait",
  "hex",
@@ -169,6 +199,35 @@ dependencies = [
  "serde",
  "thiserror 2.0.17",
  "tracing",
+]
+
+[[package]]
+name = "amaru-ledger"
+version = "0.1.0"
+source = "git+https://github.com/pragma-org/amaru.git#3ca03de6d63a2fdb1527bdb9ed2caabae56f24e0"
+dependencies = [
+ "amaru-iter-borrow 0.1.0 (git+https://github.com/pragma-org/amaru.git)",
+ "amaru-kernel 0.1.0 (git+https://github.com/pragma-org/amaru.git)",
+ "amaru-metrics 0.1.0 (git+https://github.com/pragma-org/amaru.git)",
+ "amaru-ouroboros-traits 0.1.0 (git+https://github.com/pragma-org/amaru.git)",
+ "amaru-progress-bar 0.1.0 (git+https://github.com/pragma-org/amaru.git)",
+ "amaru-slot-arithmetic 0.1.0 (git+https://github.com/pragma-org/amaru.git)",
+ "anyhow",
+ "async-trait",
+ "hex",
+ "num",
+ "serde",
+ "thiserror 2.0.17",
+ "tracing",
+]
+
+[[package]]
+name = "amaru-metrics"
+version = "0.1.0"
+source = "git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992#6ded8dd394ab796d6ee54205eff0164a51acc992"
+dependencies = [
+ "opentelemetry 0.31.0",
+ "serde",
 ]
 
 [[package]]
@@ -183,6 +242,14 @@ dependencies = [
 [[package]]
 name = "amaru-minicbor-extra"
 version = "0.1.0"
+source = "git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992#6ded8dd394ab796d6ee54205eff0164a51acc992"
+dependencies = [
+ "minicbor",
+]
+
+[[package]]
+name = "amaru-minicbor-extra"
+version = "0.1.0"
 source = "git+https://github.com/pragma-org/amaru.git#3ca03de6d63a2fdb1527bdb9ed2caabae56f24e0"
 dependencies = [
  "minicbor",
@@ -191,11 +258,11 @@ dependencies = [
 [[package]]
 name = "amaru-ouroboros"
 version = "0.1.0"
-source = "git+https://github.com/pragma-org/amaru.git#3ca03de6d63a2fdb1527bdb9ed2caabae56f24e0"
+source = "git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992#6ded8dd394ab796d6ee54205eff0164a51acc992"
 dependencies = [
- "amaru-kernel",
- "amaru-ouroboros-traits",
- "amaru-slot-arithmetic",
+ "amaru-kernel 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "amaru-ouroboros-traits 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "amaru-slot-arithmetic 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
  "hex",
  "kes-summed-ed25519",
  "num",
@@ -211,11 +278,28 @@ dependencies = [
 [[package]]
 name = "amaru-ouroboros-traits"
 version = "0.1.0"
+source = "git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992#6ded8dd394ab796d6ee54205eff0164a51acc992"
+dependencies = [
+ "amaru-kernel 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "amaru-metrics 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "amaru-slot-arithmetic 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "anyhow",
+ "async-trait",
+ "hex",
+ "minicbor",
+ "pallas-primitives",
+ "serde",
+ "thiserror 2.0.17",
+]
+
+[[package]]
+name = "amaru-ouroboros-traits"
+version = "0.1.0"
 source = "git+https://github.com/pragma-org/amaru.git#3ca03de6d63a2fdb1527bdb9ed2caabae56f24e0"
 dependencies = [
- "amaru-kernel",
- "amaru-metrics",
- "amaru-slot-arithmetic",
+ "amaru-kernel 0.1.0 (git+https://github.com/pragma-org/amaru.git)",
+ "amaru-metrics 0.1.0 (git+https://github.com/pragma-org/amaru.git)",
+ "amaru-slot-arithmetic 0.1.0 (git+https://github.com/pragma-org/amaru.git)",
  "anyhow",
  "async-trait",
  "hex",
@@ -228,14 +312,32 @@ dependencies = [
 [[package]]
 name = "amaru-progress-bar"
 version = "0.1.0"
+source = "git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992#6ded8dd394ab796d6ee54205eff0164a51acc992"
+
+[[package]]
+name = "amaru-progress-bar"
+version = "0.1.0"
 source = "git+https://github.com/pragma-org/amaru.git#3ca03de6d63a2fdb1527bdb9ed2caabae56f24e0"
+
+[[package]]
+name = "amaru-slot-arithmetic"
+version = "0.1.0"
+source = "git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992#6ded8dd394ab796d6ee54205eff0164a51acc992"
+dependencies = [
+ "amaru-minicbor-extra 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "hex",
+ "minicbor",
+ "num",
+ "serde",
+ "thiserror 2.0.17",
+]
 
 [[package]]
 name = "amaru-slot-arithmetic"
 version = "0.1.0"
 source = "git+https://github.com/pragma-org/amaru.git#3ca03de6d63a2fdb1527bdb9ed2caabae56f24e0"
 dependencies = [
- "amaru-minicbor-extra",
+ "amaru-minicbor-extra 0.1.0 (git+https://github.com/pragma-org/amaru.git)",
  "hex",
  "minicbor",
  "num",
@@ -246,13 +348,29 @@ dependencies = [
 [[package]]
 name = "amaru-stores"
 version = "0.1.0"
+source = "git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992#6ded8dd394ab796d6ee54205eff0164a51acc992"
+dependencies = [
+ "amaru-iter-borrow 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "amaru-kernel 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "amaru-ledger 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "amaru-ouroboros-traits 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "amaru-slot-arithmetic 0.1.0 (git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992)",
+ "hex",
+ "rand 0.9.2",
+ "rocksdb",
+ "tracing",
+]
+
+[[package]]
+name = "amaru-stores"
+version = "0.1.0"
 source = "git+https://github.com/pragma-org/amaru.git#3ca03de6d63a2fdb1527bdb9ed2caabae56f24e0"
 dependencies = [
- "amaru-iter-borrow",
- "amaru-kernel",
- "amaru-ledger",
- "amaru-ouroboros-traits",
- "amaru-slot-arithmetic",
+ "amaru-iter-borrow 0.1.0 (git+https://github.com/pragma-org/amaru.git)",
+ "amaru-kernel 0.1.0 (git+https://github.com/pragma-org/amaru.git)",
+ "amaru-ledger 0.1.0 (git+https://github.com/pragma-org/amaru.git)",
+ "amaru-ouroboros-traits 0.1.0 (git+https://github.com/pragma-org/amaru.git)",
+ "amaru-slot-arithmetic 0.1.0 (git+https://github.com/pragma-org/amaru.git)",
  "hex",
  "rand 0.9.2",
  "rocksdb",
@@ -1129,9 +1247,9 @@ checksum = "2a2330da5de22e8a3cb63252ce2abb30116bf5265e89c0e01bc17015ce30a476"
 name = "db-creator"
 version = "0.1.0"
 dependencies = [
- "amaru-kernel",
- "amaru-ledger",
- "amaru-stores",
+ "amaru-kernel 0.1.0 (git+https://github.com/pragma-org/amaru.git)",
+ "amaru-ledger 0.1.0 (git+https://github.com/pragma-org/amaru.git)",
+ "amaru-stores 0.1.0 (git+https://github.com/pragma-org/amaru.git)",
  "hex",
 ]
 
@@ -4037,7 +4155,7 @@ dependencies = [
 [[package]]
 name = "pure-stage"
 version = "0.1.0"
-source = "git+https://github.com/pragma-org/amaru.git#3ca03de6d63a2fdb1527bdb9ed2caabae56f24e0"
+source = "git+https://github.com/pragma-org/amaru.git?rev=6ded8dd394ab796d6ee54205eff0164a51acc992#6ded8dd394ab796d6ee54205eff0164a51acc992"
 dependencies = [
  "anyhow",
  "cbor4ii",
