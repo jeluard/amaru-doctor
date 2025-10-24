@@ -15,7 +15,6 @@ pub struct TabsState<T>
 where
     T: IntoEnumIterator + ToLine,
 {
-    title: &'static str,
     pub cursor: Cursor<T>,
 }
 
@@ -23,9 +22,8 @@ impl<T> TabsState<T>
 where
     T: IntoEnumIterator + ToLine,
 {
-    pub fn new(title: &'static str) -> Result<Self> {
+    pub fn new() -> Result<Self> {
         Ok(Self {
-            title,
             cursor: Cursor::new(T::iter().collect())?,
         })
     }
@@ -68,7 +66,7 @@ where
     }
 
     pub fn draw(&self, frame: &mut Frame, area: Rect, is_focused: bool) {
-        let mut block = Block::default().borders(Borders::ALL).title(self.title);
+        let mut block = Block::default().borders(Borders::ALL);
 
         if is_focused {
             block = block
