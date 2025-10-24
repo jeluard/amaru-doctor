@@ -28,10 +28,10 @@ pub trait View: Sync {
 /// All views
 static VIEW_DEFS: &[&dyn View] = &[
     &InspectTabs,
-    &LedgerModeTabs,
-    &SearchBar,
+    //&LedgerModeTabs,
+    //&SearchBar,
     &LedgerBrowseOptions,
-    &LedgerSearchOptions,
+    //&LedgerSearchOptions,
     &LedgerAccounts,
     &LedgerBlockIssuers,
     &LedgerDReps,

@@ -67,12 +67,12 @@ fn build_ledger_header_ls(ledger_mode: LedgerMode) -> LayoutSpec {
     let constraints = match ledger_mode {
         LedgerMode::Browse => vec![
             (Constraint::Fill(1), Left(WidgetSlot::InspectOption)),
-            (Constraint::Fill(1), Left(WidgetSlot::LedgerMode)),
+            //(Constraint::Fill(1), Left(WidgetSlot::LedgerMode)),
         ],
         LedgerMode::Search => vec![
             (Constraint::Length(30), Left(WidgetSlot::InspectOption)),
-            (Constraint::Length(20), Left(WidgetSlot::LedgerMode)),
-            (Constraint::Fill(1), Left(WidgetSlot::SearchBar)),
+            //(Constraint::Length(20), Left(WidgetSlot::LedgerMode)),
+            //(Constraint::Fill(1), Left(WidgetSlot::SearchBar)),
         ],
     };
     LayoutSpec {
@@ -128,8 +128,8 @@ fn build_chain_header_ls() -> LayoutSpec {
     LayoutSpec {
         direction: Direction::Horizontal,
         constraints: vec![
-            (Constraint::Length(30), Left(WidgetSlot::InspectOption)),
-            (Constraint::Fill(1), Left(WidgetSlot::SearchBar)),
+            (Constraint::Fill(1), Left(WidgetSlot::InspectOption)),
+            //(Constraint::Fill(1), Left(WidgetSlot::SearchBar)),
         ],
     }
 }
