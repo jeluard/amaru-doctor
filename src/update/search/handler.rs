@@ -60,7 +60,7 @@ impl SearchHandler for ChainSearch {
     }
 
     fn is_active(&self, s: &AppState) -> bool {
-        *s.inspect_tabs.cursor.current() == InspectOption::Chain
+        true//*s.inspect_tabs.cursor.current() == InspectOption::Chain
     }
 
     fn state<'a>(&self, s: &'a AppState) -> &'a SearchState<Self::Query, Self::Result> {

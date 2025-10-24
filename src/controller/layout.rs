@@ -14,7 +14,7 @@ pub fn build_layout_spec(
 ) -> LayoutSpec {
     match inspect_tabs {
         InspectOption::Ledger => build_ledger_ls(screen_mode, ledger_mode),
-        InspectOption::Chain => build_chain_ls(),
+        //InspectOption::Chain => build_chain_ls(),
         InspectOption::Otel => build_otel_ls(),
         InspectOption::Prometheus => build_prom_ls(),
     }

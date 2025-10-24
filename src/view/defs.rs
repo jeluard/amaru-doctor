@@ -51,7 +51,7 @@ impl View for SearchBar {
     fn is_visible(&self, s: &AppState) -> bool {
         match s.inspect_tabs.cursor.current() {
             InspectOption::Ledger => true,
-            InspectOption::Chain => true,
+            //InspectOption::Chain => true,
             InspectOption::Otel => false,
             InspectOption::Prometheus => false,
         }
@@ -68,7 +68,7 @@ impl View for SearchBar {
                     }
                     None => "",
                 },
-                InspectOption::Chain => &s.chain_view.chain_search.builder,
+                //InspectOption::Chain => &s.chain_view.chain_search.builder,
                 InspectOption::Otel => "",
                 InspectOption::Prometheus => "",
             },
@@ -98,7 +98,7 @@ impl View for ChainSearchHeader {
         WidgetSlot::LedgerHeaderDetails
     }
     fn is_visible(&self, s: &AppState) -> bool {
-        *s.inspect_tabs.cursor.current() == InspectOption::Chain
+        true//*s.inspect_tabs.cursor.current() == InspectOption::Chain
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) {
         let header_opt: Option<Option<&BlockHeader>> = s
@@ -122,7 +122,7 @@ impl View for ChainSearchBlock {
         WidgetSlot::LedgerBlockDetails
     }
     fn is_visible(&self, s: &AppState) -> bool {
-        *s.inspect_tabs.cursor.current() == InspectOption::Chain
+        true//*s.inspect_tabs.cursor.current() == InspectOption::Chain
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) {
         let block_opt_opt: Option<Option<&RawBlock>> = s
@@ -146,7 +146,7 @@ impl View for ChainSearchNonces {
         WidgetSlot::LedgerNoncesDetails
     }
     fn is_visible(&self, s: &AppState) -> bool {
-        *s.inspect_tabs.cursor.current() == InspectOption::Chain
+        true//*s.inspect_tabs.cursor.current() == InspectOption::Chain
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) {
         let nonces_opt_opt: Option<Option<&Nonces>> = s
