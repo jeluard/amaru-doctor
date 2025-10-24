@@ -2,7 +2,6 @@ use crate::{
     ScreenMode,
     app_state::AppState,
     config::Config,
-    effects::logo::LogoScreen,
     model::button::InputEvent,
     otel::TraceGraphSnapshot,
     prometheus::model::NodeMetrics,
@@ -16,7 +15,6 @@ use anyhow::Result;
 use crossterm::event::KeyEvent;
 use ratatui::prelude::{Backend, Rect};
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
 use tokio::sync::mpsc::{Receiver, UnboundedReceiver, UnboundedSender, unbounded_channel};
 use tracing::{debug, info, trace};
 
@@ -32,12 +30,11 @@ pub struct App {
     last_tick_key_events: Vec<KeyEvent>,
     action_tx: UnboundedSender<Action>,
     action_rx: UnboundedReceiver<Action>,
-    logo_screen: LogoScreen,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Mode {
-    Splash,
+    #[default]
     Home,
 }
 
@@ -73,11 +70,10 @@ impl App {
             should_quit: false,
             should_suspend: false,
             config: Config::new()?,
-            mode: Mode::Splash,
+            mode: Mode::Home,
             last_tick_key_events: Vec::new(),
             action_tx,
             action_rx,
-            logo_screen: LogoScreen::new(Duration::from_secs(1)),
         })
     }
 
@@ -187,15 +183,7 @@ impl App {
                     .clear()
                     .map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?,
                 Action::Resize(w, h) => self.handle_resize(tui, w, h)?,
-                Action::Render => match self.mode {
-                    Mode::Splash => {
-                        tui.draw(|f| self.logo_screen.display(f))?;
-                        if self.logo_screen.is_done() {
-                            self.mode = Mode::Home;
-                        }
-                    }
-                    Mode::Home => self.render(tui)?,
-                },
+                Action::Render => self.render(tui)?,
                 _ => {}
             }
 

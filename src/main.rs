@@ -28,7 +28,7 @@ async fn main() -> Result<()> {
         metrics_handle.receiver,
         dummy_input_events,
         tui.get_frame().area(),
-        ScreenMode::Large,
+        ScreenMode::Small,
     )?;
     app.run(&mut tui).await?;
 
