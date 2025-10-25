@@ -24,7 +24,8 @@ impl<T: ToListItem> ListModelViewState<T> {
         }
     }
 
-    /// Updates the component's height and ensures the streaming iter is loaded for the new view.
+    /// Updates the component's height and ensures the streaming iter is loaded
+    /// for the new view.
     pub fn set_height(&mut self, new_height: usize) {
         self.view.set_height(new_height);
         let required_index = self.view.max_visible_index();
@@ -37,7 +38,8 @@ impl<T: ToListItem> ListModelViewState<T> {
         self.iter.buffer().get(index)
     }
 
-    /// Sets the selected index based on a row clicked within the visible window.
+    /// Sets the selected index based on a row clicked within the visible
+    /// window.
     pub fn select_index_by_row(&mut self, relative_row: usize) {
         self.view
             .select_index_by_row(relative_row, self.iter.buffer().len());

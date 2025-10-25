@@ -10,7 +10,8 @@ pub struct TraceIter<'a> {
 }
 
 impl<'a> TraceIter<'a> {
-    /// This resulting iter will include the Spans in to_visit (unlike AncestorIter)
+    /// This resulting iter will include the Spans in to_visit (unlike
+    /// AncestorIter)
     pub fn new(graph: &'a TraceGraph, to_visit: VecDeque<SpanId>) -> Self {
         Self { graph, to_visit }
     }

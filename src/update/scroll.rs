@@ -166,9 +166,9 @@ fn scroll_trace_details(otel_view: &mut OtelViewState, direction: ScrollDirectio
     }
 }
 
-/// Helper to get the list of spans for scrolling. If a span is selected, we only get
-/// that span's subtree. If a span isn't selected, we get all the spans for the selected
-/// trace.
+/// Helper to get the list of spans for scrolling. If a span is selected, we
+/// only get that span's subtree. If a span isn't selected, we get all the spans
+/// for the selected trace.
 fn get_ordered_spans_for_view(data: &TraceGraph, otel_view: &OtelViewState) -> Option<Vec<SpanId>> {
     // Determine if a span is selected
     if let Some(selected_span) = &otel_view.selected_span {

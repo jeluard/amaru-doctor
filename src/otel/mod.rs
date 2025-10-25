@@ -43,7 +43,8 @@ impl TreeBounds {
 pub struct SubTree {
     bounds: TreeBounds,
     /// A map of start times to the respective SpanIds in this SubTree. We use
-    /// Vec<SpanId> in the unlikely case that multiple spans have the same start time.
+    /// Vec<SpanId> in the unlikely case that multiple spans have the same start
+    /// time.
     children: BTreeMap<SystemTime, Vec<SpanId>>,
 }
 
@@ -66,8 +67,8 @@ impl SubTree {
 
 #[derive(Clone, Debug, Default)]
 pub struct TraceMeta {
-    /// The RootIds for the Trace, sorted by start time. We use Vec<RootId> in the
-    /// unlikely case that multiple roots have the same start time.
+    /// The RootIds for the Trace, sorted by start time. We use Vec<RootId> in
+    /// the unlikely case that multiple roots have the same start time.
     roots: BTreeMap<SystemTime, Vec<RootId>>,
 }
 

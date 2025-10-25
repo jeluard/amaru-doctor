@@ -20,7 +20,8 @@ impl Orphanage {
             .push(orphan_span);
     }
 
-    /// Called when a parent is added to the graph; returns its waiting children.
+    /// Called when a parent is added to the graph; returns its waiting
+    /// children.
     pub fn remove(&mut self, parent_id: &SpanId) -> Option<Vec<Span>> {
         self.parent_to_orphans.remove(parent_id)
     }

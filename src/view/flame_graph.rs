@@ -47,7 +47,8 @@ fn get_flame_graph_lines(
     }
 }
 
-/// Gets the lines for the Span tree view, including the Span's ancestors and descendants.
+/// Gets the lines for the Span tree view, including the Span's ancestors and
+/// descendants.
 fn get_span_tree_lines(
     state: &OtelViewState,
     selected_span: &Arc<Span>,

@@ -2,7 +2,8 @@ use crate::model::buffer_list::BufferList;
 use std::fmt;
 use tracing::debug;
 
-/// A pure data model that provides a persistent, growing buffer over a lazy iterator.
+/// A pure data model that provides a persistent, growing buffer over a lazy
+/// iterator.
 pub struct StreamingIter<T> {
     iter: Box<dyn Iterator<Item = T>>,
     buffer: Vec<T>,

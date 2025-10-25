@@ -6,8 +6,8 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::mpsc;
 
-/// The background worker that processes span batches on its queue and updates the shared
-/// data snapshot.
+/// The background worker that processes span batches on its queue and updates
+/// the shared data snapshot.
 pub struct TraceProcessor {
     store: TraceStore,
     batch_rx: mpsc::Receiver<Vec<Span>>,

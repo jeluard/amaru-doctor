@@ -34,7 +34,8 @@ impl TraceStore {
         }
     }
 
-    /// The core recursive logic for adding a single span and resolving its orphans.
+    /// The core recursive logic for adding a single span and resolving its
+    /// orphans.
     fn add_span_recursive(&mut self, span: Span) {
         let span_id = span.span_id();
 
@@ -65,7 +66,8 @@ impl TraceStore {
     }
 
     /// Evicts all expired traces from the graph and expired orphans.
-    /// Returns the list of TraceIds if any traces were evicted from the main graph.
+    /// Returns the list of TraceIds if any traces were evicted from the main
+    /// graph.
     pub fn evict_expired(&mut self) -> Vec<TraceId> {
         self.evictor.evict(&mut self.graph, &mut self.orphanage)
     }

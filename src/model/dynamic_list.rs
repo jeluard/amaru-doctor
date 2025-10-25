@@ -1,5 +1,5 @@
-/// A "dynamic list" struct that helps the UI when the underlying data is allowed to
-/// change. To that end this
+/// A "dynamic list" struct that helps the UI when the underlying data is
+/// allowed to change. To that end this
 /// 1. Efficiently scrolls up and down and
 /// 2. Retains the currently selected item
 #[derive(Debug, Clone)]
@@ -19,8 +19,8 @@ impl<T: Clone + PartialEq> Default for DynamicList<T> {
 }
 
 impl<T: Clone + PartialEq> DynamicList<T> {
-    /// Updates the list of items and re-syncs the selection. The selection is maintained
-    /// (by value) if the item still exists in the new list.
+    /// Updates the list of items and re-syncs the selection. The selection is
+    /// maintained (by value) if the item still exists in the new list.
     pub fn set_items(&mut self, items: Vec<T>) {
         // Get the value of the current selection before replacing the items.
         let old_selection = self.selected_item().cloned();

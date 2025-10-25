@@ -13,7 +13,8 @@ use amaru_stores::rocksdb::ReadOnlyRocksDB;
 use std::sync::Arc;
 use strum::IntoEnumIterator;
 
-/// Holds the model state (underlying data) and view state (ui) for the Ledger page
+/// Holds the model state (underlying data) and view state (ui) for the Ledger
+/// page
 pub struct LedgerModelViewState {
     // Options: types of lists
     pub options_window_height: usize,

@@ -13,27 +13,29 @@ use tracing::debug;
 
 /// Manages the rendering state for the OTEL tab of the TUI.
 ///
-/// This struct acts as a snapshot of the UI state, which is sync'd with a shared,
-/// concurrently-updated data source (`trace_graph_source`).
+/// This struct acts as a snapshot of the UI state, which is sync'd with a
+/// shared, concurrently-updated data source (`trace_graph_source`).
 ///
-/// The state includes the list of all traces, the currently selected trace, and the
-/// states for hovered and selected spans within that trace's span tree.
+/// The state includes the list of all traces, the currently selected trace, and
+/// the states for hovered and selected spans within that trace's span tree.
 #[derive(Debug)]
 pub struct OtelViewState {
-    /// A thread-safe, swappable reference to the authoritative `TraceGraph`. The view
-    /// state will periodically sync its internal state from this source.
+    /// A thread-safe, swappable reference to the authoritative `TraceGraph`.
+    /// The view state will periodically sync its internal state from this
+    /// source.
     pub trace_graph_source: Arc<ArcSwap<TraceGraph>>,
-    /// A pointer to the last `TraceGraph` instance this state was synced against. This
-    /// is used for efficient change detection via `Arc::ptr_eq`.
+    /// A pointer to the last `TraceGraph` instance this state was synced
+    /// against. This is used for efficient change detection via
+    /// `Arc::ptr_eq`.
     pub last_synced_data: Option<Arc<TraceGraph>>,
-    /// The stateful list of all trace IDs, sorted for display. This component manages
-    /// selection and scrolling within the TUI's trace list view.
+    /// The stateful list of all trace IDs, sorted for display. This component
+    /// manages selection and scrolling within the TUI's trace list view.
     pub trace_list: DynamicList<TraceId>,
-    /// The span currently being hovered over in the TUI. This is used for showing span
-    /// details.
+    /// The span currently being hovered over in the TUI. This is used for
+    /// showing span details.
     pub focused_span: Option<Arc<Span>>,
-    /// The span that the user has actively selected. This is used to inspect a span's
-    /// specific subtree.
+    /// The span that the user has actively selected. This is used to inspect a
+    /// span's specific subtree.
     pub selected_span: Option<Arc<Span>>,
 }
 
@@ -50,8 +52,9 @@ impl OtelViewState {
 
     /// Syncs the view state with the latest data from the shared source.
     ///
-    /// This method checks if the underlying `TraceGraph` has changed. If it has,
-    /// it updates the trace list and validates the selected trace and spans.
+    /// This method checks if the underlying `TraceGraph` has changed. If it
+    /// has, it updates the trace list and validates the selected trace and
+    /// spans.
     pub fn sync_state(&mut self) -> bool {
         // Atomically load the most recent `Arc<TraceGraph>` from the shared `ArcSwap`.
         // This is a lock-free operation. `latest_data` is now a snapshot of the data

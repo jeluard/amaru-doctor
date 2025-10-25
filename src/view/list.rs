@@ -9,8 +9,8 @@ use ratatui::{
 };
 use tracing::debug;
 
-/// A component that manages the UI state (offset and selection) for a scrollable list.
-/// It operates on a data source provided to it externally.
+/// A component that manages the UI state (offset and selection) for a
+/// scrollable list. It operates on a data source provided to it externally.
 #[derive(Debug)]
 pub struct ListViewState {
     title: &'static str,
@@ -41,7 +41,8 @@ impl ListViewState {
         self.height = new_height;
     }
 
-    /// Sets the selected index based on a row clicked within the visible window.
+    /// Sets the selected index based on a row clicked within the visible
+    /// window.
     pub fn select_index_by_row(&mut self, relative_row: usize, buffer_len: usize) {
         let absolute_index = self.offset + relative_row;
 

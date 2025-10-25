@@ -118,7 +118,8 @@ fn get_bar_style(
     Ok(Style::default().fg(Color::White).bg(bg_color))
 }
 
-/// Gets the color for the span bar based on its duration and the total trace duration.
+/// Gets the color for the span bar based on its duration and the total trace
+/// duration.
 fn get_bar_color(max_duration: Duration, duration: Duration) -> Result<Color> {
     if max_duration.is_zero() {
         return Err(anyhow!("Illegal: got a 0 max duration for coloring"));

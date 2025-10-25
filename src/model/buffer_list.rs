@@ -6,6 +6,7 @@ pub trait BufferList<T> {
     /// Returns a slice of the currently loaded data items.
     fn buffer(&self) -> &[T];
 
-    /// Returns the total number of items if the data source is finite and fully known.
+    /// Returns the total number of items if the data source is finite and fully
+    /// known.
     fn total_len(&self) -> Option<usize>;
 }

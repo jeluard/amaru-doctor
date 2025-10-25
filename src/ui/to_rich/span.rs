@@ -110,8 +110,8 @@ fn format_any_value(value: &Option<AnyValue>) -> String {
     }
 }
 
-/// Format's the SpanKind to be human readable. See otel's protobuf spec, it's in
-/// `trace.proto`.
+/// Format's the SpanKind to be human readable. See otel's protobuf spec, it's
+/// in `trace.proto`.
 fn format_span_kind(kind: i32) -> &'static str {
     match kind {
         0 => "Unspecified",
@@ -124,8 +124,8 @@ fn format_span_kind(kind: i32) -> &'static str {
     }
 }
 
-/// Format's the StatusCode to be human readable. See otel's protobuf spec, it's in
-/// `trace.proto`.
+/// Format's the StatusCode to be human readable. See otel's protobuf spec, it's
+/// in `trace.proto`.
 fn format_status_code(code: i32) -> &'static str {
     match code {
         0 => "Unset",

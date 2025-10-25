@@ -9,7 +9,8 @@ use std::sync::Arc;
 use std::time::SystemTime;
 use tracing::error;
 
-/// A helper struct for updating the Evictor when a new Root is added to the graph.
+/// A helper struct for updating the Evictor when a new Root is added to the
+/// graph.
 pub struct TraceInfo {
     pub trace_id: TraceId,
     pub old_trace_start: Option<SystemTime>,
@@ -22,11 +23,12 @@ pub struct TraceGraph {
     /// A 1-1 map of SpanId to Span
     pub spans: HashMap<SpanId, Arc<Span>>,
 
-    /// A 1-1 map of a SpanId to SubTree. A SubTree holds the known start and end time
-    /// for this span including all its children.
+    /// A 1-1 map of a SpanId to SubTree. A SubTree holds the known start and
+    /// end time for this span including all its children.
     pub subtrees: HashMap<SpanId, Arc<SubTree>>,
 
-    /// A 1-1 map of TraceId to TraceMeta. TraceMeta holds the known RootIds for the Trace.
+    /// A 1-1 map of TraceId to TraceMeta. TraceMeta holds the known RootIds for
+    /// the Trace.
     pub traces: HashMap<TraceId, Arc<TraceMeta>>,
 }
 
@@ -94,8 +96,8 @@ impl TraceGraph {
         self.propagate_bounds_update(span_id, end_time);
     }
 
-    /// When a child's end time is later than its parent's, this walks up the tree
-    /// to ensure all ancestor bounds are updated with the new end time
+    /// When a child's end time is later than its parent's, this walks up the
+    /// tree to ensure all ancestor bounds are updated with the new end time
     pub fn propagate_bounds_update(&mut self, start_span_id: SpanId, new_end_time: SystemTime) {
         let ancestor_ids: Vec<_> = AncestorIter::new(self, start_span_id).collect();
         for span_id in ancestor_ids {
@@ -116,7 +118,8 @@ impl TraceGraph {
         }
     }
 
-    /// Removes a trace, it's children, and other associated state from the graph.
+    /// Removes a trace, it's children, and other associated state from the
+    /// graph.
     pub fn remove_trace(&mut self, trace_id: &TraceId) -> Vec<SpanId> {
         let ids_to_remove: Vec<SpanId> = self.trace_iter(trace_id).collect();
 

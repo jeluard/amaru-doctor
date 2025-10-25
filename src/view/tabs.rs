@@ -32,8 +32,8 @@ where
         self.cursor.select_index(index);
     }
 
-    /// Determines which tab was clicked based on the column and updates the cursor.
-    /// Returns true if a tab was selected, false otherwise.
+    /// Determines which tab was clicked based on the column and updates the
+    /// cursor. Returns true if a tab was selected, false otherwise.
     pub fn select_by_column(&mut self, area: Rect, column: u16) -> bool {
         const DIVIDER: &str = " | ";
         let divider_width = DIVIDER.len() as u16;

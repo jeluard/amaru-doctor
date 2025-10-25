@@ -7,8 +7,8 @@ use std::time::{Duration, SystemTime};
 /// Tracks the age of traces and manages their eviction from the TraceGraph.
 #[derive(Debug)]
 pub struct Evictor {
-    /// 1-Many map of Trace start-times to a list of TraceId. We use Vec in the unlikely
-    /// case that multiple Traces start at the same time.
+    /// 1-Many map of Trace start-times to a list of TraceId. We use Vec in the
+    /// unlikely case that multiple Traces start at the same time.
     start_to_trace: BTreeMap<SystemTime, Vec<TraceId>>,
 
     /// Parameter that determines after how long a Trace should be evicted.
@@ -23,8 +23,8 @@ impl Evictor {
         }
     }
 
-    /// Updates the tracking for a given trace for both new traces and existing traces
-    /// whose start time has changed.
+    /// Updates the tracking for a given trace for both new traces and existing
+    /// traces whose start time has changed.
     pub fn update_trace_lifetime(&mut self, info: TraceInfo) {
         if let Some(old_time) = info.old_trace_start {
             self.untrack(&info.trace_id, &old_time);
