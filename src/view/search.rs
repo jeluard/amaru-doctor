@@ -6,6 +6,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
 };
 
+#[allow(dead_code)]
 pub fn render_search_query(
     frame: &mut Frame,
     area: Rect,

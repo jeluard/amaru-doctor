@@ -29,6 +29,7 @@ impl View for InspectTabs {
     }
 }
 
+#[allow(dead_code)]
 pub struct LedgerModeTabs;
 impl View for LedgerModeTabs {
     fn slot(&self) -> WidgetSlot {
@@ -43,6 +44,7 @@ impl View for LedgerModeTabs {
     }
 }
 
+#[allow(dead_code)]
 pub struct SearchBar;
 impl View for SearchBar {
     fn slot(&self) -> WidgetSlot {
@@ -97,7 +99,7 @@ impl View for ChainSearchHeader {
     fn slot(&self) -> WidgetSlot {
         WidgetSlot::LedgerHeaderDetails
     }
-    fn is_visible(&self, s: &AppState) -> bool {
+    fn is_visible(&self, _s: &AppState) -> bool {
         true //*s.inspect_tabs.cursor.current() == InspectOption::Chain
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) {
@@ -121,7 +123,7 @@ impl View for ChainSearchBlock {
     fn slot(&self) -> WidgetSlot {
         WidgetSlot::LedgerBlockDetails
     }
-    fn is_visible(&self, s: &AppState) -> bool {
+    fn is_visible(&self, _s: &AppState) -> bool {
         true //*s.inspect_tabs.cursor.current() == InspectOption::Chain
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) {
@@ -145,7 +147,7 @@ impl View for ChainSearchNonces {
     fn slot(&self) -> WidgetSlot {
         WidgetSlot::LedgerNoncesDetails
     }
-    fn is_visible(&self, s: &AppState) -> bool {
+    fn is_visible(&self, _s: &AppState) -> bool {
         true //*s.inspect_tabs.cursor.current() == InspectOption::Chain
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) {
@@ -164,6 +166,7 @@ impl View for ChainSearchNonces {
     }
 }
 
+#[allow(dead_code)]
 pub struct LedgerSearchOptions;
 impl View for LedgerSearchOptions {
     fn slot(&self) -> WidgetSlot {

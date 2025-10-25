@@ -104,6 +104,7 @@ fn build_ledger_left_col_ls() -> LayoutSpec {
     }
 }
 
+#[allow(dead_code)]
 fn build_chain_ls() -> LayoutSpec {
     LayoutSpec {
         direction: Direction::Vertical,

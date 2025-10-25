@@ -59,7 +59,7 @@ impl SearchHandler for ChainSearch {
         WidgetSlot::SearchBar
     }
 
-    fn is_active(&self, s: &AppState) -> bool {
+    fn is_active(&self, _s: &AppState) -> bool {
         true //*s.inspect_tabs.cursor.current() == InspectOption::Chain
     }
 
