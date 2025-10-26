@@ -44,15 +44,15 @@ pub fn render_prom_metrics(
     render_chart(
         frame,
         chart_chunks[0],
-        "Chain Density",
-        Color::Cyan,
-        state.density(),
+        "Memory Usage",
+        Color::Red,
+        state.memory(),
     );
     render_chart(
         frame,
         chart_chunks[1],
         "CPU Utilization %",
-        Color::LightYellow,
+        Color::Red,
         state.cpu_util(),
     );
     render_chart(

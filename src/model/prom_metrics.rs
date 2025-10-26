@@ -8,7 +8,7 @@ use tokio::sync::mpsc::Receiver;
 pub struct PromMetricsViewState {
     receiver: Receiver<NodeMetrics>,
     last_metrics: Option<NodeMetrics>,
-    density: TimeSeries,
+    memory: TimeSeries,
     cpu_util: TimeSeries,
     disk_live_read: TimeSeries,
     disk_total_read: TimeSeries,
@@ -33,7 +33,7 @@ impl PromMetricsViewState {
         Self {
             receiver,
             last_metrics: None,
-            density: TimeSeries::new(500),
+            memory: TimeSeries::new(500),
             cpu_util: TimeSeries::new(500),
             disk_live_read: TimeSeries::new(500),
             disk_total_read: TimeSeries::new(500),
@@ -44,8 +44,8 @@ impl PromMetricsViewState {
 
     pub fn sync(&mut self) {
         if let Ok(new_metrics) = self.receiver.try_recv() {
-            self.density
-                .add_point(create_point_f64(&new_metrics.density));
+            self.memory
+                .add_point(create_point_u64(&new_metrics.mem_live_resident_bytes));
             self.cpu_util
                 .add_point(create_point_f64(&new_metrics.cpu_percent_util));
             self.disk_live_read
@@ -65,8 +65,8 @@ impl PromMetricsViewState {
         &self.last_metrics
     }
 
-    pub fn density(&self) -> &TimeSeries {
-        &self.density
+    pub fn memory(&self) -> &TimeSeries {
+        &self.memory
     }
 
     pub fn cpu_util(&self) -> &TimeSeries {
