@@ -1,4 +1,7 @@
-use crate::{model::prom_metrics::PromMetricsViewState, view::time_series::render_chart};
+use crate::{
+    model::prom_metrics::PromMetricsViewState,
+    view::time_series::{MetricKind, render_chart},
+};
 use ratatui::{
     prelude::*,
     widgets::{Block, Borders},
@@ -47,6 +50,7 @@ pub fn render_prom_metrics(
         "Memory Usage",
         Color::Red,
         state.memory(),
+        MetricKind::Bytes,
     );
     render_chart(
         frame,
@@ -54,6 +58,7 @@ pub fn render_prom_metrics(
         "CPU Utilization %",
         Color::Red,
         state.cpu_util(),
+        MetricKind::Percentage,
     );
     render_chart(
         frame,
@@ -61,6 +66,7 @@ pub fn render_prom_metrics(
         "Live Disk Read",
         Color::LightYellow,
         state.disk_live_read(),
+        MetricKind::Bytes,
     );
     render_chart(
         frame,
@@ -68,5 +74,6 @@ pub fn render_prom_metrics(
         "Live Disk Write",
         Color::LightYellow,
         state.disk_live_write(),
+        MetricKind::Bytes,
     );
 }
