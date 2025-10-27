@@ -5,7 +5,7 @@ use crate::{
         button::GetButtonEventsUpdate, drag::DragUpdate, focus::FocusUpdate, layout::LayoutUpdate,
         mouse::MouseEventUpdate, mouse_click::MouseClickUpdate, mouse_focus::MouseFocusUpdate,
         mouse_scroll::MouseScrollUpdate, prom_metrics::PromMetricsUpdate, scroll::ScrollUpdate,
-        search::SearchUpdate, select_span::SelectSpanUpdate, tick::TickUpdate,
+        search::SearchUpdate, select_span::SelectSpanUpdate, tabs::TabsUpdate, tick::TickUpdate,
         trace_graph::TraceGraphUpdate, window::WindowSizeUpdate,
     },
 };
@@ -22,6 +22,7 @@ pub mod prom_metrics;
 pub mod scroll;
 pub mod search;
 pub mod select_span;
+pub mod tabs;
 pub mod tick;
 pub mod trace_graph;
 pub mod window;
@@ -47,4 +48,5 @@ pub static UPDATE_DEFS: &[&dyn Update] = &[
     &MouseFocusUpdate,
     &MouseClickUpdate,
     &MouseScrollUpdate,
+    &TabsUpdate,
 ];

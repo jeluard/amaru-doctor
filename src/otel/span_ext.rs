@@ -1,6 +1,9 @@
 use crate::otel::id::{SpanId, TraceId};
 use opentelemetry_proto::tonic::trace::v1::Span;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::{
+    fmt,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
 /// An extension trait for otel's Span.
 pub trait SpanExt {
@@ -10,6 +13,18 @@ pub trait SpanExt {
     fn start_time(&self) -> SystemTime;
     fn end_time(&self) -> SystemTime;
     fn duration(&self) -> Duration;
+}
+
+pub struct DebugSpan<'a>(pub &'a dyn SpanExt);
+
+impl<'a> fmt::Debug for DebugSpan<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Span")
+            .field("trace_id", &self.0.trace_id())
+            .field("span_id", &self.0.span_id())
+            .field("parent_id", &self.0.parent_id())
+            .finish()
+    }
 }
 
 impl SpanExt for Span {

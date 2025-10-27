@@ -1,9 +1,12 @@
 use amaru_ledger::store::columns::{accounts, dreps, pools, proposals, slots, utxo};
 use ratatui::widgets::ListItem;
 
-use crate::ui::to_rich::{
-    account::StakeCredentialDisplay, proposal::ComparableProposalIdDisplay,
-    utxo::TransactionInputDisplay,
+use crate::{
+    otel::id::TraceId,
+    ui::to_rich::{
+        account::StakeCredentialDisplay, proposal::ComparableProposalIdDisplay,
+        utxo::TransactionInputDisplay,
+    },
 };
 
 pub trait ToListItem {
@@ -55,5 +58,11 @@ pub type UtxoItem = (utxo::Key, utxo::Value);
 impl ToListItem for UtxoItem {
     fn to_list_item(&self) -> ListItem<'static> {
         ListItem::new(TransactionInputDisplay(&self.0).to_string())
+    }
+}
+
+impl ToListItem for TraceId {
+    fn to_list_item(&self) -> ListItem<'static> {
+        self.to_string().into()
     }
 }

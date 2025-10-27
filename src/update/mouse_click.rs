@@ -50,6 +50,9 @@ impl Update for MouseClickUpdate {
                 }
             },
             WidgetSlot::List => match s.inspect_tabs.cursor.current() {
+                InspectOption::Otel => {
+                    s.otel_view.trace_list.select_index_by_row(relative_row);
+                }
                 InspectOption::Ledger => match *s.ledger_tabs.cursor.current() {
                     LedgerMode::Browse => {
                         if let Some(browse_option) = s.ledger_mvs.browse_options.selected_item() {
@@ -91,6 +94,17 @@ impl Update for MouseClickUpdate {
                 },
                 _ => debug!(
                     "Clicked a page {} with no click action",
+                    s.inspect_tabs.cursor.current()
+                ),
+            },
+            WidgetSlot::Details => match s.inspect_tabs.cursor.current() {
+                InspectOption::Otel => {
+                    if let Some(span) = &s.otel_view.focused_span {
+                        s.otel_view.selected_span = Some(span.clone());
+                    }
+                }
+                _ => debug!(
+                    "No click action in Details slot for inspect option {}",
                     s.inspect_tabs.cursor.current()
                 ),
             },

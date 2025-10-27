@@ -7,7 +7,7 @@ use opentelemetry_proto::tonic::trace::v1::Span;
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use std::time::SystemTime;
-use tracing::error;
+use tracing::{debug, error};
 
 /// A helper struct for updating the Evictor when a new Root is added to the
 /// graph.
@@ -54,6 +54,8 @@ impl TraceGraph {
             .or_default()
             .push(new_root_id);
 
+        debug!("Modified trace_meta: {:?}", trace_meta);
+
         // Insert the full span and SubTree data into the main HashMaps.
         self.subtrees
             .insert(new_root_id, SubTree::new(new_root_start, new_root_end));
@@ -83,6 +85,7 @@ impl TraceGraph {
                 .entry(start_time)
                 .or_default()
                 .push(span_id);
+            debug!("Added span {:?} to parent subtree {:?}", span, sub_tree);
         } else {
             error!("Unexpected: no parent {} for child {}", parent_id, span_id);
         }
@@ -94,6 +97,10 @@ impl TraceGraph {
         self.spans.insert(span_id, Arc::new(span));
         // Update subtree bounds with this newly added, potentially later end time
         self.propagate_bounds_update(span_id, end_time);
+        debug!(
+            "Added span to subtrees {:?} and spans {:?}",
+            self.subtrees, self.spans
+        );
     }
 
     /// When a child's end time is later than its parent's, this walks up the

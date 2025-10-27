@@ -1,15 +1,14 @@
 use crate::{
-    model::dynamic_list::DynamicList,
     otel::{
         graph::TraceGraph,
         id::{SpanId, TraceId},
         span_ext::SpanExt,
     },
+    viewmodel::dynamic_list::DynamicListViewModel,
 };
 use arc_swap::ArcSwap;
 use opentelemetry_proto::tonic::trace::v1::Span;
 use std::{cmp::Reverse, sync::Arc};
-use tracing::debug;
 
 /// Manages the rendering state for the OTEL tab of the TUI.
 ///
@@ -28,11 +27,11 @@ pub struct OtelViewState {
     /// against. This is used for efficient change detection via
     /// `Arc::ptr_eq`.
     pub last_synced_data: Option<Arc<TraceGraph>>,
-    /// The stateful list of all trace IDs, sorted for display. This component
-    /// manages selection and scrolling within the TUI's trace list view.
-    pub trace_list: DynamicList<TraceId>,
-    /// The span currently being hovered over in the TUI. This is used for
-    /// showing span details.
+    /// The stateful list of all trace IDs, sorted for display. This component manages
+    /// selection and scrolling within the TUI's trace list view.
+    pub trace_list: DynamicListViewModel<TraceId>,
+    /// The span currently being hovered over in the TUI. This is used for showing span
+    /// details.
     pub focused_span: Option<Arc<Span>>,
     /// The span that the user has actively selected. This is used to inspect a
     /// span's specific subtree.
@@ -44,7 +43,7 @@ impl OtelViewState {
         Self {
             trace_graph_source,
             last_synced_data: None,
-            trace_list: DynamicList::default(),
+            trace_list: DynamicListViewModel::new("Traces"),
             focused_span: None,
             selected_span: None,
         }
@@ -60,6 +59,7 @@ impl OtelViewState {
         // This is a lock-free operation. `latest_data` is now a snapshot of the data
         // that this sync operation will be based on.
         let latest_data = self.trace_graph_source.load_full();
+        // debug!("latest trace graph data: {:?}", latest_data);
 
         // Determine if the data has changed since the last sync
         let has_changed = match &self.last_synced_data {
@@ -72,7 +72,7 @@ impl OtelViewState {
         if !has_changed {
             return false;
         }
-        debug!("TraceGraph changes found, updating");
+        // debug!("TraceGraph changes found, updating");
 
         // Get the latest trace ids, sort them by start, and set them in the trace list
         // for display

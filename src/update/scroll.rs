@@ -26,19 +26,6 @@ impl Update for ScrollUpdate {
         };
 
         match s.layout_model.get_focus() {
-            WidgetSlot::InspectOption => {
-                match direction {
-                    ScrollDirection::Up => s.inspect_tabs.cursor.next_back(),
-                    ScrollDirection::Down => s.inspect_tabs.cursor.non_empty_next(),
-                };
-            }
-            WidgetSlot::LedgerMode => {
-                match direction {
-                    ScrollDirection::Up => s.ledger_tabs.cursor.next_back(),
-                    ScrollDirection::Down => s.ledger_tabs.cursor.non_empty_next(),
-                };
-                return vec![Action::UpdateLayout(s.frame_area)];
-            }
             WidgetSlot::LedgerOptions => {
                 let mode = s.ledger_tabs.cursor.current();
                 match (mode, direction) {
@@ -67,10 +54,10 @@ impl Update for ScrollUpdate {
                     // TODO: Make this logic simpler by taking advantage of the
                     // DynamicList struct
 
-                    // First scroll the trace list itself
+                    // First scroll the trace list
                     match direction {
-                        ScrollDirection::Up => s.otel_view.trace_list.scroll_up(),
-                        ScrollDirection::Down => {}
+                        ScrollDirection::Up => s.otel_view.trace_list.cursor_back(),
+                        ScrollDirection::Down => s.otel_view.trace_list.cursor_next(),
                     }
 
                     let graph = s.otel_view.trace_graph_source.load();

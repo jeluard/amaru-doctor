@@ -1,7 +1,4 @@
-use crate::{
-    model::{buffer_list::BufferList, streaming_iter::StreamingIter},
-    ui::to_list_item::ToListItem,
-};
+use crate::{model::buffer_list::BufferList, ui::to_list_item::ToListItem};
 use ratatui::{
     prelude::{Frame, Rect},
     style::{Color, Style},
@@ -41,8 +38,24 @@ impl ListViewState {
         self.height = new_height;
     }
 
-    /// Sets the selected index based on a row clicked within the visible
-    /// window.
+    /// Sets the selected index directly, clamping it to valid bounds and adjusting the
+    /// view offset to ensure the selection is visible.
+    pub fn select(&mut self, index: usize, total_len: usize) {
+        if total_len == 0 {
+            self.selected = 0;
+            return;
+        }
+        self.selected = index.min(total_len - 1);
+
+        // Adjust the view offset to bring the selection into view if it's off-screen.
+        if self.selected < self.offset {
+            self.offset = self.selected;
+        } else if self.height > 0 && self.selected >= self.offset + self.height {
+            self.offset = self.selected - self.height + 1;
+        }
+    }
+
+    /// Sets the selected index based on a row clicked within the visible viewport.
     pub fn select_index_by_row(&mut self, relative_row: usize, buffer_len: usize) {
         let absolute_index = self.offset + relative_row;
 
@@ -139,9 +152,10 @@ impl ListViewState {
         debug!("Did advance window: {:?}", self);
     }
 
-    pub fn draw<T>(&self, f: &mut Frame, area: Rect, iter: &StreamingIter<T>, is_focused: bool)
+    pub fn draw<T, B>(&self, f: &mut Frame, area: Rect, data: &B, is_focused: bool)
     where
         T: ToListItem,
+        B: BufferList<T>,
     {
         let mut block = Block::default().borders(Borders::ALL).title(self.title);
         if is_focused {
@@ -150,7 +164,7 @@ impl ListViewState {
                 .title_style(Style::default().fg(Color::White));
         }
 
-        let items: Vec<ListItem> = iter.buffer().iter().map(ToListItem::to_list_item).collect();
+        let items: Vec<ListItem> = data.buffer().iter().map(ToListItem::to_list_item).collect();
 
         let list_widget = List::new(items).block(block).highlight_symbol(">> ");
 
