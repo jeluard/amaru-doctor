@@ -2,7 +2,6 @@ pub mod buffer_list;
 pub mod button;
 pub mod chain_view;
 pub mod cursor;
-pub mod dynamic_list;
 pub mod layout;
 pub mod ledger_view;
 pub mod list_view;

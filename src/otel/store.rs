@@ -1,5 +1,9 @@
 use crate::otel::{
-    evictor::Evictor, graph::TraceGraph, id::TraceId, orphanage::Orphanage, span_ext::SpanExt,
+    evictor::Evictor,
+    graph::TraceGraph,
+    id::TraceId,
+    orphanage::Orphanage,
+    span_ext::SpanExt,
 };
 use opentelemetry_proto::tonic::trace::v1::Span;
 use std::time::Duration;
@@ -60,6 +64,7 @@ impl TraceStore {
         if let Some(orphans) = self.orphanage.remove(&span_id) {
             // If so, recursively add the newly un-orphaned children.
             for orphan in orphans {
+                // debug!("Will add orphan to the TraceGraph: {:?}", orphan);
                 self.add_span_recursive(orphan);
             }
         }

@@ -1,6 +1,6 @@
 use crate::model::buffer_list::BufferList;
 use std::fmt;
-use tracing::debug;
+use tracing::trace;
 
 /// A pure data model that provides a persistent, growing buffer over a lazy
 /// iterator.
@@ -33,7 +33,7 @@ impl<T> StreamingIter<T> {
 
 impl<T> BufferList<T> for StreamingIter<T> {
     fn load_up_to(&mut self, index: usize) {
-        debug!("Will load up to {}: {:?}", index, self);
+        trace!("Will load up to {}: {:?}", index, self);
         if self.exhausted || index < self.buffer.len() {
             return;
         }
@@ -47,7 +47,7 @@ impl<T> BufferList<T> for StreamingIter<T> {
                 break;
             }
         }
-        debug!("Did load up to {}: {:?}", index, self);
+        trace!("Did load up to {}: {:?}", index, self);
     }
 
     fn buffer(&self) -> &[T] {

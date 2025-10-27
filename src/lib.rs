@@ -24,6 +24,7 @@ pub mod tui;
 mod ui;
 mod update;
 mod view;
+pub mod viewmodel;
 
 #[derive(Clone, Copy)]
 pub enum ScreenMode {

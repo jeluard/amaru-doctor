@@ -10,3 +10,15 @@ pub trait BufferList<T> {
     /// known.
     fn total_len(&self) -> Option<usize>;
 }
+
+impl<T> BufferList<T> for Vec<T> {
+    fn load_up_to(&mut self, _index: usize) {}
+
+    fn buffer(&self) -> &[T] {
+        self.as_slice()
+    }
+
+    fn total_len(&self) -> Option<usize> {
+        Some(self.len())
+    }
+}

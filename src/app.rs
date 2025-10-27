@@ -16,7 +16,7 @@ use crossterm::event::KeyEvent;
 use ratatui::prelude::{Backend, Rect};
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::{Receiver, UnboundedReceiver, UnboundedSender, unbounded_channel};
-use tracing::{debug, info, trace};
+use tracing::{debug, error, info, trace};
 
 pub struct App {
     config: Config,
@@ -167,9 +167,10 @@ impl App {
                 debug!("{action:?}");
             }
 
+            // TODO: These should be created in Upate functions, not here
             let recompute_slot_widgets = matches!(
                 action,
-                Action::ScrollUp | Action::ScrollDown | Action::MouseEvent(_)
+                Action::ScrollUp | Action::ScrollDown | Action::MouseEvent(_) | Action::Key(_)
             );
 
             match action {
@@ -232,7 +233,7 @@ impl App {
                 if let Some(view) = self.slot_views.get(slot) {
                     view.render(f, *area, &self.app_state);
                 } else {
-                    debug!("Found no view for slot {}", slot);
+                    error!("Found no view for slot {}", slot);
                 }
             }
         })

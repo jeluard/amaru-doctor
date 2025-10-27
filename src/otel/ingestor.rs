@@ -1,11 +1,15 @@
 use crate::otel::graph::TraceGraph;
+use crate::otel::id::TraceId;
 use crate::otel::processor::TraceProcessor;
+use crate::otel::span_ext::SpanExt;
 use arc_swap::ArcSwap;
 use opentelemetry_proto::tonic::trace::v1::Span;
+use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::error::SendError;
+use tracing::debug;
 
 /// The TraceIngestor holds
 /// 1. the queue to which batch Vecs of spans are sent and
@@ -31,6 +35,8 @@ impl TraceIngestor {
     }
 
     pub async fn ingest(&self, spans: Vec<Span>) -> Result<(), SendError<Vec<Span>>> {
+        let trace_ids: HashSet<TraceId> = spans.iter().map(|s| s.trace_id()).collect();
+        debug!("Got trace ids: {:?}", trace_ids);
         self.batch_tx.send(spans).await
     }
 

@@ -5,7 +5,6 @@ use crate::view::item_details::draw_details;
 use crate::view::nonces::render_nonces;
 use crate::view::prom_metrics::render_prom_metrics;
 use crate::view::span::render_span;
-use crate::view::trace_list::render_traces;
 use crate::{
     app_state::AppState,
     states::{InspectOption, LedgerBrowse, LedgerMode, LedgerSearch, WidgetSlot},
@@ -299,13 +298,10 @@ impl View for TraceList {
         *s.inspect_tabs.cursor.current() == InspectOption::Otel
     }
 
-    fn render(&self, frame: &mut Frame, area: Rect, s: &AppState) {
-        render_traces(
-            frame,
-            area,
-            &s.otel_view.trace_list,
-            s.layout_model.is_focused(self.slot()),
-        );
+    fn render(&self, f: &mut Frame, a: Rect, s: &AppState) {
+        s.otel_view
+            .trace_list
+            .draw(f, a, s.layout_model.is_focused(self.slot()));
     }
 }
 

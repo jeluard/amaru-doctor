@@ -15,6 +15,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
 };
 use std::{iter, sync::Arc};
+use tracing::error;
 
 /// Renders the flame graph widget.
 pub fn render_flame_graph(frame: &mut Frame, area: Rect, state: &OtelViewState, is_focused: bool) {
@@ -25,7 +26,13 @@ pub fn render_flame_graph(frame: &mut Frame, area: Rect, state: &OtelViewState, 
         block = block.border_style(Style::default().fg(Color::Blue));
     }
 
-    let lines = get_flame_graph_lines(state, area.width.saturating_sub(2) as usize).unwrap();
+    let lines = match get_flame_graph_lines(state, area.width.saturating_sub(2) as usize) {
+        Ok(lines) => lines,
+        Err(e) => {
+            error!("Unable to get flame graph lines: {}", e);
+            vec![Line::from("Unable to get flame graph.")]
+        }
+    };
 
     let paragraph = Paragraph::new(lines).block(block);
     frame.render_widget(paragraph, area);

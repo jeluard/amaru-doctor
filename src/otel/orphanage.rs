@@ -14,6 +14,7 @@ pub struct Orphanage {
 impl Orphanage {
     /// Adds a span that is waiting for its parent to arrive.
     pub fn add(&mut self, parent_id: SpanId, orphan_span: Span) {
+        // debug!("Will add orphan span: {:?}", DebugSpan(&orphan_span));
         self.parent_to_orphans
             .entry(parent_id)
             .or_default()
@@ -28,6 +29,7 @@ impl Orphanage {
 
     /// Evicts orphans that are too old to be relevant anymore.
     pub fn evict(&mut self, expire_before: SystemTime) {
+        // debug!("Will evict orphans before: {:?}", expire_before);
         self.parent_to_orphans.retain(|_, orphans| {
             // Retain the orphans not expired
             orphans.retain(|orphan| orphan.start_time() >= expire_before);
