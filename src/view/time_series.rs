@@ -14,15 +14,19 @@ fn format_unix_time_label(ts: f64) -> String {
     format!("{:02}:{:02}:{:02}", h, m, s)
 }
 
-fn format_mib_label(y_mib: f64) -> String {
-    if y_mib >= 1024.0 * 1024.0 {
+const ONE_KB: f64 = 1024.0;
+const ONE_MB: f64 = 1024.0 * ONE_KB;
+const ONE_GB: f64 = 1024.0 * ONE_MB;
+
+fn format_mib_label(value: f64) -> String {
+    if value >= ONE_GB {
         // Show GiB if large
-        format!("{:.2} GiB", y_mib / 1024.0 / 1024.0)
-    } else if y_mib >= 1024.0 {
+        format!("{:.2} GiB", value / ONE_GB)
+    } else if value >= ONE_MB {
         // Show GiB if large
-        format!("{:.2} MiB", y_mib / 1024.0)
+        format!("{:.2} MiB", value / ONE_MB)
     } else {
-        format!("{:.1} B", y_mib)
+        format!("{:.1} B", value / ONE_KB)
     }
 }
 
