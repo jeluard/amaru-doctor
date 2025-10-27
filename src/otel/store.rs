@@ -1,9 +1,5 @@
 use crate::otel::{
-    evictor::Evictor,
-    graph::TraceGraph,
-    id::TraceId,
-    orphanage::Orphanage,
-    span_ext::SpanExt,
+    evictor::Evictor, graph::TraceGraph, id::TraceId, orphanage::Orphanage, span_ext::SpanExt,
 };
 use opentelemetry_proto::tonic::trace::v1::Span;
 use std::time::Duration;

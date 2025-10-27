@@ -38,8 +38,8 @@ impl ListViewState {
         self.height = new_height;
     }
 
-    /// Sets the selected index directly, clamping it to valid bounds and adjusting the
-    /// view offset to ensure the selection is visible.
+    /// Sets the selected index directly, clamping it to valid bounds and
+    /// adjusting the view offset to ensure the selection is visible.
     pub fn select(&mut self, index: usize, total_len: usize) {
         if total_len == 0 {
             self.selected = 0;
@@ -55,7 +55,8 @@ impl ListViewState {
         }
     }
 
-    /// Sets the selected index based on a row clicked within the visible viewport.
+    /// Sets the selected index based on a row clicked within the visible
+    /// viewport.
     pub fn select_index_by_row(&mut self, relative_row: usize, buffer_len: usize) {
         let absolute_index = self.offset + relative_row;
 

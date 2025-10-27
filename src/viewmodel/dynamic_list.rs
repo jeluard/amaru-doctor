@@ -2,8 +2,9 @@ use ratatui::{Frame, layout::Rect};
 
 use crate::{ui::to_list_item::ToListItem, view::list::ListViewState};
 
-/// A stateful component for a list whose entire dataset can be replaced dynamically.
-/// It combines the data model (`Vec<T>`) with the view state (`ListViewState`).
+/// A stateful component for a list whose entire dataset can be replaced
+/// dynamically. It combines the data model (`Vec<T>`) with the view state
+/// (`ListViewState`).
 #[derive(Debug)]
 pub struct DynamicListViewModel<T: Clone + PartialEq> {
     items: Vec<T>,

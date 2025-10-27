@@ -27,11 +27,11 @@ pub struct OtelViewState {
     /// against. This is used for efficient change detection via
     /// `Arc::ptr_eq`.
     pub last_synced_data: Option<Arc<TraceGraph>>,
-    /// The stateful list of all trace IDs, sorted for display. This component manages
-    /// selection and scrolling within the TUI's trace list view.
+    /// The stateful list of all trace IDs, sorted for display. This component
+    /// manages selection and scrolling within the TUI's trace list view.
     pub trace_list: DynamicListViewModel<TraceId>,
-    /// The span currently being hovered over in the TUI. This is used for showing span
-    /// details.
+    /// The span currently being hovered over in the TUI. This is used for
+    /// showing span details.
     pub focused_span: Option<Arc<Span>>,
     /// The span that the user has actively selected. This is used to inspect a
     /// span's specific subtree.
