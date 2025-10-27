@@ -24,13 +24,10 @@ fn build_ledger_ls(screen_mode: ScreenMode, ledger_mode: LedgerMode) -> LayoutSp
     match screen_mode {
         ScreenMode::Large => LayoutSpec {
             direction: Direction::Vertical,
-            constraints: vec![
-                (
-                    Constraint::Fill(1),
-                    Right(build_ledger_rest_ls(screen_mode, ledger_mode)),
-                ),
-                (Constraint::Length(1), Left(WidgetSlot::BottomLine)),
-            ],
+            constraints: vec![(
+                Constraint::Fill(1),
+                Right(build_ledger_rest_ls(screen_mode, ledger_mode)),
+            )],
         },
         // No bottom bar for small screens
         ScreenMode::Small => LayoutSpec {
@@ -108,10 +105,7 @@ fn build_ledger_left_col_ls() -> LayoutSpec {
 fn build_chain_ls() -> LayoutSpec {
     LayoutSpec {
         direction: Direction::Vertical,
-        constraints: vec![
-            (Constraint::Fill(1), Right(build_chain_rest_ls())),
-            (Constraint::Length(1), Left(WidgetSlot::BottomLine)),
-        ],
+        constraints: vec![(Constraint::Fill(1), Right(build_chain_rest_ls()))],
     }
 }
 
@@ -149,10 +143,7 @@ fn build_chain_body_ls() -> LayoutSpec {
 fn build_otel_ls() -> LayoutSpec {
     LayoutSpec {
         direction: Direction::Vertical,
-        constraints: vec![
-            (Constraint::Fill(1), Right(build_otel_rest_ls())),
-            (Constraint::Length(1), Left(WidgetSlot::BottomLine)),
-        ],
+        constraints: vec![(Constraint::Fill(1), Right(build_otel_rest_ls()))],
     }
 }
 
@@ -196,10 +187,7 @@ fn build_otel_details_ls() -> LayoutSpec {
 fn build_prom_ls() -> LayoutSpec {
     LayoutSpec {
         direction: Direction::Vertical,
-        constraints: vec![
-            (Constraint::Fill(1), Right(build_prom_rest_ls())),
-            (Constraint::Length(1), Left(WidgetSlot::BottomLine)),
-        ],
+        constraints: vec![(Constraint::Fill(1), Right(build_prom_rest_ls()))],
     }
 }
 

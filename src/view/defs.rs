@@ -8,7 +8,7 @@ use crate::view::span::render_span;
 use crate::{
     app_state::AppState,
     states::{InspectOption, LedgerBrowse, LedgerMode, LedgerSearch, WidgetSlot},
-    view::{View, header::render_header, line::render_line, search::render_search_query},
+    view::{View, header::render_header, search::render_search_query},
 };
 use amaru_consensus::{BlockHeader, Nonces};
 use amaru_kernel::RawBlock;
@@ -361,23 +361,6 @@ impl View for PromMetrics {
             area,
             &s.prom_metrics,
             s.layout_model.is_focused(self.slot()),
-        );
-    }
-}
-
-pub struct BottomLine;
-impl View for BottomLine {
-    fn slot(&self) -> WidgetSlot {
-        WidgetSlot::BottomLine
-    }
-    fn is_visible(&self, _s: &AppState) -> bool {
-        true
-    }
-    fn render(&self, f: &mut Frame, area: Rect, _s: &AppState) {
-        render_line(
-            f,
-            area,
-            "Use shift + arrow keys to move focus. Use arrow keys to scroll.".to_owned(),
         );
     }
 }

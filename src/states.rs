@@ -99,13 +99,12 @@ pub enum WidgetSlot {
     LedgerHeaderDetails,
     LedgerBlockDetails,
     LedgerNoncesDetails,
-    BottomLine,
 }
 
 impl WidgetSlot {
     pub fn focusable() -> HashSet<WidgetSlot> {
         WidgetSlot::iter()
-            .filter(|s| !matches!(s, WidgetSlot::TopLine | WidgetSlot::BottomLine))
+            .filter(|s| !matches!(s, WidgetSlot::TopLine))
             .collect()
     }
 }

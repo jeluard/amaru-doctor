@@ -8,7 +8,6 @@ pub mod empty_list;
 pub mod flame_graph;
 pub mod header;
 pub mod item_details;
-pub mod line;
 pub mod list;
 pub mod nonces;
 pub mod prom_metrics;
@@ -51,7 +50,6 @@ static VIEW_DEFS: &[&dyn View] = &[
     &TraceList,
     &FlameGraphDetails,
     &SpanDetails,
-    &BottomLine,
     &PromMetrics,
 ];
 
