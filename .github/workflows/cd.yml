@@ -43,6 +43,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
+
+      - name: Install Rust target
+        run: rustup target add ${{ matrix.target }}
+
       - name: Cargo build
         run: cargo build --release --target ${{ matrix.target }}
 
@@ -110,4 +114,3 @@ jobs:
         env:
 
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-
