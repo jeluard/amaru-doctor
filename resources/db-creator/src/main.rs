@@ -78,7 +78,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     db.next_snapshot(Epoch::from(5))?;
     db.next_snapshot(Epoch::from(6))?;
 
-    let _consensus_store = RocksDBStore::new(RocksDbConfig::new("chain.db".into()))?;
+    let _consensus_store = RocksDBStore::open_and_migrate(RocksDbConfig::new("chain.db".into()))?;
 
     Ok(())
 }
