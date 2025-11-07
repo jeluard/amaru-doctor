@@ -85,7 +85,6 @@ impl TraceGraph {
                 .entry(start_time)
                 .or_default()
                 .push(span_id);
-            debug!("Added span {:?} to parent subtree {:?}", span, sub_tree);
         } else {
             error!("Unexpected: no parent {} for child {}", parent_id, span_id);
         }
@@ -97,10 +96,6 @@ impl TraceGraph {
         self.spans.insert(span_id, Arc::new(span));
         // Update subtree bounds with this newly added, potentially later end time
         self.propagate_bounds_update(span_id, end_time);
-        debug!(
-            "Added span to subtrees {:?} and spans {:?}",
-            self.subtrees, self.spans
-        );
     }
 
     /// When a child's end time is later than its parent's, this walks up the
