@@ -60,16 +60,8 @@ jobs:
         if: matrix.target == 'aarch64-unknown-linux-gnu'
         run: |
           sudo apt-get update
-          # Install the C-toolchain for aarch64 (includes gcc, ar, etc.)
-          sudo apt-get install -y gcc-aarch64-linux-gnu
-          
-          # Configure Cargo to use the aarch64 linker, C compiler (cc), and archiver (ar)
-          # This tells build scripts (like ring's) which tools to use.
-          mkdir -p .cargo
-          echo '[target.aarch64-unknown-linux-gnu]' >> .cargo/config.toml
-          echo 'linker = "aarch64-linux-gnu-gcc"' >> .cargo/config.toml
-          echo 'cc = "aarch64-linux-gnu-gcc"' >> .cargo/config.toml
-          echo 'ar = "aarch64-linux-gnu-ar"' >> .cargo/config.toml
+          # Install the C (gcc) and C++ (g++) toolchains for aarch64
+          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
       - name: Cargo build
         run: cargo build --release --target ${{ matrix.target }}
