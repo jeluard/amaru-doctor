@@ -33,12 +33,12 @@ impl PromMetricsViewState {
         Self {
             receiver,
             last_metrics: None,
-            memory: TimeSeries::new(500),
-            cpu_util: TimeSeries::new(500),
-            disk_live_read: TimeSeries::new(500),
-            disk_total_read: TimeSeries::new(500),
-            disk_live_write: TimeSeries::new(500),
-            disk_total_write: TimeSeries::new(500),
+            memory: TimeSeries::new(500, 20),
+            cpu_util: TimeSeries::new(500, 20),
+            disk_live_read: TimeSeries::new(500, 20),
+            disk_total_read: TimeSeries::new(500, 20),
+            disk_live_write: TimeSeries::new(500, 20),
+            disk_total_write: TimeSeries::new(500, 20),
         }
     }
 

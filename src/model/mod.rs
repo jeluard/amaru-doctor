@@ -7,5 +7,6 @@ pub mod ledger_view;
 pub mod list_view;
 pub mod otel_view;
 pub mod prom_metrics;
+pub mod sma;
 pub mod streaming_iter;
 pub mod time_series;
