@@ -84,6 +84,7 @@ pub enum Action {
     SyncTraceGraph,
     SyncPromMetrics,
     GetButtonEvents,
+    PollUtxoSearch,
     SetFocus(ComponentId),
     FocusNext,
     FocusPrev,

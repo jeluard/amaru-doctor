@@ -1,4 +1,5 @@
-use crate::states::{ComponentId, WidgetSlot};
+use crate::components::Component;
+use crate::states::WidgetSlot;
 use crate::view::adapter::ComponentViewAdapter;
 use crate::view::block::render_block;
 use crate::view::empty_list::draw_empty_list;
@@ -15,11 +16,17 @@ use crate::{
 use amaru_consensus::{BlockHeader, Nonces};
 use amaru_kernel::RawBlock;
 use ratatui::{Frame, layout::Rect};
+use std::collections::HashMap;
 
-pub static INSPECT_TABS_VIEW: ComponentViewAdapter =
-    ComponentViewAdapter::new(ComponentId::InspectTabs, WidgetSlot::InspectOption);
-pub static LEDGER_MODE_TABS_VIEW: ComponentViewAdapter =
-    ComponentViewAdapter::new(ComponentId::LedgerModeTabs, WidgetSlot::LedgerMode);
+pub static INSPECT_TABS_VIEW: ComponentViewAdapter = ComponentViewAdapter::always_visible(
+    crate::states::ComponentId::InspectTabs,
+    crate::states::WidgetSlot::InspectOption,
+);
+pub static LEDGER_MODE_TABS_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
+    crate::states::ComponentId::LedgerModeTabs,
+    crate::states::WidgetSlot::LedgerMode,
+    |s: &AppState| s.get_inspect_tabs().selected() == InspectOption::Ledger,
+);
 
 #[allow(dead_code)]
 pub struct SearchBar;
@@ -221,21 +228,26 @@ browse_views!(
     (Utxos, LedgerUtxos, LedgerUtxoDetails, utxos, "Utxos"),
 );
 
+#[derive(Default)]
 pub struct LedgerUtxosByAddr;
 impl View for LedgerUtxosByAddr {
     fn slot(&self) -> WidgetSlot {
         WidgetSlot::List
     }
+
     fn is_visible(&self, s: &AppState) -> bool {
-        *s.get_inspect_tabs().cursor.current() == InspectOption::Ledger
-            && *s.get_ledger_mode_tabs().cursor.current() == LedgerMode::Search
+        s.get_inspect_tabs().selected() == InspectOption::Ledger
+            && s.get_ledger_mode_tabs().selected() == LedgerMode::Search
             && s.ledger_mvs.search_options.selected_item()
                 == Some(LedgerSearch::UtxosByAddress).as_ref()
     }
+
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) {
         let is_focused = s.layout_model.is_focused(self.slot());
         if let Some(res) = s.ledger_mvs.utxos_by_addr_search.get_current_res() {
-            res.draw(f, area, is_focused);
+            let mut layout = HashMap::new();
+            layout.insert(res.id(), area);
+            res.render(f, s, &layout);
         } else {
             draw_empty_list(f, area, "Utxos by Addr", "No results", is_focused);
         }
@@ -256,13 +268,8 @@ impl View for LedgerSearchUtxoDetails {
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) {
         let is_focused = s.layout_model.is_focused(self.slot());
         let res_opt = s.ledger_mvs.utxos_by_addr_search.get_current_res();
-        draw_details(
-            f,
-            area,
-            "Utxo Details".to_owned(),
-            res_opt.and_then(|res| res.selected_item()),
-            is_focused,
-        );
+        let item_opt = res_opt.and_then(|res| res.selected_item());
+        draw_details(f, area, "Utxo Details".to_owned(), item_opt, is_focused);
     }
 }
 

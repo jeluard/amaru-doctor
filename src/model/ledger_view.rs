@@ -1,5 +1,5 @@
 use crate::{
-    model::list_view::ListModelViewState,
+    model::{async_list_model::AsyncListModel, list_view::ListModelViewState},
     states::{LedgerBrowse, LedgerSearch},
     store::owned_iter::{
         OwnedAccountIter, OwnedBlockIssuerIter, OwnedDRepIter, OwnedPoolIter, OwnedProposalIter,
@@ -29,8 +29,7 @@ pub struct LedgerModelViewState {
     pub pools: ListModelViewState<PoolItem>,
     pub proposals: ListModelViewState<ProposalItem>,
     pub utxos: ListModelViewState<UtxoItem>,
-
-    pub utxos_by_addr_search: SearchState<Address, ListModelViewState<UtxoItem>>,
+    pub utxos_by_addr_search: SearchState<Address, AsyncListModel<UtxoItem>>,
 }
 
 impl LedgerModelViewState {

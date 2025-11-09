@@ -26,6 +26,10 @@ impl ListViewState {
         }
     }
 
+    pub fn title(&self) -> &'static str {
+        self.title
+    }
+
     pub fn max_visible_index(&self) -> usize {
         self.offset + self.height
     }

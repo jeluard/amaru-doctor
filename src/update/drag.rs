@@ -26,8 +26,8 @@ impl Update for DragUpdate {
         };
 
         if s.layout_model.is_focused(WidgetSlot::List)
-            && s.get_inspect_tabs().cursor.current() == &InspectOption::Ledger
-            && *s.get_ledger_mode_tabs().cursor.current() == LedgerMode::Browse
+            && s.get_inspect_tabs().selected() == InspectOption::Ledger
+            && s.get_ledger_mode_tabs().selected() == LedgerMode::Browse
         {
             scroll_ledger_list(&mut s.ledger_mvs, direction);
         }

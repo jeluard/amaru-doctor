@@ -9,11 +9,24 @@ use tracing::error;
 pub struct ComponentViewAdapter {
     id: ComponentId,
     slot: WidgetSlot,
+    visibility_check: fn(&AppState) -> bool,
 }
 
 impl ComponentViewAdapter {
-    pub const fn new(id: ComponentId, slot: WidgetSlot) -> Self {
-        Self { id, slot }
+    pub const fn new(
+        id: ComponentId,
+        slot: WidgetSlot,
+        visibility_check: fn(&AppState) -> bool,
+    ) -> Self {
+        Self {
+            id,
+            slot,
+            visibility_check,
+        }
+    }
+
+    pub const fn always_visible(id: ComponentId, slot: WidgetSlot) -> Self {
+        Self::new(id, slot, |_| true)
     }
 }
 
@@ -22,8 +35,8 @@ impl View for ComponentViewAdapter {
         self.slot
     }
 
-    fn is_visible(&self, _s: &AppState) -> bool {
-        true
+    fn is_visible(&self, s: &AppState) -> bool {
+        (self.visibility_check)(s)
     }
 
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) {
