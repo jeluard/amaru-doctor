@@ -3,11 +3,11 @@ use crate::ui::to_list_item::{
 };
 use amaru_ledger::store::ReadStore;
 use amaru_stores::rocksdb::ReadOnlyRocksDB;
-use std::sync::{Arc, mpsc};
+use std::sync::{Arc, Mutex, mpsc};
 use std::thread;
 
 pub struct OwnedDbIter<T> {
-    rx: mpsc::Receiver<T>,
+    rx: Mutex<mpsc::Receiver<T>>,
 }
 
 impl<T: Send + 'static> OwnedDbIter<T> {
@@ -20,14 +20,14 @@ impl<T: Send + 'static> OwnedDbIter<T> {
             iter_logic_fn(tx);
         });
 
-        OwnedDbIter { rx }
+        OwnedDbIter { rx: Mutex::new(rx) }
     }
 }
 
 impl<T> Iterator for OwnedDbIter<T> {
     type Item = T;
     fn next(&mut self) -> Option<Self::Item> {
-        self.rx.recv().ok()
+        self.rx.lock().unwrap().recv().ok()
     }
 }
 

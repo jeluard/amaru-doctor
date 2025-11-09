@@ -15,7 +15,7 @@ pub struct ListModelViewState<T> {
 impl<T: ToListItem> ListModelViewState<T> {
     pub fn new(
         title: &'static str,
-        iter: impl Iterator<Item = T> + 'static,
+        iter: impl Iterator<Item = T> + Send + Sync + 'static,
         initial_buffer_size: usize,
     ) -> Self {
         Self {

@@ -41,15 +41,18 @@ impl Update for MouseClickUpdate {
                 s.get_ledger_mode_tabs_mut()
                     .select_by_column(rect, mouse_event.column);
             }
-            WidgetSlot::LedgerOptions => match *s.get_ledger_mode_tabs().cursor.current() {
+            WidgetSlot::LedgerOptions => match s.get_ledger_mode_tabs().selected() {
                 LedgerMode::Browse => {
-                    s.ledger_mvs
-                        .browse_options
-                        .select_index_by_row(relative_row);
+                    return s.get_ledger_browse_options_mut().handle_click(
+                        rect,
+                        mouse_event.row,
+                        mouse_event.column,
+                    );
                 }
                 LedgerMode::Search => {
-                    s.ledger_mvs
-                        .search_options
+                    let relative_row = mouse_event.row.saturating_sub(rect.y + 1) as usize;
+                    s.get_ledger_search_options_mut()
+                        .view
                         .select_index_by_row(relative_row);
                 }
             },
@@ -59,31 +62,41 @@ impl Update for MouseClickUpdate {
                 }
                 InspectOption::Ledger => match *s.get_ledger_mode_tabs().cursor.current() {
                     LedgerMode::Browse => {
-                        if let Some(browse_option) = s.ledger_mvs.browse_options.selected_item() {
+                        if let Some(browse_option) =
+                            s.get_ledger_browse_options().view.selected_item()
+                        {
                             match browse_option {
-                                LedgerBrowse::Accounts => {
-                                    s.ledger_mvs.accounts.select_index_by_row(relative_row)
-                                }
-                                LedgerBrowse::BlockIssuers => {
-                                    s.ledger_mvs.block_issuers.select_index_by_row(relative_row)
-                                }
-                                LedgerBrowse::DReps => {
-                                    s.ledger_mvs.dreps.select_index_by_row(relative_row)
-                                }
-                                LedgerBrowse::Pools => {
-                                    s.ledger_mvs.pools.select_index_by_row(relative_row)
-                                }
-                                LedgerBrowse::Proposals => {
-                                    s.ledger_mvs.proposals.select_index_by_row(relative_row)
-                                }
-                                LedgerBrowse::Utxos => {
-                                    s.ledger_mvs.utxos.select_index_by_row(relative_row)
-                                }
+                                LedgerBrowse::Accounts => s
+                                    .get_accounts_list_mut()
+                                    .view
+                                    .select_index_by_row(relative_row),
+                                LedgerBrowse::BlockIssuers => s
+                                    .get_block_issuers_list_mut()
+                                    .view
+                                    .select_index_by_row(relative_row),
+                                LedgerBrowse::DReps => s
+                                    .get_dreps_list_mut()
+                                    .view
+                                    .select_index_by_row(relative_row),
+                                LedgerBrowse::Pools => s
+                                    .get_pools_list_mut()
+                                    .view
+                                    .select_index_by_row(relative_row),
+                                LedgerBrowse::Proposals => s
+                                    .get_proposals_list_mut()
+                                    .view
+                                    .select_index_by_row(relative_row),
+                                LedgerBrowse::Utxos => s
+                                    .get_utxos_list_mut()
+                                    .view
+                                    .select_index_by_row(relative_row),
                             }
                         }
                     }
                     LedgerMode::Search => {
-                        if let Some(search_option) = s.ledger_mvs.search_options.selected_item() {
+                        if let Some(search_option) =
+                            s.get_ledger_search_options().view.selected_item()
+                        {
                             match search_option {
                                 UtxosByAddress => {
                                     if let Some(search_res) =

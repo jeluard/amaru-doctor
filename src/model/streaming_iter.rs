@@ -5,7 +5,7 @@ use tracing::trace;
 /// A pure data model that provides a persistent, growing buffer over a lazy
 /// iterator.
 pub struct StreamingIter<T> {
-    iter: Box<dyn Iterator<Item = T>>,
+    iter: Box<dyn Iterator<Item = T> + Send + Sync>,
     buffer: Vec<T>,
     exhausted: bool,
 }
@@ -20,7 +20,10 @@ impl<T> fmt::Debug for StreamingIter<T> {
 }
 
 impl<T> StreamingIter<T> {
-    pub fn new(iter: impl Iterator<Item = T> + 'static, initial_buffer_size: usize) -> Self {
+    pub fn new(
+        iter: impl Iterator<Item = T> + Send + Sync + 'static,
+        initial_buffer_size: usize,
+    ) -> Self {
         let mut s = Self {
             iter: Box::new(iter),
             buffer: Vec::with_capacity(initial_buffer_size),

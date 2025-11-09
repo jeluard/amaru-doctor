@@ -1,9 +1,10 @@
 use crate::{
     app_state::AppState,
-    components::{Component, ComponentLayout, ScrollDirection},
+    components::{Component, ComponentLayout, MouseScrollDirection},
     model::async_provider::AsyncProvider,
     states::{Action, ComponentId, WidgetSlot},
     ui::to_list_item::ToListItem,
+    update::scroll::ScrollDirection,
     view::list::ListViewState,
 };
 use ratatui::{
@@ -25,8 +26,8 @@ where
     id: ComponentId,
     slot: WidgetSlot,
     provider: AsyncProvider<T>,
-    buffer: Vec<T>,
-    view: ListViewState,
+    pub buffer: Vec<T>,
+    pub view: ListViewState,
     is_loading: bool,
     _phantom: PhantomData<T>,
 }
@@ -167,6 +168,22 @@ where
 
     fn handle_key_event(&mut self, _key: crossterm::event::KeyEvent) -> Vec<Action> {
         info!("No key handling for AsyncListModel");
+        Vec::new()
+    }
+
+    fn handle_mouse_scroll(&mut self, direction: MouseScrollDirection) -> Vec<Action> {
+        match direction {
+            MouseScrollDirection::Up => self.view.cursor_back(),
+            MouseScrollDirection::Down => self.view.cursor_next(Some(self.buffer.len())),
+        }
+        Vec::new()
+    }
+
+    fn handle_mouse_drag(&mut self, direction: ScrollDirection) -> Vec<Action> {
+        match direction {
+            ScrollDirection::Up => self.view.advance_window(Some(self.buffer.len())),
+            ScrollDirection::Down => self.view.retreat_window(),
+        }
         Vec::new()
     }
 }

@@ -1,11 +1,9 @@
 use crate::{
     app_state::AppState,
-    model::ledger_view::LedgerModelViewState,
     states::{Action, InspectOption, LedgerBrowse, LedgerMode, WidgetSlot},
     update::Update,
 };
 use strum::Display;
-use tracing::debug;
 
 #[derive(Display, Debug, Clone, Copy)]
 pub enum DragDirection {
@@ -29,7 +27,7 @@ impl Update for DragUpdate {
             && s.get_inspect_tabs().selected() == InspectOption::Ledger
             && s.get_ledger_mode_tabs().selected() == LedgerMode::Browse
         {
-            scroll_ledger_list(&mut s.ledger_mvs, direction);
+            scroll_ledger_list(s, direction);
         }
 
         Vec::new()
@@ -37,36 +35,32 @@ impl Update for DragUpdate {
 }
 
 /// Scrolls the currently active list within the ledger view.
-fn scroll_ledger_list(ledger_mvs: &mut LedgerModelViewState, direction: DragDirection) {
-    if let Some(browse_option) = ledger_mvs.browse_options.selected_item() {
-        debug!(
-            "Scrolling ledger list for browse option: {:?}",
-            browse_option
-        );
+fn scroll_ledger_list(s: &mut AppState, direction: DragDirection) {
+    if let Some(browse_option) = s.get_ledger_browse_options().view.selected_item() {
         match browse_option {
             LedgerBrowse::Accounts => match direction {
-                DragDirection::Up => ledger_mvs.accounts.advance_window(),
-                DragDirection::Down => ledger_mvs.accounts.retreat_window(),
+                DragDirection::Up => s.get_accounts_list_mut().view.advance_window(),
+                DragDirection::Down => s.get_accounts_list_mut().view.retreat_window(),
             },
             LedgerBrowse::BlockIssuers => match direction {
-                DragDirection::Up => ledger_mvs.block_issuers.advance_window(),
-                DragDirection::Down => ledger_mvs.block_issuers.retreat_window(),
+                DragDirection::Up => s.get_block_issuers_list_mut().view.advance_window(),
+                DragDirection::Down => s.get_block_issuers_list_mut().view.retreat_window(),
             },
             LedgerBrowse::DReps => match direction {
-                DragDirection::Up => ledger_mvs.dreps.advance_window(),
-                DragDirection::Down => ledger_mvs.dreps.retreat_window(),
+                DragDirection::Up => s.get_dreps_list_mut().view.advance_window(),
+                DragDirection::Down => s.get_dreps_list_mut().view.retreat_window(),
             },
             LedgerBrowse::Pools => match direction {
-                DragDirection::Up => ledger_mvs.pools.advance_window(),
-                DragDirection::Down => ledger_mvs.pools.retreat_window(),
+                DragDirection::Up => s.get_pools_list_mut().view.advance_window(),
+                DragDirection::Down => s.get_pools_list_mut().view.retreat_window(),
             },
             LedgerBrowse::Proposals => match direction {
-                DragDirection::Up => ledger_mvs.proposals.advance_window(),
-                DragDirection::Down => ledger_mvs.proposals.retreat_window(),
+                DragDirection::Up => s.get_proposals_list_mut().view.advance_window(),
+                DragDirection::Down => s.get_proposals_list_mut().view.retreat_window(),
             },
             LedgerBrowse::Utxos => match direction {
-                DragDirection::Up => ledger_mvs.utxos.advance_window(),
-                DragDirection::Down => ledger_mvs.utxos.retreat_window(),
+                DragDirection::Up => s.get_utxos_list_mut().view.advance_window(),
+                DragDirection::Down => s.get_utxos_list_mut().view.retreat_window(),
             },
         }
     }

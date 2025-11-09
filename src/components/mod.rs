@@ -1,18 +1,20 @@
+use crate::{
+    app_state::AppState,
+    states::{Action, ComponentId},
+    update::scroll::ScrollDirection,
+};
 use crossterm::event::KeyEvent;
 use ratatui::{Frame, layout::Rect};
 use std::{any::Any, collections::HashMap};
 
-use crate::{
-    app_state::AppState,
-    states::{Action, ComponentId},
-};
-
+pub mod details;
+pub mod list;
 pub mod tabs;
 
 pub type ComponentLayout = HashMap<ComponentId, Rect>;
 
 #[derive(strum::Display, Debug, Clone, Copy)]
-pub enum ScrollDirection {
+pub enum MouseScrollDirection {
     Up,
     Down,
 }
@@ -41,4 +43,10 @@ pub trait Component {
 
     /// Handles a mouse click.
     fn handle_click(&mut self, _area: Rect, _row: u16, _col: u16) -> Vec<Action>;
+
+    /// Handles a mouse scroll event.
+    fn handle_mouse_scroll(&mut self, _direction: MouseScrollDirection) -> Vec<Action>;
+
+    /// Handles a mouse drag event.
+    fn handle_mouse_drag(&mut self, _direction: ScrollDirection) -> Vec<Action>;
 }
