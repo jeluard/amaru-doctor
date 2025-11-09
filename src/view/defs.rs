@@ -14,20 +14,6 @@ use amaru_consensus::{BlockHeader, Nonces};
 use amaru_kernel::RawBlock;
 use ratatui::{Frame, layout::Rect};
 
-pub struct InspectTabs;
-impl View for InspectTabs {
-    fn slot(&self) -> WidgetSlot {
-        WidgetSlot::InspectOption
-    }
-    fn is_visible(&self, _s: &AppState) -> bool {
-        true
-    }
-    fn render(&self, f: &mut Frame, area: Rect, s: &AppState) {
-        s.inspect_tabs
-            .draw(f, area, s.layout_model.is_focused(self.slot()));
-    }
-}
-
 #[allow(dead_code)]
 pub struct LedgerModeTabs;
 impl View for LedgerModeTabs {
@@ -35,7 +21,7 @@ impl View for LedgerModeTabs {
         WidgetSlot::LedgerMode
     }
     fn is_visible(&self, s: &AppState) -> bool {
-        *s.inspect_tabs.cursor.current() == InspectOption::Ledger
+        *s.get_inspect_tabs().cursor.current() == InspectOption::Ledger
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) {
         s.ledger_tabs
@@ -50,7 +36,7 @@ impl View for SearchBar {
         WidgetSlot::SearchBar
     }
     fn is_visible(&self, s: &AppState) -> bool {
-        match s.inspect_tabs.cursor.current() {
+        match s.get_inspect_tabs().cursor.current() {
             InspectOption::Ledger => true,
             //InspectOption::Chain => true,
             InspectOption::Otel => false,
@@ -62,7 +48,7 @@ impl View for SearchBar {
             f,
             area,
             "Search",
-            match s.inspect_tabs.cursor.current() {
+            match s.get_inspect_tabs().cursor.current() {
                 InspectOption::Ledger => match s.ledger_mvs.search_options.selected_item() {
                     Some(LedgerSearch::UtxosByAddress) => {
                         &s.ledger_mvs.utxos_by_addr_search.builder
@@ -84,7 +70,7 @@ impl View for LedgerBrowseOptions {
         WidgetSlot::LedgerOptions
     }
     fn is_visible(&self, s: &AppState) -> bool {
-        *s.inspect_tabs.cursor.current() == InspectOption::Ledger
+        *s.get_inspect_tabs().cursor.current() == InspectOption::Ledger
             && *s.ledger_tabs.cursor.current() == LedgerMode::Browse
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) {
@@ -99,7 +85,7 @@ impl View for ChainSearchHeader {
         WidgetSlot::LedgerHeaderDetails
     }
     fn is_visible(&self, _s: &AppState) -> bool {
-        true //*s.inspect_tabs.cursor.current() == InspectOption::Chain
+        true //*s.get_inspect_tabs().cursor.current() == InspectOption::Chain
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) {
         let header_opt: Option<Option<&BlockHeader>> = s
@@ -123,7 +109,7 @@ impl View for ChainSearchBlock {
         WidgetSlot::LedgerBlockDetails
     }
     fn is_visible(&self, _s: &AppState) -> bool {
-        true //*s.inspect_tabs.cursor.current() == InspectOption::Chain
+        true //*s.get_inspect_tabs().cursor.current() == InspectOption::Chain
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) {
         let block_opt_opt: Option<Option<&RawBlock>> = s
@@ -147,7 +133,7 @@ impl View for ChainSearchNonces {
         WidgetSlot::LedgerNoncesDetails
     }
     fn is_visible(&self, _s: &AppState) -> bool {
-        true //*s.inspect_tabs.cursor.current() == InspectOption::Chain
+        true //*s.get_inspect_tabs().cursor.current() == InspectOption::Chain
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) {
         let nonces_opt_opt: Option<Option<&Nonces>> = s
@@ -172,7 +158,7 @@ impl View for LedgerSearchOptions {
         WidgetSlot::LedgerOptions
     }
     fn is_visible(&self, s: &AppState) -> bool {
-        *s.inspect_tabs.cursor.current() == InspectOption::Ledger
+        *s.get_inspect_tabs().cursor.current() == InspectOption::Ledger
             && *s.ledger_tabs.cursor.current() == LedgerMode::Search
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) {
@@ -188,7 +174,7 @@ macro_rules! browse_views {
             impl View for $list_struct {
                 fn slot(&self) -> WidgetSlot { WidgetSlot::List }
                 fn is_visible(&self, s: &AppState) -> bool {
-                    *s.inspect_tabs.cursor.current() == InspectOption::Ledger &&
+                    *s.get_inspect_tabs().cursor.current() == InspectOption::Ledger &&
                     *s.ledger_tabs.cursor.current() == LedgerMode::Browse &&
                     s.ledger_mvs.browse_options.selected_item() == Some(&LedgerBrowse::$variant)
                 }
@@ -202,7 +188,7 @@ macro_rules! browse_views {
             impl View for $details_struct {
                 fn slot(&self) -> WidgetSlot { WidgetSlot::Details }
                 fn is_visible(&self, s: &AppState) -> bool {
-                    let visible = *s.inspect_tabs.cursor.current() == InspectOption::Ledger &&
+                    let visible = *s.get_inspect_tabs().cursor.current() == InspectOption::Ledger &&
                     *s.ledger_tabs.cursor.current() == LedgerMode::Browse &&
                     s.ledger_mvs.browse_options.selected_item() == Some(&LedgerBrowse::$variant);
                     visible
@@ -249,7 +235,7 @@ impl View for LedgerUtxosByAddr {
         WidgetSlot::List
     }
     fn is_visible(&self, s: &AppState) -> bool {
-        *s.inspect_tabs.cursor.current() == InspectOption::Ledger
+        *s.get_inspect_tabs().cursor.current() == InspectOption::Ledger
             && *s.ledger_tabs.cursor.current() == LedgerMode::Search
             && s.ledger_mvs.search_options.selected_item()
                 == Some(LedgerSearch::UtxosByAddress).as_ref()
@@ -270,7 +256,7 @@ impl View for LedgerSearchUtxoDetails {
         WidgetSlot::Details
     }
     fn is_visible(&self, s: &AppState) -> bool {
-        *s.inspect_tabs.cursor.current() == InspectOption::Ledger
+        *s.get_inspect_tabs().cursor.current() == InspectOption::Ledger
             && *s.ledger_tabs.cursor.current() == LedgerMode::Search
             && s.ledger_mvs.search_options.selected_item()
                 == Some(LedgerSearch::UtxosByAddress).as_ref()
@@ -295,7 +281,7 @@ impl View for TraceList {
     }
 
     fn is_visible(&self, s: &AppState) -> bool {
-        *s.inspect_tabs.cursor.current() == InspectOption::Otel
+        *s.get_inspect_tabs().cursor.current() == InspectOption::Otel
     }
 
     fn render(&self, f: &mut Frame, a: Rect, s: &AppState) {
@@ -312,7 +298,7 @@ impl View for FlameGraphDetails {
     }
 
     fn is_visible(&self, s: &AppState) -> bool {
-        *s.inspect_tabs.cursor.current() == InspectOption::Otel
+        *s.get_inspect_tabs().cursor.current() == InspectOption::Otel
     }
 
     fn render(&self, frame: &mut Frame, area: Rect, s: &AppState) {
@@ -332,7 +318,7 @@ impl View for SpanDetails {
     }
 
     fn is_visible(&self, s: &AppState) -> bool {
-        *s.inspect_tabs.cursor.current() == InspectOption::Otel
+        *s.get_inspect_tabs().cursor.current() == InspectOption::Otel
     }
 
     fn render(&self, frame: &mut Frame, area: Rect, s: &AppState) {
@@ -352,7 +338,7 @@ impl View for PromMetrics {
     }
 
     fn is_visible(&self, s: &AppState) -> bool {
-        *s.inspect_tabs.cursor.current() == InspectOption::Prometheus
+        *s.get_inspect_tabs().cursor.current() == InspectOption::Prometheus
     }
 
     fn render(&self, frame: &mut Frame, area: Rect, s: &AppState) {

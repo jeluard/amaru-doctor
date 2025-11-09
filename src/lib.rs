@@ -11,6 +11,7 @@ use anyhow::Result;
 pub mod app;
 mod app_state;
 pub mod cli;
+pub mod components;
 mod config;
 mod controller;
 pub mod detection;

@@ -5,6 +5,54 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use strum::{Display, EnumIter, IntoEnumIterator};
 
+#[derive(Clone, Copy, Debug, Default, Display, Hash, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ComponentId {
+    // --- Containers ---
+    #[default]
+    Root,
+    LegacyRoot,
+    LedgerPage,
+    OtelPage,
+    PrometheusPage,
+    ChainPage,
+
+    // --- Global / Reusable ---
+    InspectTabs,
+    SearchBar,
+
+    // --- Ledger Page ---
+    LedgerModeTabs,
+    LedgerBrowseOptions,
+    LedgerSearchOptions,
+    LedgerAccountsList,
+    LedgerAccountDetails,
+    LedgerBlockIssuersList,
+    LedgerBlockIssuerDetails,
+    LedgerDRepsList,
+    LedgerDRepDetails,
+    LedgerPoolsList,
+    LedgerPoolDetails,
+    LedgerProposalsList,
+    LedgerProposalDetails,
+    LedgerUtxosList,
+    LedgerUtxoDetails,
+    LedgerUtxosByAddrList,
+    LedgerUtxosByAddrDetails,
+
+    // --- Chain Page ---
+    ChainSearchHeader,
+    ChainSearchBlock,
+    ChainSearchNonces,
+
+    // --- Otel Page ---
+    OtelTraceList,
+    OtelFlameGraph,
+    OtelSpanDetails,
+
+    // --- Prometheus Page ---
+    PrometheusMetrics,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Display, Serialize, Deserialize)]
 pub enum Action {
     Tick,
@@ -36,6 +84,9 @@ pub enum Action {
     SyncTraceGraph,
     SyncPromMetrics,
     GetButtonEvents,
+    SetFocus(ComponentId),
+    FocusNext,
+    FocusPrev,
 }
 
 impl Action {

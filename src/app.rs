@@ -59,7 +59,7 @@ impl App {
             frame_area,
             screen_mode,
         )?;
-        let last_inspect_tabs = *app_state.inspect_tabs.cursor.current();
+        let last_inspect_tabs = *app_state.get_inspect_tabs().cursor.current();
         let slot_views = compute_slot_views(&app_state);
 
         Ok(Self {
@@ -219,14 +219,13 @@ impl App {
         tui.draw(|f| {
             let frame_area = f.area();
             if frame_area != self.app_state.frame_area
-                || self.app_state.inspect_tabs.cursor.current() != &self.last_store_option
+                || self.app_state.get_inspect_tabs().selected() != self.last_store_option
             {
                 debug!("Frame area or store option changed");
 
                 let action = Action::UpdateLayout(frame_area);
                 let _ = self.run_updates(&action);
-
-                self.last_store_option = *self.app_state.inspect_tabs.cursor.current();
+                self.last_store_option = self.app_state.get_inspect_tabs().selected();
             }
 
             for (slot, area) in self.app_state.layout_model.get_layout().clone().iter() {

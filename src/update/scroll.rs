@@ -43,7 +43,7 @@ impl Update for ScrollUpdate {
                     }
                 }
             }
-            WidgetSlot::List => match s.inspect_tabs.cursor.current() {
+            WidgetSlot::List => match s.get_inspect_tabs().cursor.current() {
                 InspectOption::Ledger => {
                     if *s.ledger_tabs.cursor.current() == LedgerMode::Browse {
                         scroll_ledger_list(&mut s.ledger_mvs, direction);
@@ -81,7 +81,7 @@ impl Update for ScrollUpdate {
                 //InspectOption::Chain => { /* There's no list widget in the Chain tab */ }
                 InspectOption::Prometheus => { /* There's no list widget in the Prometheus tab */ }
             },
-            WidgetSlot::Details => match s.inspect_tabs.cursor.current() {
+            WidgetSlot::Details => match s.get_inspect_tabs().cursor.current() {
                 InspectOption::Otel => scroll_trace_details(&mut s.otel_view, direction),
                 InspectOption::Ledger => { /* TODO: Impl item details scroll */ }
                 //InspectOption::Chain => {}

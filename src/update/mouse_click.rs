@@ -1,5 +1,6 @@
 use crate::{
     app_state::AppState,
+    components::Component,
     states::{
         Action, InspectOption, LedgerBrowse, LedgerMode, LedgerSearch::UtxosByAddress, WidgetSlot,
     },
@@ -32,7 +33,9 @@ impl Update for MouseClickUpdate {
 
         match slot {
             WidgetSlot::InspectOption => {
-                s.inspect_tabs.select_by_column(rect, mouse_event.column);
+                s.get_inspect_tabs_mut()
+                    .handle_click(rect, mouse_event.row, mouse_event.column)
+                    .is_empty();
             }
             WidgetSlot::LedgerMode => {
                 s.ledger_tabs.select_by_column(rect, mouse_event.column);
@@ -49,7 +52,7 @@ impl Update for MouseClickUpdate {
                         .select_index_by_row(relative_row);
                 }
             },
-            WidgetSlot::List => match s.inspect_tabs.cursor.current() {
+            WidgetSlot::List => match s.get_inspect_tabs().cursor.current() {
                 InspectOption::Otel => {
                     s.otel_view.trace_list.select_index_by_row(relative_row);
                 }
@@ -94,10 +97,10 @@ impl Update for MouseClickUpdate {
                 },
                 _ => debug!(
                     "Clicked a page {} with no click action",
-                    s.inspect_tabs.cursor.current()
+                    s.get_inspect_tabs().cursor.current()
                 ),
             },
-            WidgetSlot::Details => match s.inspect_tabs.cursor.current() {
+            WidgetSlot::Details => match s.get_inspect_tabs().cursor.current() {
                 InspectOption::Otel => {
                     if let Some(span) = &s.otel_view.focused_span {
                         s.otel_view.selected_span = Some(span.clone());
@@ -105,7 +108,7 @@ impl Update for MouseClickUpdate {
                 }
                 _ => debug!(
                     "No click action in Details slot for inspect option {}",
-                    s.inspect_tabs.cursor.current()
+                    s.get_inspect_tabs().cursor.current()
                 ),
             },
             _ => debug!("Clicked a slot {} with no click action", slot),
