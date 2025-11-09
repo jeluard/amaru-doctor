@@ -12,8 +12,8 @@ impl Update for LayoutUpdate {
         s.frame_area = *frame_area;
         let new_layout = compute_slot_layout(
             s.screen_mode,
-            *s.get_inspect_tabs().cursor.current(),
-            *s.get_ledger_mode_tabs().cursor.current(),
+            s.get_inspect_tabs().selected(),
+            s.get_ledger_mode_tabs().selected(),
             *frame_area,
         );
         let actions = new_layout

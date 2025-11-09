@@ -15,7 +15,10 @@ use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
 use anyhow::Result;
 use arc_swap::ArcSwap;
 use ratatui::layout::Rect;
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::HashMap,
+    sync::{Arc, mpsc},
+};
 use tokio::sync::mpsc::Receiver;
 
 /// Holds ALL the app's state. Does not self-mutate.
@@ -34,7 +37,7 @@ pub struct AppState {
     pub otel_view: OtelViewState,
     pub prom_metrics: PromMetricsViewState,
 
-    pub button_events: std::sync::mpsc::Receiver<InputEvent>,
+    pub button_events: mpsc::Receiver<InputEvent>,
 
     pub mouse_state: MouseState,
 
@@ -48,7 +51,7 @@ impl AppState {
         chain_db: ReadOnlyChainDB,
         trace_graph: Arc<ArcSwap<TraceGraph>>,
         prom_metrics: Receiver<NodeMetrics>,
-        button_events: std::sync::mpsc::Receiver<InputEvent>,
+        button_events: mpsc::Receiver<InputEvent>,
         frame_area: Rect,
         screen_mode: ScreenMode,
     ) -> Result<Self> {
@@ -78,11 +81,11 @@ impl AppState {
             HashMap::new();
 
         let inspect_tabs: TabsComponent<InspectOption> =
-            TabsComponent::new(ComponentId::InspectTabs);
+            TabsComponent::new(ComponentId::InspectTabs, WidgetSlot::InspectOption);
         component_registry.insert(inspect_tabs.id(), Box::new(inspect_tabs));
 
         let ledger_mode_tabs: TabsComponent<LedgerMode> =
-            TabsComponent::new(ComponentId::LedgerModeTabs);
+            TabsComponent::new(ComponentId::LedgerModeTabs, WidgetSlot::LedgerMode);
         component_registry.insert(ledger_mode_tabs.id(), Box::new(ledger_mode_tabs));
 
         Ok(Self {

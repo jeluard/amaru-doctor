@@ -15,6 +15,7 @@ impl Update for TickUpdate {
             Action::SyncTraceGraph,
             Action::SyncPromMetrics,
             Action::GetButtonEvents,
+            Action::PollUtxoSearch,
         ]
     }
 }

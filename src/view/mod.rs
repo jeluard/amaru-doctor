@@ -27,9 +27,9 @@ pub trait View: Sync {
 static VIEW_DEFS: &[&dyn View] = &[
     &INSPECT_TABS_VIEW,
     &LEDGER_MODE_TABS_VIEW,
-    //&SearchBar,
+    &SearchBar,
     &LedgerBrowseOptions,
-    //&LedgerSearchOptions,
+    &LedgerSearchOptions,
     &LedgerAccounts,
     &LedgerBlockIssuers,
     &LedgerDReps,

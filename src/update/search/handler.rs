@@ -1,20 +1,21 @@
 use crate::{
     app_state::AppState,
-    model::list_view::ListModelViewState,
-    states::{InspectOption, LedgerSearch, WidgetSlot},
-    store::owned_iter::OwnedUtxoIter,
+    model::{async_list_model::AsyncListModel, async_provider::AsyncProvider},
+    states::{ComponentId, InspectOption, LedgerMode, LedgerSearch, WidgetSlot},
     ui::to_list_item::UtxoItem,
     update::search::{SearchHandler, SearchState},
 };
 use amaru_consensus::{BlockHeader, Nonces, ReadOnlyChainStore};
 use amaru_kernel::{Address, Hash, RawBlock};
+use amaru_ledger::store::ReadStore;
+use tokio::sync::mpsc;
 use tracing::trace;
 
 #[derive(Default)]
 pub struct LedgerUtxosByAddr;
 impl SearchHandler for LedgerUtxosByAddr {
     type Query = Address;
-    type Result = ListModelViewState<UtxoItem>;
+    type Result = AsyncListModel<UtxoItem>;
 
     fn debug_name(&self) -> &'static str {
         "LedgerUtxosByAddr"
@@ -25,7 +26,8 @@ impl SearchHandler for LedgerUtxosByAddr {
     }
 
     fn is_active(&self, s: &AppState) -> bool {
-        *s.get_inspect_tabs().cursor.current() == InspectOption::Ledger
+        s.get_inspect_tabs().selected() == InspectOption::Ledger
+            && s.get_ledger_mode_tabs().selected() == LedgerMode::Search
             && s.ledger_mvs.search_options.selected_item() == Some(&LedgerSearch::UtxosByAddress)
     }
 
@@ -39,9 +41,28 @@ impl SearchHandler for LedgerUtxosByAddr {
 
     fn compute(&self, s: &AppState, query: &Self::Query) -> Self::Result {
         let owned_query = query.clone();
-        let iter = OwnedUtxoIter::new(s.ledger_db.clone())
-            .filter(move |(_, out): &UtxoItem| out.address == owned_query);
-        ListModelViewState::new("Utxos by Address", iter, s.ledger_mvs.list_window_height)
+        let db_clone = s.ledger_db.clone();
+
+        let iter = move |tx: mpsc::Sender<UtxoItem>| {
+            let Ok(utxo_iter) = db_clone.iter_utxos() else {
+                return;
+            };
+            let filtered_iter =
+                utxo_iter.filter(move |(_, out): &UtxoItem| out.address == owned_query);
+            for item in filtered_iter {
+                if tx.blocking_send(item).is_err() {
+                    break;
+                }
+            }
+        };
+
+        let provider = AsyncProvider::new(iter);
+        AsyncListModel::new(
+            ComponentId::LedgerUtxosByAddrList,
+            self.slot(),
+            "UTxOs by Address",
+            provider,
+        )
     }
 }
 
