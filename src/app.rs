@@ -15,6 +15,7 @@ use anyhow::Result;
 use crossterm::event::KeyEvent;
 use ratatui::prelude::{Backend, Rect};
 use serde::{Deserialize, Serialize};
+use std::sync::mpsc;
 use tokio::sync::mpsc::{Receiver, UnboundedReceiver, UnboundedSender, unbounded_channel};
 use tracing::{debug, error, info, trace};
 
@@ -44,7 +45,7 @@ impl App {
         chain_db: ReadOnlyChainDB,
         trace_graph: TraceGraphSnapshot,
         prom_metrics: Receiver<NodeMetrics>,
-        button_events: std::sync::mpsc::Receiver<InputEvent>,
+        button_events: mpsc::Receiver<InputEvent>,
         frame_area: Rect,
         screen_mode: ScreenMode,
     ) -> Result<Self> {

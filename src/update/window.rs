@@ -22,10 +22,10 @@ static WINDOW_DEFS: &[WindowSizeDef] = &[
                 s.ledger_mvs.options_window_height = size;
             },
             |s, size| {
-                s.ledger_mvs.browse_options.set_height(size);
+                s.get_ledger_browse_options_mut().view.set_height(size);
             },
             |s, size| {
-                s.ledger_mvs.search_options.set_height(size);
+                s.get_ledger_search_options_mut().view.set_height(size);
             },
         ],
     },
@@ -36,22 +36,22 @@ static WINDOW_DEFS: &[WindowSizeDef] = &[
                 s.ledger_mvs.list_window_height = size;
             },
             |s, size| {
-                s.ledger_mvs.accounts.set_height(size);
+                s.get_accounts_list_mut().view.set_height(size);
             },
             |s, size| {
-                s.ledger_mvs.block_issuers.set_height(size);
+                s.get_block_issuers_list_mut().view.set_height(size);
             },
             |s, size| {
-                s.ledger_mvs.dreps.set_height(size);
+                s.get_dreps_list_mut().view.set_height(size);
             },
             |s, size| {
-                s.ledger_mvs.pools.set_height(size);
+                s.get_pools_list_mut().view.set_height(size);
             },
             |s, size| {
-                s.ledger_mvs.proposals.set_height(size);
+                s.get_proposals_list_mut().view.set_height(size);
             },
             |s, size| {
-                s.ledger_mvs.utxos.set_height(size);
+                s.get_utxos_list_mut().view.set_height(size);
             },
             |s, size| {
                 for w in s.ledger_mvs.utxos_by_addr_search.results.values_mut() {

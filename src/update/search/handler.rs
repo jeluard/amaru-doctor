@@ -28,7 +28,8 @@ impl SearchHandler for LedgerUtxosByAddr {
     fn is_active(&self, s: &AppState) -> bool {
         s.get_inspect_tabs().selected() == InspectOption::Ledger
             && s.get_ledger_mode_tabs().selected() == LedgerMode::Search
-            && s.ledger_mvs.search_options.selected_item() == Some(&LedgerSearch::UtxosByAddress)
+            && s.get_ledger_search_options().view.selected_item()
+                == Some(&LedgerSearch::UtxosByAddress)
     }
 
     fn state<'a>(&self, s: &'a AppState) -> &'a SearchState<Self::Query, Self::Result> {
@@ -59,7 +60,7 @@ impl SearchHandler for LedgerUtxosByAddr {
         let provider = AsyncProvider::new(iter);
         AsyncListModel::new(
             ComponentId::LedgerUtxosByAddrList,
-            self.slot(),
+            WidgetSlot::List,
             "UTxOs by Address",
             provider,
         )

@@ -1,3 +1,4 @@
+use super::{MouseScrollDirection, ScrollDirection};
 use crate::{
     app_state::AppState,
     components::{Component, ComponentLayout},
@@ -142,8 +143,18 @@ where
         Vec::new()
     }
 
-    fn handle_scroll(&mut self, _direction: super::ScrollDirection) -> Vec<Action> {
+    fn handle_scroll(&mut self, _direction: ScrollDirection) -> Vec<Action> {
         info!("Nothing to scroll");
+        Vec::new()
+    }
+
+    fn handle_mouse_scroll(&mut self, _direction: MouseScrollDirection) -> Vec<Action> {
+        info!("Nothing to scroll");
+        Vec::new()
+    }
+
+    fn handle_mouse_drag(&mut self, _direction: ScrollDirection) -> Vec<Action> {
+        info!("Nothing to drag");
         Vec::new()
     }
 }

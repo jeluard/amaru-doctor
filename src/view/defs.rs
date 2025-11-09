@@ -1,5 +1,5 @@
 use crate::components::Component;
-use crate::states::WidgetSlot;
+use crate::states::{ComponentId, WidgetSlot};
 use crate::view::adapter::ComponentViewAdapter;
 use crate::view::block::render_block;
 use crate::view::empty_list::draw_empty_list;
@@ -18,15 +18,10 @@ use amaru_kernel::RawBlock;
 use ratatui::{Frame, layout::Rect};
 use std::collections::HashMap;
 
-pub static INSPECT_TABS_VIEW: ComponentViewAdapter = ComponentViewAdapter::always_visible(
-    crate::states::ComponentId::InspectTabs,
-    crate::states::WidgetSlot::InspectOption,
-);
-pub static LEDGER_MODE_TABS_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
-    crate::states::ComponentId::LedgerModeTabs,
-    crate::states::WidgetSlot::LedgerMode,
-    |s: &AppState| s.get_inspect_tabs().selected() == InspectOption::Ledger,
-);
+pub static INSPECT_TABS_VIEW: ComponentViewAdapter =
+    ComponentViewAdapter::always_visible(ComponentId::InspectTabs, WidgetSlot::InspectOption);
+pub static LEDGER_MODE_TABS_VIEW: ComponentViewAdapter =
+    ComponentViewAdapter::always_visible(ComponentId::LedgerModeTabs, WidgetSlot::LedgerMode);
 
 #[allow(dead_code)]
 pub struct SearchBar;
@@ -48,7 +43,7 @@ impl View for SearchBar {
             area,
             "Search",
             match s.get_inspect_tabs().cursor.current() {
-                InspectOption::Ledger => match s.ledger_mvs.search_options.selected_item() {
+                InspectOption::Ledger => match s.get_ledger_search_options().view.selected_item() {
                     Some(LedgerSearch::UtxosByAddress) => {
                         &s.ledger_mvs.utxos_by_addr_search.builder
                     }
@@ -63,20 +58,14 @@ impl View for SearchBar {
     }
 }
 
-pub struct LedgerBrowseOptions;
-impl View for LedgerBrowseOptions {
-    fn slot(&self) -> WidgetSlot {
-        WidgetSlot::LedgerOptions
-    }
-    fn is_visible(&self, s: &AppState) -> bool {
-        *s.get_inspect_tabs().cursor.current() == InspectOption::Ledger
-            && *s.get_ledger_mode_tabs().cursor.current() == LedgerMode::Browse
-    }
-    fn render(&self, f: &mut Frame, area: Rect, s: &AppState) {
-        let is_focused = s.layout_model.is_focused(self.slot());
-        s.ledger_mvs.browse_options.draw(f, area, is_focused);
-    }
-}
+pub static LEDGER_BROWSE_OPTIONS_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
+    ComponentId::LedgerBrowseOptions,
+    WidgetSlot::LedgerOptions,
+    |s: &AppState| {
+        s.get_inspect_tabs().selected() == InspectOption::Ledger
+            && s.get_ledger_mode_tabs().selected() == LedgerMode::Browse
+    },
+);
 
 pub struct ChainSearchHeader;
 impl View for ChainSearchHeader {
@@ -150,82 +139,130 @@ impl View for ChainSearchNonces {
     }
 }
 
-#[allow(dead_code)]
-pub struct LedgerSearchOptions;
-impl View for LedgerSearchOptions {
-    fn slot(&self) -> WidgetSlot {
-        WidgetSlot::LedgerOptions
-    }
-    fn is_visible(&self, s: &AppState) -> bool {
-        *s.get_inspect_tabs().cursor.current() == InspectOption::Ledger
-            && *s.get_ledger_mode_tabs().cursor.current() == LedgerMode::Search
-    }
-    fn render(&self, f: &mut Frame, area: Rect, s: &AppState) {
-        let is_focused = s.layout_model.is_focused(self.slot());
-        s.ledger_mvs.search_options.draw(f, area, is_focused);
-    }
-}
+pub static LEDGER_SEARCH_OPTIONS_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
+    ComponentId::LedgerSearchOptions,
+    WidgetSlot::LedgerOptions,
+    |s: &AppState| {
+        s.get_inspect_tabs().selected() == InspectOption::Ledger
+            && s.get_ledger_mode_tabs().selected() == LedgerMode::Search
+    },
+);
 
-macro_rules! browse_views {
-    ($(($variant:ident, $list_struct:ident, $details_struct:ident, $field:ident, $label:expr)),* $(,)?) => {
-        $(
-            pub struct $list_struct;
-            impl View for $list_struct {
-                fn slot(&self) -> WidgetSlot { WidgetSlot::List }
-                fn is_visible(&self, s: &AppState) -> bool {
-                    *s.get_inspect_tabs().cursor.current() == InspectOption::Ledger &&
-                    *s.get_ledger_mode_tabs().cursor.current() == LedgerMode::Browse &&
-                    s.ledger_mvs.browse_options.selected_item() == Some(&LedgerBrowse::$variant)
-                }
-                fn render(&self, f: &mut Frame, area: Rect, s: &AppState)  {
-                    let is_focused = s.layout_model.is_focused(self.slot());
-                    s.ledger_mvs.$field.draw(f, area, is_focused);
-                }
-            }
+pub static LEDGER_ACCOUNTS_LIST_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
+    ComponentId::LedgerAccountsList,
+    WidgetSlot::List,
+    |s: &AppState| {
+        s.get_inspect_tabs().selected() == InspectOption::Ledger
+            && s.get_ledger_mode_tabs().selected() == LedgerMode::Browse
+            && s.get_ledger_browse_options().view.selected_item() == Some(&LedgerBrowse::Accounts)
+    },
+);
 
-            pub struct $details_struct;
-            impl View for $details_struct {
-                fn slot(&self) -> WidgetSlot { WidgetSlot::Details }
-                fn is_visible(&self, s: &AppState) -> bool {
-                    let visible = *s.get_inspect_tabs().cursor.current() == InspectOption::Ledger &&
-                    *s.get_ledger_mode_tabs().cursor.current() == LedgerMode::Browse &&
-                    s.ledger_mvs.browse_options.selected_item() == Some(&LedgerBrowse::$variant);
-                    visible
-                }
-                fn render(&self, f: &mut Frame, area: Rect, s: &AppState)  {
-                    let is_focused = s.layout_model.is_focused(self.slot());
-                    draw_details(f, area, format!("{} Details", $label.to_owned()), s.ledger_mvs.$field.selected_item(), is_focused);
-                }
-            }
-        )*
-    }
-}
+pub static LEDGER_ACCOUNT_DETAILS_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
+    ComponentId::LedgerAccountDetails,
+    WidgetSlot::Details,
+    |s: &AppState| {
+        s.get_inspect_tabs().selected() == InspectOption::Ledger
+            && s.get_ledger_mode_tabs().selected() == LedgerMode::Browse
+            && s.get_ledger_browse_options().view.selected_item() == Some(&LedgerBrowse::Accounts)
+    },
+);
 
-browse_views!(
-    (
-        Accounts,
-        LedgerAccounts,
-        LedgerAccountDetails,
-        accounts,
-        "Accounts"
-    ),
-    (
-        BlockIssuers,
-        LedgerBlockIssuers,
-        LedgerBlockIssuerDetails,
-        block_issuers,
-        "Block Issuers"
-    ),
-    (DReps, LedgerDReps, LedgerDRepDetails, dreps, "DReps"),
-    (Pools, LedgerPools, LedgerPoolDetails, pools, "Pools"),
-    (
-        Proposals,
-        LedgerProposals,
-        LedgerProposalDetails,
-        proposals,
-        "Proposals"
-    ),
-    (Utxos, LedgerUtxos, LedgerUtxoDetails, utxos, "Utxos"),
+pub static LEDGER_BLOCK_ISSUERS_LIST_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
+    ComponentId::LedgerBlockIssuersList,
+    WidgetSlot::List,
+    |s: &AppState| {
+        s.get_inspect_tabs().selected() == InspectOption::Ledger
+            && s.get_ledger_mode_tabs().selected() == LedgerMode::Browse
+            && s.get_ledger_browse_options().view.selected_item()
+                == Some(&LedgerBrowse::BlockIssuers)
+    },
+);
+pub static LEDGER_BLOCK_ISSUER_DETAILS_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
+    ComponentId::LedgerBlockIssuerDetails,
+    WidgetSlot::Details,
+    |s: &AppState| {
+        s.get_inspect_tabs().selected() == InspectOption::Ledger
+            && s.get_ledger_mode_tabs().selected() == LedgerMode::Browse
+            && s.get_ledger_browse_options().view.selected_item()
+                == Some(&LedgerBrowse::BlockIssuers)
+    },
+);
+
+pub static LEDGER_DREPS_LIST_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
+    ComponentId::LedgerDRepsList,
+    WidgetSlot::List,
+    |s: &AppState| {
+        s.get_inspect_tabs().selected() == InspectOption::Ledger
+            && s.get_ledger_mode_tabs().selected() == LedgerMode::Browse
+            && s.get_ledger_browse_options().view.selected_item() == Some(&LedgerBrowse::DReps)
+    },
+);
+pub static LEDGER_DREP_DETAILS_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
+    ComponentId::LedgerDRepDetails,
+    WidgetSlot::Details,
+    |s: &AppState| {
+        s.get_inspect_tabs().selected() == InspectOption::Ledger
+            && s.get_ledger_mode_tabs().selected() == LedgerMode::Browse
+            && s.get_ledger_browse_options().view.selected_item() == Some(&LedgerBrowse::DReps)
+    },
+);
+
+pub static LEDGER_POOLS_LIST_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
+    ComponentId::LedgerPoolsList,
+    WidgetSlot::List,
+    |s: &AppState| {
+        s.get_inspect_tabs().selected() == InspectOption::Ledger
+            && s.get_ledger_mode_tabs().selected() == LedgerMode::Browse
+            && s.get_ledger_browse_options().view.selected_item() == Some(&LedgerBrowse::Pools)
+    },
+);
+pub static LEDGER_POOL_DETAILS_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
+    ComponentId::LedgerPoolDetails,
+    WidgetSlot::Details,
+    |s: &AppState| {
+        s.get_inspect_tabs().selected() == InspectOption::Ledger
+            && s.get_ledger_mode_tabs().selected() == LedgerMode::Browse
+            && s.get_ledger_browse_options().view.selected_item() == Some(&LedgerBrowse::Pools)
+    },
+);
+
+pub static LEDGER_PROPOSALS_LIST_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
+    ComponentId::LedgerProposalsList,
+    WidgetSlot::List,
+    |s: &AppState| {
+        s.get_inspect_tabs().selected() == InspectOption::Ledger
+            && s.get_ledger_mode_tabs().selected() == LedgerMode::Browse
+            && s.get_ledger_browse_options().view.selected_item() == Some(&LedgerBrowse::Proposals)
+    },
+);
+pub static LEDGER_PROPOSAL_DETAILS_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
+    ComponentId::LedgerProposalDetails,
+    WidgetSlot::Details,
+    |s: &AppState| {
+        s.get_inspect_tabs().selected() == InspectOption::Ledger
+            && s.get_ledger_mode_tabs().selected() == LedgerMode::Browse
+            && s.get_ledger_browse_options().view.selected_item() == Some(&LedgerBrowse::Proposals)
+    },
+);
+
+pub static LEDGER_UTXOS_LIST_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
+    ComponentId::LedgerUtxosList,
+    WidgetSlot::List,
+    |s: &AppState| {
+        s.get_inspect_tabs().selected() == InspectOption::Ledger
+            && s.get_ledger_mode_tabs().selected() == LedgerMode::Browse
+            && s.get_ledger_browse_options().view.selected_item() == Some(&LedgerBrowse::Utxos)
+    },
+);
+pub static LEDGER_UTXO_DETAILS_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
+    ComponentId::LedgerUtxoDetails,
+    WidgetSlot::Details,
+    |s: &AppState| {
+        s.get_inspect_tabs().selected() == InspectOption::Ledger
+            && s.get_ledger_mode_tabs().selected() == LedgerMode::Browse
+            && s.get_ledger_browse_options().view.selected_item() == Some(&LedgerBrowse::Utxos)
+    },
 );
 
 #[derive(Default)]
@@ -238,7 +275,7 @@ impl View for LedgerUtxosByAddr {
     fn is_visible(&self, s: &AppState) -> bool {
         s.get_inspect_tabs().selected() == InspectOption::Ledger
             && s.get_ledger_mode_tabs().selected() == LedgerMode::Search
-            && s.ledger_mvs.search_options.selected_item()
+            && s.get_ledger_search_options().view.selected_item()
                 == Some(LedgerSearch::UtxosByAddress).as_ref()
     }
 
@@ -262,7 +299,7 @@ impl View for LedgerSearchUtxoDetails {
     fn is_visible(&self, s: &AppState) -> bool {
         *s.get_inspect_tabs().cursor.current() == InspectOption::Ledger
             && *s.get_ledger_mode_tabs().cursor.current() == LedgerMode::Search
-            && s.ledger_mvs.search_options.selected_item()
+            && s.get_ledger_search_options().view.selected_item()
                 == Some(LedgerSearch::UtxosByAddress).as_ref()
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) {
