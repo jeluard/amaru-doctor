@@ -1,8 +1,4 @@
-use crate::{
-    app_state::AppState,
-    states::{ComponentId, WidgetSlot},
-    view::{adapter::ComponentViewAdapter, defs::*},
-};
+use crate::{app_state::AppState, states::WidgetSlot, view::defs::*};
 use ratatui::{Frame, layout::Rect};
 use std::collections::HashMap;
 
@@ -19,7 +15,6 @@ pub mod prom_metrics;
 pub mod search;
 pub mod span;
 pub mod span_bar;
-pub mod tabs;
 pub mod time_series;
 
 pub trait View: Sync {
@@ -30,8 +25,8 @@ pub trait View: Sync {
 
 /// All views
 static VIEW_DEFS: &[&dyn View] = &[
-    &ComponentViewAdapter::new(ComponentId::InspectTabs, WidgetSlot::InspectOption),
-    //&LedgerModeTabs,
+    &INSPECT_TABS_VIEW,
+    &LEDGER_MODE_TABS_VIEW,
     //&SearchBar,
     &LedgerBrowseOptions,
     //&LedgerSearchOptions,

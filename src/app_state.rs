@@ -10,7 +10,6 @@ use crate::{
     prometheus::model::NodeMetrics,
     states::{ComponentId, InspectOption, LedgerMode, WidgetSlot},
     update::mouse::MouseState,
-    view::tabs::TabsState,
 };
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
 use anyhow::Result;
@@ -28,8 +27,6 @@ pub struct AppState {
 
     pub frame_area: Rect,
     pub layout_model: LayoutModel,
-
-    pub ledger_tabs: TabsState<LedgerMode>,
 
     pub ledger_mvs: LedgerModelViewState,
     pub chain_view: ChainViewState,
@@ -79,9 +76,14 @@ impl AppState {
 
         let mut component_registry: HashMap<ComponentId, Box<dyn Component + Send + Sync>> =
             HashMap::new();
+
         let inspect_tabs: TabsComponent<InspectOption> =
             TabsComponent::new(ComponentId::InspectTabs);
         component_registry.insert(inspect_tabs.id(), Box::new(inspect_tabs));
+
+        let ledger_mode_tabs: TabsComponent<LedgerMode> =
+            TabsComponent::new(ComponentId::LedgerModeTabs);
+        component_registry.insert(ledger_mode_tabs.id(), Box::new(ledger_mode_tabs));
 
         Ok(Self {
             screen_mode,
@@ -89,7 +91,6 @@ impl AppState {
             chain_db: chain_db_arc.clone(),
             frame_area: Rect::default(),
             layout_model,
-            ledger_tabs: TabsState::new()?,
             ledger_mvs: LedgerModelViewState::new(ledger_db_arc, options_height, list_height),
             chain_view: ChainViewState::default(),
             otel_view: OtelViewState::new(trace_graph),
@@ -121,5 +122,27 @@ impl AppState {
                     .downcast_mut::<TabsComponent<InspectOption>>()
             })
             .expect("InspectTabs component not in registry or wrong type")
+    }
+
+    pub fn get_ledger_mode_tabs(&self) -> &TabsComponent<LedgerMode> {
+        self.component_registry
+            .get(&ComponentId::LedgerModeTabs)
+            .and_then(|c| {
+                c.as_ref()
+                    .as_any()
+                    .downcast_ref::<TabsComponent<LedgerMode>>()
+            })
+            .expect("LedgerModeTabs component not in registry or wrong type")
+    }
+
+    pub fn get_ledger_mode_tabs_mut(&mut self) -> &mut TabsComponent<LedgerMode> {
+        self.component_registry
+            .get_mut(&ComponentId::LedgerModeTabs)
+            .and_then(|c| {
+                c.as_mut()
+                    .as_any_mut()
+                    .downcast_mut::<TabsComponent<LedgerMode>>()
+            })
+            .expect("LedgerModeTabs component not in registry or wrong type")
     }
 }
