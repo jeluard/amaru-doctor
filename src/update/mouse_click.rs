@@ -38,9 +38,10 @@ impl Update for MouseClickUpdate {
                     .is_empty();
             }
             WidgetSlot::LedgerMode => {
-                s.ledger_tabs.select_by_column(rect, mouse_event.column);
+                s.get_ledger_mode_tabs_mut()
+                    .select_by_column(rect, mouse_event.column);
             }
-            WidgetSlot::LedgerOptions => match *s.ledger_tabs.cursor.current() {
+            WidgetSlot::LedgerOptions => match *s.get_ledger_mode_tabs().cursor.current() {
                 LedgerMode::Browse => {
                     s.ledger_mvs
                         .browse_options
@@ -56,7 +57,7 @@ impl Update for MouseClickUpdate {
                 InspectOption::Otel => {
                     s.otel_view.trace_list.select_index_by_row(relative_row);
                 }
-                InspectOption::Ledger => match *s.ledger_tabs.cursor.current() {
+                InspectOption::Ledger => match *s.get_ledger_mode_tabs().cursor.current() {
                     LedgerMode::Browse => {
                         if let Some(browse_option) = s.ledger_mvs.browse_options.selected_item() {
                             match browse_option {

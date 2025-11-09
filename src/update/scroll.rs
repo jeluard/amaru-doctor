@@ -27,7 +27,7 @@ impl Update for ScrollUpdate {
 
         match s.layout_model.get_focus() {
             WidgetSlot::LedgerOptions => {
-                let mode = s.ledger_tabs.cursor.current();
+                let mode = s.get_ledger_mode_tabs().cursor.current();
                 match (mode, direction) {
                     (LedgerMode::Browse, ScrollDirection::Up) => {
                         s.ledger_mvs.browse_options.cursor_back()
@@ -45,7 +45,7 @@ impl Update for ScrollUpdate {
             }
             WidgetSlot::List => match s.get_inspect_tabs().cursor.current() {
                 InspectOption::Ledger => {
-                    if *s.ledger_tabs.cursor.current() == LedgerMode::Browse {
+                    if *s.get_ledger_mode_tabs().cursor.current() == LedgerMode::Browse {
                         scroll_ledger_list(&mut s.ledger_mvs, direction);
                     }
                     // TODO: Add similar unified logic for LedgerMode::Search

@@ -34,8 +34,8 @@ impl Update for TabsUpdate {
             }
             WidgetSlot::LedgerMode => {
                 match direction {
-                    ScrollDirection::Left => s.ledger_tabs.cursor.next_back(),
-                    ScrollDirection::Right => s.ledger_tabs.cursor.non_empty_next(),
+                    ScrollDirection::Left => s.get_ledger_mode_tabs_mut().cursor.next_back(),
+                    ScrollDirection::Right => s.get_ledger_mode_tabs_mut().cursor.non_empty_next(),
                 };
                 return vec![Action::UpdateLayout(s.frame_area)];
             }
