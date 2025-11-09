@@ -27,8 +27,8 @@ impl Update for TabsUpdate {
         match s.layout_model.get_focus() {
             WidgetSlot::InspectOption => {
                 match direction {
-                    ScrollDirection::Left => s.inspect_tabs.cursor.next_back(),
-                    ScrollDirection::Right => s.inspect_tabs.cursor.non_empty_next(),
+                    ScrollDirection::Left => s.get_inspect_tabs_mut().cursor.next_back(),
+                    ScrollDirection::Right => s.get_inspect_tabs_mut().cursor.non_empty_next(),
                 };
                 return vec![Action::UpdateLayout(s.frame_area)];
             }

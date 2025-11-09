@@ -1,5 +1,6 @@
 use crate::{
     ScreenMode,
+    components::{Component, tabs::TabsComponent},
     model::{
         button::InputEvent, chain_view::ChainViewState, layout::LayoutModel,
         ledger_view::LedgerModelViewState, otel_view::OtelViewState,
@@ -7,7 +8,7 @@ use crate::{
     },
     otel::graph::TraceGraph,
     prometheus::model::NodeMetrics,
-    states::{InspectOption, LedgerMode, WidgetSlot},
+    states::{ComponentId, InspectOption, LedgerMode, WidgetSlot},
     update::mouse::MouseState,
     view::tabs::TabsState,
 };
@@ -15,7 +16,7 @@ use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
 use anyhow::Result;
 use arc_swap::ArcSwap;
 use ratatui::layout::Rect;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 use tokio::sync::mpsc::Receiver;
 
 /// Holds ALL the app's state. Does not self-mutate.
@@ -28,7 +29,6 @@ pub struct AppState {
     pub frame_area: Rect,
     pub layout_model: LayoutModel,
 
-    pub inspect_tabs: TabsState<InspectOption>,
     pub ledger_tabs: TabsState<LedgerMode>,
 
     pub ledger_mvs: LedgerModelViewState,
@@ -40,6 +40,9 @@ pub struct AppState {
     pub button_events: std::sync::mpsc::Receiver<InputEvent>,
 
     pub mouse_state: MouseState,
+
+    pub component_registry: HashMap<ComponentId, Box<dyn Component + Send + Sync>>,
+    pub focused_component: ComponentId,
 }
 
 impl AppState {
@@ -73,13 +76,19 @@ impl AppState {
             .ok_or(anyhow::anyhow!("No rect for List"))?
             .height
             .into();
+
+        let mut component_registry: HashMap<ComponentId, Box<dyn Component + Send + Sync>> =
+            HashMap::new();
+        let inspect_tabs: TabsComponent<InspectOption> =
+            TabsComponent::new(ComponentId::InspectTabs);
+        component_registry.insert(inspect_tabs.id(), Box::new(inspect_tabs));
+
         Ok(Self {
             screen_mode,
             ledger_db: ledger_db_arc.clone(),
             chain_db: chain_db_arc.clone(),
             frame_area: Rect::default(),
             layout_model,
-            inspect_tabs: TabsState::new()?,
             ledger_tabs: TabsState::new()?,
             ledger_mvs: LedgerModelViewState::new(ledger_db_arc, options_height, list_height),
             chain_view: ChainViewState::default(),
@@ -87,6 +96,30 @@ impl AppState {
             prom_metrics: PromMetricsViewState::new(prom_metrics),
             button_events,
             mouse_state: MouseState::default(),
+            component_registry,
+            focused_component: ComponentId::InspectTabs,
         })
+    }
+
+    pub fn get_inspect_tabs(&self) -> &TabsComponent<InspectOption> {
+        self.component_registry
+            .get(&ComponentId::InspectTabs)
+            .and_then(|c| {
+                c.as_ref()
+                    .as_any()
+                    .downcast_ref::<TabsComponent<InspectOption>>()
+            })
+            .expect("InspectTabs component not in registry or wrong type")
+    }
+
+    pub fn get_inspect_tabs_mut(&mut self) -> &mut TabsComponent<InspectOption> {
+        self.component_registry
+            .get_mut(&ComponentId::InspectTabs)
+            .and_then(|c| {
+                c.as_mut()
+                    .as_any_mut()
+                    .downcast_mut::<TabsComponent<InspectOption>>()
+            })
+            .expect("InspectTabs component not in registry or wrong type")
     }
 }

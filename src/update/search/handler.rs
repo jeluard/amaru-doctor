@@ -25,7 +25,7 @@ impl SearchHandler for LedgerUtxosByAddr {
     }
 
     fn is_active(&self, s: &AppState) -> bool {
-        *s.inspect_tabs.cursor.current() == InspectOption::Ledger
+        *s.get_inspect_tabs().cursor.current() == InspectOption::Ledger
             && s.ledger_mvs.search_options.selected_item() == Some(&LedgerSearch::UtxosByAddress)
     }
 
@@ -60,7 +60,7 @@ impl SearchHandler for ChainSearch {
     }
 
     fn is_active(&self, _s: &AppState) -> bool {
-        true //*s.inspect_tabs.cursor.current() == InspectOption::Chain
+        true //*s.get_inspect_tabs().cursor.current() == InspectOption::Chain
     }
 
     fn state<'a>(&self, s: &'a AppState) -> &'a SearchState<Self::Query, Self::Result> {
