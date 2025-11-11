@@ -2,8 +2,9 @@ use crate::ui::{
     RichText, ToRichText, labeled_default, labeled_default_opt, labeled_default_single,
 };
 use amaru_consensus::{BlockHeader, IsHeader};
-use amaru_kernel::{Header, HeaderBody};
+use amaru_kernel::{Header, HeaderBody, RawBlock};
 use pallas_primitives::{VrfCert, conway::OperationalCert};
+use ratatui::text::Span;
 
 impl ToRichText for Header {
     fn to_rich_text(&self) -> RichText {
@@ -75,5 +76,11 @@ impl ToRichText for OperationalCert {
             &self.operational_cert_sigma,
         ));
         RichText::Lines(lines)
+    }
+}
+
+impl ToRichText for RawBlock {
+    fn to_rich_text(&self) -> RichText {
+        RichText::Single(Span::raw(hex::encode::<&[u8]>(self.as_ref())))
     }
 }

@@ -1,6 +1,9 @@
 use crate::{
     ScreenMode,
-    components::{Component, details::DetailsComponent, list::ListComponent, tabs::TabsComponent},
+    components::{
+        Component, details::DetailsComponent, list::ListComponent, search_bar::SearchBarComponent,
+        tabs::TabsComponent, trace_list::TraceListComponent,
+    },
     model::{
         button::InputEvent, chain_view::ChainViewState, layout::LayoutModel,
         ledger_view::LedgerModelViewState, otel_view::OtelViewState,
@@ -16,6 +19,8 @@ use crate::{
     ui::to_list_item::{AccountItem, BlockIssuerItem, DRepItem, PoolItem, ProposalItem, UtxoItem},
     update::mouse::MouseState,
 };
+use amaru_consensus::{BlockHeader, Nonces};
+use amaru_kernel::RawBlock;
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
 use anyhow::Result;
 use arc_swap::ArcSwap;
@@ -138,6 +143,11 @@ impl AppState {
 
         register_component!(
             component_registry,
+            SearchBarComponent::new(ComponentId::SearchBar, WidgetSlot::SearchBar)
+        );
+
+        register_component!(
+            component_registry,
             ListComponent::<LedgerBrowse>::new(
                 ComponentId::LedgerBrowseOptions,
                 WidgetSlot::LedgerOptions,
@@ -174,7 +184,7 @@ impl AppState {
                 ComponentId::LedgerAccountDetails,
                 WidgetSlot::Details,
                 "Account Details",
-                ComponentId::LedgerAccountsList,
+                Box::new(|s: &AppState| s.get_accounts_list().model_view.selected_item()),
             )
         );
 
@@ -194,7 +204,7 @@ impl AppState {
                 ComponentId::LedgerBlockIssuerDetails,
                 WidgetSlot::Details,
                 "Block Issuer Details",
-                ComponentId::LedgerBlockIssuersList,
+                Box::new(|s: &AppState| s.get_block_issuers_list().model_view.selected_item()),
             )
         );
 
@@ -214,7 +224,7 @@ impl AppState {
                 ComponentId::LedgerDRepDetails,
                 WidgetSlot::Details,
                 "DRep Details",
-                ComponentId::LedgerDRepsList,
+                Box::new(|s: &AppState| s.get_dreps_list().model_view.selected_item()),
             )
         );
 
@@ -234,7 +244,7 @@ impl AppState {
                 ComponentId::LedgerPoolDetails,
                 WidgetSlot::Details,
                 "Pool Details",
-                ComponentId::LedgerPoolsList,
+                Box::new(|s: &AppState| s.get_pools_list().model_view.selected_item()),
             )
         );
 
@@ -254,7 +264,7 @@ impl AppState {
                 ComponentId::LedgerProposalDetails,
                 WidgetSlot::Details,
                 "Proposal Details",
-                ComponentId::LedgerProposalsList,
+                Box::new(|s: &AppState| s.get_proposals_list().model_view.selected_item()),
             )
         );
 
@@ -274,8 +284,58 @@ impl AppState {
                 ComponentId::LedgerUtxoDetails,
                 WidgetSlot::Details,
                 "Utxo Details",
-                ComponentId::LedgerUtxosList,
+                Box::new(|s: &AppState| s.get_utxos_list().model_view.selected_item()),
             )
+        );
+
+        register_component!(
+            component_registry,
+            DetailsComponent::<BlockHeader>::new(
+                ComponentId::ChainSearchHeader,
+                WidgetSlot::LedgerHeaderDetails,
+                "Header Details",
+                Box::new(|s: &AppState| {
+                    s.chain_view
+                        .chain_search
+                        .get_current_res()
+                        .and_then(|res| res.as_ref().map(|(h, _, _)| h))
+                }),
+            )
+        );
+
+        register_component!(
+            component_registry,
+            DetailsComponent::<RawBlock>::new(
+                ComponentId::ChainSearchBlock,
+                WidgetSlot::LedgerBlockDetails,
+                "Block Details",
+                Box::new(|s: &AppState| {
+                    s.chain_view
+                        .chain_search
+                        .get_current_res()
+                        .and_then(|res| res.as_ref().map(|(_, b, _)| b))
+                }),
+            )
+        );
+
+        register_component!(
+            component_registry,
+            DetailsComponent::<Nonces>::new(
+                ComponentId::ChainSearchNonces,
+                WidgetSlot::LedgerNoncesDetails,
+                "Nonces Details",
+                Box::new(|s: &AppState| {
+                    s.chain_view
+                        .chain_search
+                        .get_current_res()
+                        .and_then(|res| res.as_ref().map(|(_, _, n)| n))
+                }),
+            )
+        );
+
+        register_component!(
+            component_registry,
+            TraceListComponent::new(ComponentId::OtelTraceList, WidgetSlot::List)
         );
 
         Ok(Self {
@@ -373,5 +433,13 @@ impl AppState {
         ListComponent<UtxoItem>,
         ComponentId::LedgerUtxosList,
         "LedgerUtxosList"
+    );
+
+    define_component_getter!(
+        get_trace_list,
+        get_trace_list_mut,
+        TraceListComponent,
+        ComponentId::OtelTraceList,
+        "OtelTraceList"
     );
 }

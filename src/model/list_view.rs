@@ -7,12 +7,12 @@ use ratatui::{prelude::Frame, prelude::Rect};
 
 /// A stateful component that encapsulates both the data model (`StreamingIter`)
 /// and the view state (`ListViewState`) for a list, providing an ergonomic API.
-pub struct ListModelViewState<T> {
+pub struct ListModelView<T> {
     iter: StreamingIter<T>,
     view: ListViewState,
 }
 
-impl<T: ToListItem> ListModelViewState<T> {
+impl<T: ToListItem> ListModelView<T> {
     pub fn new(
         title: &'static str,
         iter: impl Iterator<Item = T> + Send + Sync + 'static,

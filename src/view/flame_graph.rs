@@ -1,4 +1,5 @@
 use crate::{
+    app_state::AppState,
     model::otel_view::OtelViewState,
     otel::{
         TreeBounds,
@@ -18,7 +19,7 @@ use std::{iter, sync::Arc};
 use tracing::error;
 
 /// Renders the flame graph widget.
-pub fn render_flame_graph(frame: &mut Frame, area: Rect, state: &OtelViewState, is_focused: bool) {
+pub fn render_flame_graph(frame: &mut Frame, area: Rect, s: &AppState, is_focused: bool) {
     let mut block = Block::default()
         .title("Trace Details")
         .borders(Borders::ALL);
@@ -26,7 +27,7 @@ pub fn render_flame_graph(frame: &mut Frame, area: Rect, state: &OtelViewState, 
         block = block.border_style(Style::default().fg(Color::Blue));
     }
 
-    let lines = match get_flame_graph_lines(state, area.width.saturating_sub(2) as usize) {
+    let lines = match get_flame_graph_lines(s, area.width.saturating_sub(2) as usize) {
         Ok(lines) => lines,
         Err(e) => {
             error!("Unable to get flame graph lines: {}", e);
@@ -39,16 +40,13 @@ pub fn render_flame_graph(frame: &mut Frame, area: Rect, state: &OtelViewState, 
 }
 
 /// Determines which view to render based on the app state.
-fn get_flame_graph_lines(
-    state: &OtelViewState,
-    max_bar_width: usize,
-) -> Result<Vec<Line<'static>>> {
-    if let Some(selected_span) = &state.selected_span {
+fn get_flame_graph_lines(s: &AppState, max_bar_width: usize) -> Result<Vec<Line<'static>>> {
+    if let Some(selected_span) = &s.otel_view.selected_span {
         // A Span is selected
-        get_span_tree_lines(state, selected_span, max_bar_width)
-    } else if let Some(trace_id) = state.trace_list.selected_item() {
+        get_span_tree_lines(&s.otel_view, selected_span, max_bar_width)
+    } else if let Some(trace_id) = s.get_trace_list().selected_item() {
         // No Span is selected but a Trace is selected
-        get_trace_tree_lines(state, trace_id, max_bar_width)
+        get_trace_tree_lines(&s.otel_view, trace_id, max_bar_width)
     } else {
         Ok(vec![Line::from("No Trace selected.")])
     }

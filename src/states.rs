@@ -178,7 +178,7 @@ impl ToListItem for LedgerSearch {
 pub enum InspectOption {
     #[default]
     Ledger,
-    //Chain,
+    // Chain,
     Otel,
     Prometheus,
 }

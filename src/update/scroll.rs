@@ -1,7 +1,6 @@
 use crate::{
     app_state::AppState,
     components::Component,
-    model::otel_view::OtelViewState,
     otel::{graph::TraceGraph, id::SpanId, span_ext::SpanExt},
     states::{Action, InspectOption, LedgerBrowse, LedgerMode, WidgetSlot},
     update::Update,
@@ -32,8 +31,12 @@ impl Update for ScrollUpdate {
                     return s.get_ledger_browse_options_mut().handle_scroll(direction);
                 }
                 LedgerMode::Search => match direction {
-                    ScrollDirection::Up => s.get_ledger_search_options_mut().view.cursor_back(),
-                    ScrollDirection::Down => s.get_ledger_search_options_mut().view.cursor_next(),
+                    ScrollDirection::Up => {
+                        s.get_ledger_search_options_mut().model_view.cursor_back()
+                    }
+                    ScrollDirection::Down => {
+                        s.get_ledger_search_options_mut().model_view.cursor_next()
+                    }
                 },
             },
             WidgetSlot::List => match s.get_inspect_tabs().cursor.current() {
@@ -52,18 +55,14 @@ impl Update for ScrollUpdate {
                     // DynamicList struct
 
                     // First scroll the trace list
-                    match direction {
-                        ScrollDirection::Up => s.otel_view.trace_list.cursor_back(),
-                        ScrollDirection::Down => s.otel_view.trace_list.cursor_next(),
-                    }
+                    s.get_trace_list_mut().handle_scroll(direction);
 
                     let graph = s.otel_view.trace_graph_source.load();
 
                     // Then find the new focused span--it's the first span (root) in the
                     // new trace
                     let new_focused_span = s
-                        .otel_view
-                        .trace_list
+                        .get_trace_list()
                         .selected_item()
                         .and_then(|trace_id| graph.traces.get(trace_id))
                         .and_then(|trace_meta| trace_meta.roots().first_key_value())
@@ -75,13 +74,12 @@ impl Update for ScrollUpdate {
                     // If we've scrolled to a new Trace, the selected span is reset
                     s.otel_view.selected_span = None;
                 }
-                //InspectOption::Chain => { /* There's no list widget in the Chain tab */ }
-                InspectOption::Prometheus => { /* There's no list widget in the Prometheus tab */ }
+                InspectOption::Prometheus => { /* There's no list widget in the Prometheus tab */ } // InspectOption::Chain => {}
             },
             WidgetSlot::Details => match s.get_inspect_tabs().cursor.current() {
-                InspectOption::Otel => scroll_trace_details(&mut s.otel_view, direction),
+                InspectOption::Otel => scroll_trace_details(s, direction),
                 InspectOption::Ledger => { /* TODO: Impl item details scroll */ }
-                //InspectOption::Chain => {}
+                // InspectOption::Chain => {}
                 InspectOption::Prometheus => { /* TODO: Impl metrics scroll */ }
             },
             _ => trace!("No scroll logic for slot {:?}", s.layout_model.get_focus()),
@@ -92,7 +90,7 @@ impl Update for ScrollUpdate {
 
 /// Scrolls the list within the ledger view.
 fn scroll_ledger_list(s: &mut AppState, direction: ScrollDirection) {
-    if let Some(browse_option) = s.get_ledger_browse_options().view.selected_item() {
+    if let Some(browse_option) = s.get_ledger_browse_options().model_view.selected_item() {
         debug!(
             "Scrolling ledger list cursor for browse option: {:?}",
             browse_option
@@ -102,37 +100,43 @@ fn scroll_ledger_list(s: &mut AppState, direction: ScrollDirection) {
                 s.get_accounts_list_mut().handle_scroll(direction);
             }
             (LedgerBrowse::BlockIssuers, ScrollDirection::Up) => {
-                s.get_block_issuers_list_mut().view.cursor_back()
+                s.get_block_issuers_list_mut().model_view.cursor_back()
             }
             (LedgerBrowse::BlockIssuers, ScrollDirection::Down) => {
-                s.get_block_issuers_list_mut().view.cursor_next()
+                s.get_block_issuers_list_mut().model_view.cursor_next()
             }
-            (LedgerBrowse::DReps, ScrollDirection::Up) => s.get_dreps_list_mut().view.cursor_back(),
+            (LedgerBrowse::DReps, ScrollDirection::Up) => {
+                s.get_dreps_list_mut().model_view.cursor_back()
+            }
             (LedgerBrowse::DReps, ScrollDirection::Down) => {
-                s.get_dreps_list_mut().view.cursor_next()
+                s.get_dreps_list_mut().model_view.cursor_next()
             }
-            (LedgerBrowse::Pools, ScrollDirection::Up) => s.get_pools_list_mut().view.cursor_back(),
+            (LedgerBrowse::Pools, ScrollDirection::Up) => {
+                s.get_pools_list_mut().model_view.cursor_back()
+            }
             (LedgerBrowse::Pools, ScrollDirection::Down) => {
-                s.get_pools_list_mut().view.cursor_next()
+                s.get_pools_list_mut().model_view.cursor_next()
             }
             (LedgerBrowse::Proposals, ScrollDirection::Up) => {
-                s.get_proposals_list_mut().view.cursor_back()
+                s.get_proposals_list_mut().model_view.cursor_back()
             }
             (LedgerBrowse::Proposals, ScrollDirection::Down) => {
-                s.get_proposals_list_mut().view.cursor_next()
+                s.get_proposals_list_mut().model_view.cursor_next()
             }
-            (LedgerBrowse::Utxos, ScrollDirection::Up) => s.get_utxos_list_mut().view.cursor_back(),
+            (LedgerBrowse::Utxos, ScrollDirection::Up) => {
+                s.get_utxos_list_mut().model_view.cursor_back()
+            }
             (LedgerBrowse::Utxos, ScrollDirection::Down) => {
-                s.get_utxos_list_mut().view.cursor_next()
+                s.get_utxos_list_mut().model_view.cursor_next()
             }
         }
     }
 }
 
 /// Scrolls to the next focused span within the OTEL trace details view.
-fn scroll_trace_details(otel_view: &mut OtelViewState, direction: ScrollDirection) {
-    let data = otel_view.trace_graph_source.load();
-    let Some(ordered_spans) = get_ordered_spans_for_view(&data, otel_view) else {
+fn scroll_trace_details(s: &mut AppState, direction: ScrollDirection) {
+    let data = s.otel_view.trace_graph_source.load();
+    let Some(ordered_spans) = get_ordered_spans_for_view(&data, s) else {
         return;
     };
     if ordered_spans.is_empty() {
@@ -140,7 +144,8 @@ fn scroll_trace_details(otel_view: &mut OtelViewState, direction: ScrollDirectio
     }
 
     // Find the index of the currently focused span in the span list
-    let current_index = otel_view
+    let current_index = s
+        .otel_view
         .focused_span
         .as_ref()
         .and_then(|span| ordered_spans.iter().position(|id| *id == span.span_id()));
@@ -155,7 +160,7 @@ fn scroll_trace_details(otel_view: &mut OtelViewState, direction: ScrollDirectio
 
     if Some(new_index) != current_index {
         // Update the focused span given the new index
-        otel_view.focused_span = ordered_spans
+        s.otel_view.focused_span = ordered_spans
             .get(new_index)
             .and_then(|id| data.spans.get(id).cloned());
     }
@@ -164,9 +169,9 @@ fn scroll_trace_details(otel_view: &mut OtelViewState, direction: ScrollDirectio
 /// Helper to get the list of spans for scrolling. If a span is selected, we
 /// only get that span's subtree. If a span isn't selected, we get all the spans
 /// for the selected trace.
-fn get_ordered_spans_for_view(data: &TraceGraph, otel_view: &OtelViewState) -> Option<Vec<SpanId>> {
+fn get_ordered_spans_for_view(data: &TraceGraph, s: &AppState) -> Option<Vec<SpanId>> {
     // Determine if a span is selected
-    if let Some(selected_span) = &otel_view.selected_span {
+    if let Some(selected_span) = &s.otel_view.selected_span {
         let selected_span_id = selected_span.span_id();
         // Get the span's ancestors. The iter starts at the span's parent and walks *up*
         // the tree--we reverse this so that the resulting list is in ascending order.
@@ -176,8 +181,7 @@ fn get_ordered_spans_for_view(data: &TraceGraph, otel_view: &OtelViewState) -> O
         Some(ancestors.into_iter().chain(self_and_descendants).collect())
     } else {
         // There's no selected span, render the selected trace's entire tree
-        otel_view
-            .trace_list
+        s.get_trace_list()
             .selected_item()
             .map(|trace_id| data.trace_iter(trace_id).collect())
     }

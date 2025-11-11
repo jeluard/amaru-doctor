@@ -1,6 +1,5 @@
 use crate::{
-    model::async_list_model::AsyncListModel, ui::to_list_item::UtxoItem,
-    update::search::SearchState,
+    components::async_list::AsyncListModel, ui::to_list_item::UtxoItem, update::search::SearchState,
 };
 use amaru_kernel::Address;
 

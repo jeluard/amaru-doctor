@@ -1,51 +1,26 @@
 use crate::{
     app_state::AppState,
-    components::{Component, ComponentLayout, MouseScrollDirection, ScrollDirection},
-    states::{Action, ComponentId, WidgetSlot},
-    ui::ToRichText,
-    view::item_details::draw_details,
+    components::{Component, ComponentLayout, MouseScrollDirection},
+    states::{Action, ComponentId, InspectOption, LedgerSearch, WidgetSlot},
+    update::scroll::ScrollDirection,
+    view::search::render_search_query,
 };
 use crossterm::event::KeyEvent;
 use ratatui::{Frame, layout::Rect};
-use std::{any::Any, marker::PhantomData};
+use std::any::Any;
 
-type DataAccessor<T> = Box<dyn Fn(&AppState) -> Option<&T> + Send + Sync>;
-
-pub struct DetailsComponent<T>
-where
-    T: ToRichText + Send + Sync + 'static,
-{
+pub struct SearchBarComponent {
     id: ComponentId,
     slot: WidgetSlot,
-    title: &'static str,
-    data_accessor: DataAccessor<T>,
-    _phantom: PhantomData<T>,
 }
 
-impl<T> DetailsComponent<T>
-where
-    T: ToRichText + Send + Sync + 'static,
-{
-    pub fn new(
-        id: ComponentId,
-        slot: WidgetSlot,
-        title: &'static str,
-        data_accessor: DataAccessor<T>,
-    ) -> Self {
-        Self {
-            id,
-            slot,
-            title,
-            data_accessor,
-            _phantom: PhantomData,
-        }
+impl SearchBarComponent {
+    pub fn new(id: ComponentId, slot: WidgetSlot) -> Self {
+        Self { id, slot }
     }
 }
 
-impl<T> Component for DetailsComponent<T>
-where
-    T: ToRichText + Send + Sync + 'static,
-{
+impl Component for SearchBarComponent {
     fn id(&self) -> ComponentId {
         self.id
     }
@@ -64,15 +39,27 @@ where
         layout
     }
 
+    /// Renders the search bar, pulling its state from the old model
     fn render(&self, f: &mut Frame, s: &AppState, layout: &ComponentLayout) {
         let Some(&area) = layout.get(&self.id) else {
             return;
         };
         let is_focused = s.layout_model.is_focused(self.slot);
-        let selected_item = (self.data_accessor)(s);
-        draw_details(f, area, self.title.to_string(), selected_item, is_focused);
-    }
 
+        // This is the old, complex logic from view/defs.rs
+        let search_query = match s.get_inspect_tabs().selected() {
+            InspectOption::Ledger => match s.get_ledger_search_options().model_view.selected_item()
+            {
+                Some(LedgerSearch::UtxosByAddress) => &s.ledger_mvs.utxos_by_addr_search.builder,
+                None => "",
+            },
+            // InspectOption::Chain => &s.chain_view.chain_search.builder,
+            InspectOption::Otel => "",
+            InspectOption::Prometheus => "",
+        };
+
+        render_search_query(f, area, "Search", search_query, is_focused);
+    }
     fn handle_scroll(&mut self, _direction: ScrollDirection) -> Vec<Action> {
         Vec::new()
     }

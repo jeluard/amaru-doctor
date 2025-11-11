@@ -1,6 +1,7 @@
 use crate::{
     app_state::AppState,
-    model::{async_list_model::AsyncListModel, async_provider::AsyncProvider},
+    components::async_list::AsyncListModel,
+    model::async_provider::AsyncProvider,
     states::{ComponentId, InspectOption, LedgerMode, LedgerSearch, WidgetSlot},
     ui::to_list_item::UtxoItem,
     update::search::{SearchHandler, SearchState},
@@ -28,7 +29,7 @@ impl SearchHandler for LedgerUtxosByAddr {
     fn is_active(&self, s: &AppState) -> bool {
         s.get_inspect_tabs().selected() == InspectOption::Ledger
             && s.get_ledger_mode_tabs().selected() == LedgerMode::Search
-            && s.get_ledger_search_options().view.selected_item()
+            && s.get_ledger_search_options().model_view.selected_item()
                 == Some(&LedgerSearch::UtxosByAddress)
     }
 
