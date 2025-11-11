@@ -1,7 +1,7 @@
 use crate::{
     app_state::AppState,
     components::{Component, ComponentLayout, MouseScrollDirection, ScrollDirection},
-    model::list_view::ListModelViewState,
+    model::list_view::ListModelView,
     states::{Action, ComponentId, WidgetSlot},
     ui::to_list_item::ToListItem,
 };
@@ -18,7 +18,7 @@ where
 {
     id: ComponentId,
     slot: WidgetSlot,
-    pub view: ListModelViewState<T>,
+    pub model_view: ListModelView<T>,
     _phantom: PhantomData<T>,
 }
 
@@ -36,7 +36,7 @@ where
         Self {
             id,
             slot,
-            view: ListModelViewState::new(title, iter, initial_buffer_size),
+            model_view: ListModelView::new(title, iter, initial_buffer_size),
             _phantom: PhantomData,
         }
     }
@@ -71,14 +71,14 @@ where
         };
         // Use the old focus model for now
         let is_focused = s.layout_model.is_focused(self.slot);
-        self.view.draw(f, area, is_focused);
+        self.model_view.draw(f, area, is_focused);
     }
 
     /// Handles mouse clicks to select an item.
     fn handle_click(&mut self, area: Rect, row: u16, _col: u16) -> Vec<Action> {
         // +1 to account for the border
         let relative_row = row.saturating_sub(area.y + 1) as usize;
-        self.view.select_index_by_row(relative_row);
+        self.model_view.select_index_by_row(relative_row);
         Vec::new()
     }
 
@@ -89,24 +89,24 @@ where
 
     fn handle_scroll(&mut self, direction: ScrollDirection) -> Vec<Action> {
         match direction {
-            ScrollDirection::Up => self.view.cursor_back(),
-            ScrollDirection::Down => self.view.cursor_next(),
+            ScrollDirection::Up => self.model_view.cursor_back(),
+            ScrollDirection::Down => self.model_view.cursor_next(),
         }
         Vec::new()
     }
 
     fn handle_mouse_scroll(&mut self, direction: MouseScrollDirection) -> Vec<Action> {
         match direction {
-            MouseScrollDirection::Up => self.view.cursor_back(),
-            MouseScrollDirection::Down => self.view.cursor_next(),
+            MouseScrollDirection::Up => self.model_view.cursor_back(),
+            MouseScrollDirection::Down => self.model_view.cursor_next(),
         }
         Vec::new()
     }
 
     fn handle_mouse_drag(&mut self, direction: ScrollDirection) -> Vec<Action> {
         match direction {
-            ScrollDirection::Up => self.view.advance_window(),
-            ScrollDirection::Down => self.view.retreat_window(),
+            ScrollDirection::Up => self.model_view.advance_window(),
+            ScrollDirection::Down => self.model_view.retreat_window(),
         }
         Vec::new()
     }

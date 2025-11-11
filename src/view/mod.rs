@@ -3,14 +3,11 @@ use ratatui::{Frame, layout::Rect};
 use std::collections::HashMap;
 
 pub mod adapter;
-pub mod block;
 pub mod defs;
 pub mod empty_list;
 pub mod flame_graph;
-pub mod header;
 pub mod item_details;
 pub mod list;
-pub mod nonces;
 pub mod prom_metrics;
 pub mod search;
 pub mod span;
@@ -27,7 +24,7 @@ pub trait View: Sync {
 static VIEW_DEFS: &[&dyn View] = &[
     &INSPECT_TABS_VIEW,
     &LEDGER_MODE_TABS_VIEW,
-    &SearchBar,
+    &SEARCH_BAR_VIEW,
     &LEDGER_BROWSE_OPTIONS_VIEW,
     &LEDGER_SEARCH_OPTIONS_VIEW,
     &LEDGER_ACCOUNTS_LIST_VIEW,
@@ -44,10 +41,10 @@ static VIEW_DEFS: &[&dyn View] = &[
     &LEDGER_PROPOSAL_DETAILS_VIEW,
     &LEDGER_UTXO_DETAILS_VIEW,
     &LedgerSearchUtxoDetails,
-    &ChainSearchHeader,
-    &ChainSearchBlock,
-    &ChainSearchNonces,
-    &TraceList,
+    &CHAIN_SEARCH_HEADER_VIEW,
+    &CHAIN_SEARCH_BLOCK_VIEW,
+    &CHAIN_SEARCH_NONCES_VIEW,
+    &TRACE_LIST_VIEW,
     &FlameGraphDetails,
     &SpanDetails,
     &PromMetrics,

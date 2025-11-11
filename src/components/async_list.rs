@@ -7,6 +7,7 @@ use crate::{
     update::scroll::ScrollDirection,
     view::list::ListViewState,
 };
+use crossterm::event::KeyEvent;
 use ratatui::{
     Frame,
     layout::{Alignment, Rect},
@@ -166,7 +167,7 @@ where
         Vec::new()
     }
 
-    fn handle_key_event(&mut self, _key: crossterm::event::KeyEvent) -> Vec<Action> {
+    fn handle_key_event(&mut self, _key: KeyEvent) -> Vec<Action> {
         info!("No key handling for AsyncListModel");
         Vec::new()
     }

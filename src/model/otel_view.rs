@@ -1,14 +1,11 @@
-use crate::{
-    otel::{
-        graph::TraceGraph,
-        id::{SpanId, TraceId},
-        span_ext::SpanExt,
-    },
-    viewmodel::dynamic_list::DynamicListViewModel,
+use crate::otel::{
+    graph::TraceGraph,
+    id::{SpanId, TraceId},
+    span_ext::SpanExt,
 };
 use arc_swap::ArcSwap;
 use opentelemetry_proto::tonic::trace::v1::Span;
-use std::{cmp::Reverse, sync::Arc};
+use std::sync::Arc;
 
 /// Manages the rendering state for the OTEL tab of the TUI.
 ///
@@ -27,9 +24,6 @@ pub struct OtelViewState {
     /// against. This is used for efficient change detection via
     /// `Arc::ptr_eq`.
     pub last_synced_data: Option<Arc<TraceGraph>>,
-    /// The stateful list of all trace IDs, sorted for display. This component
-    /// manages selection and scrolling within the TUI's trace list view.
-    pub trace_list: DynamicListViewModel<TraceId>,
     /// The span currently being hovered over in the TUI. This is used for
     /// showing span details.
     pub focused_span: Option<Arc<Span>>,
@@ -43,7 +37,6 @@ impl OtelViewState {
         Self {
             trace_graph_source,
             last_synced_data: None,
-            trace_list: DynamicListViewModel::new("Traces"),
             focused_span: None,
             selected_span: None,
         }
@@ -54,7 +47,7 @@ impl OtelViewState {
     /// This method checks if the underlying `TraceGraph` has changed. If it
     /// has, it updates the trace list and validates the selected trace and
     /// spans.
-    pub fn sync_state(&mut self) -> bool {
+    pub fn sync_state(&mut self, selected_trace: Option<&TraceId>) -> bool {
         // Atomically load the most recent `Arc<TraceGraph>` from the shared `ArcSwap`.
         // This is a lock-free operation. `latest_data` is now a snapshot of the data
         // that this sync operation will be based on.
@@ -72,24 +65,15 @@ impl OtelViewState {
         if !has_changed {
             return false;
         }
-        // debug!("TraceGraph changes found, updating");
 
-        // Get the latest trace ids, sort them by start, and set them in the trace list
-        // for display
-        let mut trace_ids: Vec<_> = latest_data.traces.keys().copied().collect();
-        trace_ids
-            .sort_unstable_by_key(|id| Reverse(latest_data.traces.get(id).unwrap().start_time()));
-        self.trace_list.set_items(trace_ids);
-
-        if self.trace_list.selected_item().is_none() {
-            // Trace selection was lost (because the trace was evicted), clear the
-            // dependent span states
+        if selected_trace.is_none() {
+            // Trace selection was lost, clear the dependent span states
             self.focused_span = None;
             self.selected_span = None;
         } else {
             // Trace selection remains, validate the span states
-            self.validate_span(&latest_data, |s| &mut s.focused_span);
-            self.validate_span(&latest_data, |s| &mut s.selected_span);
+            self.validate_span(&latest_data, selected_trace, |s| &mut s.focused_span);
+            self.validate_span(&latest_data, selected_trace, |s| &mut s.selected_span);
         }
 
         self.last_synced_data = Some(latest_data);
@@ -97,16 +81,18 @@ impl OtelViewState {
     }
 
     /// Helper to validate a span field against the latest data.
-    fn validate_span<F>(&mut self, data: &TraceGraph, mut field_accessor: F)
-    where
+    fn validate_span<F>(
+        &mut self,
+        data: &TraceGraph,
+        selected_trace: Option<&TraceId>,
+        mut field_accessor: F,
+    ) where
         F: FnMut(&mut Self) -> &mut Option<Arc<Span>>,
     {
         // Take the span from the field to check it
         if let Some(span) = field_accessor(self).take() {
             // Check if the currently selected trace contains the span
-            if self
-                .trace_list
-                .selected_item()
+            if selected_trace
                 .is_some_and(|trace_id| is_span_in_trace(data, trace_id, &span.span_id()))
             {
                 // It's still valid (in the trace), put it back
