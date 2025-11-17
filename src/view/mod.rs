@@ -8,11 +8,9 @@ pub mod empty_list;
 pub mod flame_graph;
 pub mod item_details;
 pub mod list;
-pub mod prom_metrics;
 pub mod search;
 pub mod span;
 pub mod span_bar;
-pub mod time_series;
 
 pub trait View: Sync {
     fn slot(&self) -> WidgetSlot;
@@ -47,7 +45,7 @@ static VIEW_DEFS: &[&dyn View] = &[
     &TRACE_LIST_VIEW,
     &FlameGraphDetails,
     &SpanDetails,
-    &PromMetrics,
+    &PROM_METRICS_VIEW,
 ];
 
 pub type SlotViews = HashMap<WidgetSlot, &'static dyn View>;
