@@ -9,6 +9,7 @@ use std::{any::Any, collections::HashMap};
 
 pub mod async_list;
 pub mod details;
+pub mod flame_graph;
 pub mod list;
 pub mod prom_metrics;
 pub mod search_bar;

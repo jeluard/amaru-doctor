@@ -43,8 +43,8 @@ static VIEW_DEFS: &[&dyn View] = &[
     &CHAIN_SEARCH_BLOCK_VIEW,
     &CHAIN_SEARCH_NONCES_VIEW,
     &TRACE_LIST_VIEW,
-    &FlameGraphDetails,
-    &SpanDetails,
+    &OTEL_SPAN_DETAILS_VIEW,
+    &OTEL_FLAME_GRAPH_VIEW,
     &PROM_METRICS_VIEW,
 ];
 
