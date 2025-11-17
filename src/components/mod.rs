@@ -10,6 +10,7 @@ use std::{any::Any, collections::HashMap};
 pub mod async_list;
 pub mod details;
 pub mod list;
+pub mod prom_metrics;
 pub mod search_bar;
 pub mod tabs;
 pub mod trace_list;

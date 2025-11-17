@@ -4,7 +4,6 @@ use crate::view::adapter::ComponentViewAdapter;
 use crate::view::empty_list::draw_empty_list;
 use crate::view::flame_graph::render_flame_graph;
 use crate::view::item_details::draw_details;
-use crate::view::prom_metrics::render_prom_metrics;
 use crate::view::span::render_span;
 use crate::{
     app_state::AppState,
@@ -276,22 +275,8 @@ impl View for SpanDetails {
     }
 }
 
-pub struct PromMetrics;
-impl View for PromMetrics {
-    fn slot(&self) -> WidgetSlot {
-        WidgetSlot::Details
-    }
-
-    fn is_visible(&self, s: &AppState) -> bool {
-        *s.get_inspect_tabs().cursor.current() == InspectOption::Prometheus
-    }
-
-    fn render(&self, frame: &mut Frame, area: Rect, s: &AppState) {
-        render_prom_metrics(
-            frame,
-            area,
-            &s.prom_metrics,
-            s.layout_model.is_focused(self.slot()),
-        );
-    }
-}
+pub static PROM_METRICS_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
+    ComponentId::PrometheusMetrics,
+    WidgetSlot::Details,
+    |s: &AppState| s.get_inspect_tabs().selected() == InspectOption::Prometheus,
+);

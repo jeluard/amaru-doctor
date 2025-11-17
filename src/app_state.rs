@@ -1,13 +1,13 @@
 use crate::{
     ScreenMode,
     components::{
-        Component, details::DetailsComponent, list::ListComponent, search_bar::SearchBarComponent,
-        tabs::TabsComponent, trace_list::TraceListComponent,
+        Component, details::DetailsComponent, list::ListComponent,
+        prom_metrics::PromMetricsComponent, search_bar::SearchBarComponent, tabs::TabsComponent,
+        trace_list::TraceListComponent,
     },
     model::{
         button::InputEvent, chain_view::ChainViewState, layout::LayoutModel,
         ledger_view::LedgerModelViewState, otel_view::OtelViewState,
-        prom_metrics::PromMetricsViewState,
     },
     otel::graph::TraceGraph,
     prometheus::model::NodeMetrics,
@@ -83,7 +83,6 @@ pub struct AppState {
     pub chain_view: ChainViewState,
 
     pub otel_view: OtelViewState,
-    pub prom_metrics: PromMetricsViewState,
 
     pub button_events: mpsc::Receiver<InputEvent>,
 
@@ -338,6 +337,11 @@ impl AppState {
             TraceListComponent::new(ComponentId::OtelTraceList, WidgetSlot::List)
         );
 
+        register_component!(
+            component_registry,
+            PromMetricsComponent::new(ComponentId::PrometheusMetrics, prom_metrics)
+        );
+
         Ok(Self {
             screen_mode,
             ledger_db: ledger_db_arc.clone(),
@@ -347,7 +351,6 @@ impl AppState {
             ledger_mvs: LedgerModelViewState::new(options_height, list_height),
             chain_view: ChainViewState::default(),
             otel_view: OtelViewState::new(trace_graph),
-            prom_metrics: PromMetricsViewState::new(prom_metrics),
             button_events,
             mouse_state: MouseState::default(),
             component_registry,
@@ -441,5 +444,13 @@ impl AppState {
         TraceListComponent,
         ComponentId::OtelTraceList,
         "OtelTraceList"
+    );
+
+    define_component_getter!(
+        get_prom_metrics,
+        get_prom_metrics_mut,
+        PromMetricsComponent,
+        ComponentId::PrometheusMetrics,
+        "PromMetrics"
     );
 }

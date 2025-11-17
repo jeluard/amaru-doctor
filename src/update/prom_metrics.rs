@@ -4,8 +4,8 @@ use crate::{app_state::AppState, states::Action, update::Update};
 pub struct PromMetricsUpdate;
 impl Update for PromMetricsUpdate {
     fn update(&self, a: &Action, s: &mut AppState) -> Vec<Action> {
-        if *a != Action::SyncPromMetrics {
-            s.prom_metrics.sync();
+        if *a == Action::SyncPromMetrics {
+            s.get_prom_metrics_mut().sync();
         }
 
         Vec::new()
