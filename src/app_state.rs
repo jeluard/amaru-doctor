@@ -1,9 +1,9 @@
 use crate::{
     ScreenMode,
     components::{
-        Component, details::DetailsComponent, list::ListComponent,
-        prom_metrics::PromMetricsComponent, search_bar::SearchBarComponent, tabs::TabsComponent,
-        trace_list::TraceListComponent,
+        Component, details::DetailsComponent, flame_graph::FlameGraphComponent,
+        list::ListComponent, prom_metrics::PromMetricsComponent, search_bar::SearchBarComponent,
+        tabs::TabsComponent, trace_list::TraceListComponent,
     },
     model::{
         button::InputEvent, chain_view::ChainViewState, layout::LayoutModel,
@@ -24,6 +24,7 @@ use amaru_kernel::RawBlock;
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
 use anyhow::Result;
 use arc_swap::ArcSwap;
+use opentelemetry_proto::tonic::trace::v1::Span;
 use ratatui::layout::Rect;
 use std::{
     collections::HashMap,
@@ -335,6 +336,21 @@ impl AppState {
         register_component!(
             component_registry,
             TraceListComponent::new(ComponentId::OtelTraceList, WidgetSlot::List)
+        );
+
+        register_component!(
+            component_registry,
+            DetailsComponent::<Span>::new(
+                ComponentId::OtelSpanDetails,
+                WidgetSlot::SubDetails,
+                "Span Details",
+                Box::new(|s: &AppState| s.otel_view.focused_span.as_deref()),
+            )
+        );
+
+        register_component!(
+            component_registry,
+            FlameGraphComponent::new(ComponentId::OtelFlameGraph, WidgetSlot::Details)
         );
 
         register_component!(

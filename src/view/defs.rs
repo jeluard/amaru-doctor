@@ -2,9 +2,7 @@ use crate::components::Component;
 use crate::states::{ComponentId, WidgetSlot};
 use crate::view::adapter::ComponentViewAdapter;
 use crate::view::empty_list::draw_empty_list;
-use crate::view::flame_graph::render_flame_graph;
 use crate::view::item_details::draw_details;
-use crate::view::span::render_span;
 use crate::{
     app_state::AppState,
     states::{InspectOption, LedgerBrowse, LedgerMode, LedgerSearch},
@@ -26,6 +24,7 @@ pub static SEARCH_BAR_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
         // InspectOption::Chain => true,
         InspectOption::Otel => false,
         InspectOption::Prometheus => false,
+        InspectOption::Chain => true,
     },
 );
 
@@ -38,19 +37,22 @@ pub static LEDGER_BROWSE_OPTIONS_VIEW: ComponentViewAdapter = ComponentViewAdapt
     },
 );
 
-pub static CHAIN_SEARCH_HEADER_VIEW: ComponentViewAdapter = ComponentViewAdapter::always_visible(
+pub static CHAIN_SEARCH_HEADER_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
     ComponentId::ChainSearchHeader,
     WidgetSlot::LedgerHeaderDetails,
+    |s: &AppState| s.get_inspect_tabs().selected() == InspectOption::Chain,
 );
 
-pub static CHAIN_SEARCH_BLOCK_VIEW: ComponentViewAdapter = ComponentViewAdapter::always_visible(
+pub static CHAIN_SEARCH_BLOCK_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
     ComponentId::ChainSearchBlock,
     WidgetSlot::LedgerBlockDetails,
+    |s: &AppState| s.get_inspect_tabs().selected() == InspectOption::Chain,
 );
 
-pub static CHAIN_SEARCH_NONCES_VIEW: ComponentViewAdapter = ComponentViewAdapter::always_visible(
+pub static CHAIN_SEARCH_NONCES_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
     ComponentId::ChainSearchNonces,
     WidgetSlot::LedgerNoncesDetails,
+    |s: &AppState| s.get_inspect_tabs().selected() == InspectOption::Chain,
 );
 
 pub static LEDGER_SEARCH_OPTIONS_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
@@ -240,40 +242,17 @@ pub static TRACE_LIST_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
     |s: &AppState| s.get_inspect_tabs().selected() == InspectOption::Otel,
 );
 
-pub struct FlameGraphDetails;
-impl View for FlameGraphDetails {
-    fn slot(&self) -> WidgetSlot {
-        WidgetSlot::Details
-    }
+pub static OTEL_SPAN_DETAILS_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
+    ComponentId::OtelSpanDetails,
+    WidgetSlot::SubDetails,
+    |s: &AppState| s.get_inspect_tabs().selected() == InspectOption::Otel,
+);
 
-    fn is_visible(&self, s: &AppState) -> bool {
-        *s.get_inspect_tabs().cursor.current() == InspectOption::Otel
-    }
-
-    fn render(&self, frame: &mut Frame, area: Rect, s: &AppState) {
-        render_flame_graph(frame, area, s, s.layout_model.is_focused(self.slot()));
-    }
-}
-
-pub struct SpanDetails;
-impl View for SpanDetails {
-    fn slot(&self) -> WidgetSlot {
-        WidgetSlot::SubDetails
-    }
-
-    fn is_visible(&self, s: &AppState) -> bool {
-        *s.get_inspect_tabs().cursor.current() == InspectOption::Otel
-    }
-
-    fn render(&self, frame: &mut Frame, area: Rect, s: &AppState) {
-        render_span(
-            frame,
-            area,
-            &s.otel_view,
-            s.layout_model.is_focused(self.slot()),
-        );
-    }
-}
+pub static OTEL_FLAME_GRAPH_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
+    ComponentId::OtelFlameGraph,
+    WidgetSlot::Details,
+    |s: &AppState| s.get_inspect_tabs().selected() == InspectOption::Otel,
+);
 
 pub static PROM_METRICS_VIEW: ComponentViewAdapter = ComponentViewAdapter::new(
     ComponentId::PrometheusMetrics,

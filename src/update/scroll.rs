@@ -74,13 +74,15 @@ impl Update for ScrollUpdate {
                     // If we've scrolled to a new Trace, the selected span is reset
                     s.otel_view.selected_span = None;
                 }
-                InspectOption::Prometheus => { /* There's no list widget in the Prometheus tab */ } // InspectOption::Chain => {}
+                InspectOption::Prometheus => { /* There's no list widget in the Prometheus tab */ }
+                InspectOption::Chain => {} // No list widget in the Chain tab currently
             },
             WidgetSlot::Details => match s.get_inspect_tabs().cursor.current() {
                 InspectOption::Otel => scroll_trace_details(s, direction),
                 InspectOption::Ledger => { /* TODO: Impl item details scroll */ }
                 // InspectOption::Chain => {}
                 InspectOption::Prometheus => { /* TODO: Impl metrics scroll */ }
+                InspectOption::Chain => {} // DetailsComponent for Chain page doesn't scroll currently
             },
             _ => trace!("No scroll logic for slot {:?}", s.layout_model.get_focus()),
         }

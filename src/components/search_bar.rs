@@ -5,7 +5,7 @@ use crate::{
     update::scroll::ScrollDirection,
     view::search::render_search_query,
 };
-use crossterm::event::KeyEvent;
+use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{Frame, layout::Rect};
 use std::any::Any;
 
@@ -53,7 +53,7 @@ impl Component for SearchBarComponent {
                 Some(LedgerSearch::UtxosByAddress) => &s.ledger_mvs.utxos_by_addr_search.builder,
                 None => "",
             },
-            // InspectOption::Chain => &s.chain_view.chain_search.builder,
+            InspectOption::Chain => &s.chain_view.chain_search.builder,
             InspectOption::Otel => "",
             InspectOption::Prometheus => "",
         };
@@ -63,7 +63,16 @@ impl Component for SearchBarComponent {
     fn handle_scroll(&mut self, _direction: ScrollDirection) -> Vec<Action> {
         Vec::new()
     }
-    fn handle_key_event(&mut self, _key: KeyEvent) -> Vec<Action> {
+    fn handle_key_event(&mut self, key: KeyEvent) -> Vec<Action> {
+        match key.code {
+            KeyCode::Char(c) => {
+                return vec![Action::Key(KeyCode::Char(c))];
+            }
+            KeyCode::Backspace => {
+                return vec![Action::Key(KeyCode::Backspace)];
+            }
+            _ => {}
+        }
         Vec::new()
     }
     fn handle_click(&mut self, _area: Rect, _row: u16, _col: u16) -> Vec<Action> {
