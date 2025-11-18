@@ -23,7 +23,7 @@ impl Update for DragUpdate {
             return Vec::new();
         };
 
-        if s.layout_model.is_focused(WidgetSlot::List)
+        if s.layout_model.is_focused(s, WidgetSlot::List)
             && s.get_inspect_tabs().selected() == InspectOption::Ledger
             && s.get_ledger_mode_tabs().selected() == LedgerMode::Browse
         {

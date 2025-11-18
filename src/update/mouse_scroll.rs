@@ -20,7 +20,7 @@ impl Update for MouseScrollUpdate {
             return Vec::new();
         }
 
-        let Some((slot, rect)) = s
+        let Some((component_id, rect)) = s
             .layout_model
             .find_hovered_slot(mouse_event.column, mouse_event.row)
         else {
@@ -29,9 +29,12 @@ impl Update for MouseScrollUpdate {
         };
         debug!(
             "Found slot {} and rect {} for mouse event {:?}",
-            slot, rect, mouse_event
+            component_id, rect, mouse_event
         );
 
+        let slot = s
+            .component_id_to_widget_slot(component_id)
+            .unwrap_or_else(|| panic!("No widget slot for component id {}", component_id));
         match (slot, mouse_event.kind) {
             (WidgetSlot::LedgerOptions, MouseEventKind::ScrollUp) => vec![Action::ScrollUp],
             (WidgetSlot::LedgerOptions, MouseEventKind::ScrollDown) => vec![Action::ScrollDown],

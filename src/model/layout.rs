@@ -1,7 +1,8 @@
 use crate::{
     ScreenMode,
-    controller::{SlotLayout, compute_slot_layout},
-    states::{InspectOption, LedgerMode, WidgetSlot},
+    app_state::AppState,
+    components::ComponentLayout,
+    states::{ComponentId, InspectOption, LedgerMode, WidgetSlot},
 };
 use ratatui::layout::{Position, Rect};
 use tracing::warn;
@@ -29,40 +30,46 @@ pub enum MoveFocus {
 
 #[derive(Debug)]
 pub struct LayoutModel {
-    layout: SlotLayout,
-    focus: WidgetSlot,
+    pub layout: ComponentLayout,
+    focus: ComponentId,
 }
 
 impl LayoutModel {
     pub fn new(
-        screen_mode: ScreenMode,
-        inspect_tabs: InspectOption,
-        ledger_mode: LedgerMode,
-        frame_area: Rect,
+        _screen_mode: ScreenMode,
+        _inspect_tabs: InspectOption,
+        _ledger_mode: LedgerMode,
+        _frame_area: Rect,
     ) -> Self {
         Self {
-            layout: compute_slot_layout(screen_mode, inspect_tabs, ledger_mode, frame_area),
-            focus: WidgetSlot::default(),
+            layout: ComponentLayout::default(),
+            focus: ComponentId::default(),
         }
     }
 
-    pub fn update_layout(&mut self, new_layout: SlotLayout) {
+    pub fn set_layout(&mut self, new_layout: ComponentLayout) {
         self.layout = new_layout;
     }
 
-    pub fn get_layout(&self) -> &SlotLayout {
+    pub fn get_layout(&self) -> &ComponentLayout {
         &self.layout
     }
 
-    pub fn get_focus(&self) -> WidgetSlot {
+    pub fn get_focus(&self) -> ComponentId {
         self.focus
     }
 
-    pub fn is_focused(&self, query: WidgetSlot) -> bool {
+    pub fn is_component_focused(&self, query: ComponentId) -> bool {
         query == self.focus
     }
 
-    pub fn set_focus(&mut self, new_focus: WidgetSlot) {
+    pub fn is_focused(&self, s: &AppState, query: WidgetSlot) -> bool {
+        query
+            == s.component_id_to_widget_slot(self.focus)
+                .unwrap_or_else(|| panic!("No widget slot found for component id {}", self.focus))
+    }
+
+    pub fn set_focus(&mut self, new_focus: ComponentId) {
         self.focus = new_focus
     }
 
@@ -70,7 +77,7 @@ impl LayoutModel {
     /// Returns `true` if the focus was changed.
     pub fn set_focus_by_location(&mut self, column: u16, row: u16) -> bool {
         self.find_hovered_slot(column, row)
-            .map(|(slot, _)| self.focus = slot)
+            .map(|(component_id, _)| self.focus = component_id)
             .is_some()
     }
 
@@ -78,7 +85,7 @@ impl LayoutModel {
     /// wrapping around the screen edges if necessary.
     pub fn set_focus_by_move(&mut self, direction: MoveFocus) {
         let Some(current_rect) = self.layout.get(&self.focus).copied() else {
-            warn!("No rect in layout for current focus {}", self.focus);
+            warn!("No rect in layout for current focus {:?}", self.focus);
             return;
         };
         let current_center = current_rect.center();
@@ -87,7 +94,7 @@ impl LayoutModel {
         let best_candidate = self
             .layout
             .iter()
-            .filter(|(slot, _)| **slot != self.focus && WidgetSlot::focusable().contains(slot))
+            .filter(|(slot, _)| **slot != self.focus)
             .filter(|(_, rect)| match direction {
                 MoveFocus::Up => rect.bottom() <= current_rect.top(),
                 MoveFocus::Down => rect.top() >= current_rect.bottom(),
@@ -112,7 +119,7 @@ impl LayoutModel {
         let new_focus = best_candidate.or_else(|| {
             self.layout
                 .iter()
-                .filter(|(slot, _)| **slot != self.focus && WidgetSlot::focusable().contains(slot))
+                .filter(|(slot, _)| **slot != self.focus)
                 .min_by_key(|(_, rect)| match direction {
                     MoveFocus::Right => (rect.left(), rect.top()),
                     MoveFocus::Left => (u16::MAX - rect.right(), rect.top()),
@@ -128,7 +135,7 @@ impl LayoutModel {
     }
 
     /// Finds the widget slot and its `Rect` at the given screen coordinates.
-    pub fn find_hovered_slot(&self, column: u16, row: u16) -> Option<(WidgetSlot, Rect)> {
+    pub fn find_hovered_slot(&self, column: u16, row: u16) -> Option<(ComponentId, Rect)> {
         self.layout.iter().find_map(|(slot, rect)| {
             if column >= rect.x
                 && column < rect.x + rect.width

@@ -21,7 +21,7 @@ impl Update for MouseClickUpdate {
             return Vec::new();
         };
 
-        let Some((slot, rect)) = s
+        let Some((component_id, rect)) = s
             .layout_model
             .find_hovered_slot(mouse_event.column, mouse_event.row)
         else {
@@ -31,7 +31,10 @@ impl Update for MouseClickUpdate {
 
         let relative_row = mouse_event.row.saturating_sub(rect.y + 1) as usize;
 
-        match slot {
+        match s
+            .component_id_to_widget_slot(component_id)
+            .unwrap_or_else(|| panic!("No widget slot for component id {}", component_id))
+        {
             WidgetSlot::InspectOption => {
                 s.get_inspect_tabs_mut()
                     .handle_click(rect, mouse_event.row, mouse_event.column)
@@ -129,7 +132,7 @@ impl Update for MouseClickUpdate {
                     s.get_inspect_tabs().cursor.current()
                 ),
             },
-            _ => debug!("Clicked a slot {} with no click action", slot),
+            _ => debug!("Clicked a slot {} with no click action", component_id),
         }
 
         vec![Action::UpdateLayout(s.frame_area)]

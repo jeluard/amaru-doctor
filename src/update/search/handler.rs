@@ -61,7 +61,6 @@ impl SearchHandler for LedgerUtxosByAddr {
         let provider = AsyncProvider::new(iter);
         AsyncListModel::new(
             ComponentId::LedgerUtxosByAddrList,
-            WidgetSlot::List,
             "UTxOs by Address",
             provider,
         )

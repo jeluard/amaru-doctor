@@ -1,7 +1,7 @@
 use crate::{
     app_state::AppState,
     components::{Component, ComponentLayout, MouseScrollDirection},
-    states::{Action, ComponentId, InspectOption, LedgerSearch, WidgetSlot},
+    states::{Action, ComponentId, InspectOption, LedgerSearch},
     update::scroll::ScrollDirection,
     view::search::render_search_query,
 };
@@ -11,12 +11,11 @@ use std::any::Any;
 
 pub struct SearchBarComponent {
     id: ComponentId,
-    slot: WidgetSlot,
 }
 
 impl SearchBarComponent {
-    pub fn new(id: ComponentId, slot: WidgetSlot) -> Self {
-        Self { id, slot }
+    pub fn new(id: ComponentId) -> Self {
+        Self { id }
     }
 }
 
@@ -44,7 +43,7 @@ impl Component for SearchBarComponent {
         let Some(&area) = layout.get(&self.id) else {
             return;
         };
-        let is_focused = s.layout_model.is_focused(self.slot);
+        let is_focused = s.layout_model.is_component_focused(self.id);
 
         // This is the old, complex logic from view/defs.rs
         let search_query = match s.get_inspect_tabs().selected() {

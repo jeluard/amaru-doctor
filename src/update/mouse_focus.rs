@@ -33,7 +33,7 @@ impl Update for MouseFocusUpdate {
         let relative_row = mouse_event.row.saturating_sub(rect.y + 1) as usize;
 
         if *s.get_inspect_tabs().cursor.current() == InspectOption::Otel
-            && s.layout_model.get_focus() == WidgetSlot::Details
+            && s.layout_model.is_focused(s, WidgetSlot::Details)
             && let Some(selected_trace) = s.get_trace_list().selected_item()
         {
             let trace_graph = s.otel_view.trace_graph_source.load();
