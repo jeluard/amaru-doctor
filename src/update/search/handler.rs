@@ -2,7 +2,7 @@ use crate::{
     app_state::AppState,
     components::async_list::AsyncListModel,
     model::async_provider::AsyncProvider,
-    states::{ComponentId, InspectOption, LedgerMode, LedgerSearch, WidgetSlot},
+    states::{ComponentId, InspectOption, LedgerMode, LedgerSearch},
     ui::to_list_item::UtxoItem,
     update::search::{SearchHandler, SearchState},
 };
@@ -22,8 +22,8 @@ impl SearchHandler for LedgerUtxosByAddr {
         "LedgerUtxosByAddr"
     }
 
-    fn slot(&self) -> WidgetSlot {
-        WidgetSlot::SearchBar
+    fn id(&self) -> ComponentId {
+        ComponentId::SearchBar
     }
 
     fn is_active(&self, s: &AppState) -> bool {
@@ -77,8 +77,8 @@ impl SearchHandler for ChainSearch {
         "ChainSearch"
     }
 
-    fn slot(&self) -> WidgetSlot {
-        WidgetSlot::SearchBar
+    fn id(&self) -> ComponentId {
+        ComponentId::SearchBar
     }
 
     fn is_active(&self, _s: &AppState) -> bool {

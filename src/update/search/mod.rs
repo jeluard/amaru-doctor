@@ -1,6 +1,6 @@
 use crate::{
     app_state::AppState,
-    states::{Action, WidgetSlot},
+    states::{Action, ComponentId},
     update::{
         Update,
         search::handler::{ChainSearch, LedgerUtxosByAddr},
@@ -65,8 +65,8 @@ trait SearchHandler {
 
     fn debug_name(&self) -> &'static str;
 
-    /// Which widget this search handler is bound to
-    fn slot(&self) -> WidgetSlot;
+    /// Which ComponentId this search handler is bound to
+    fn id(&self) -> ComponentId;
 
     /// Whether this handler should be active given current AppState
     fn is_active(&self, app: &AppState) -> bool;
@@ -105,7 +105,7 @@ where
     H: SearchHandler,
     <H::Query as FromStr>::Err: Display,
 {
-    if !s.layout_model.is_focused(s, handler.slot()) || !handler.is_active(s) {
+    if !s.layout_model.is_component_focused(handler.id()) || !handler.is_active(s) {
         return Vec::new();
     }
     trace!(
