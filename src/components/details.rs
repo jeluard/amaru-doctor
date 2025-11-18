@@ -1,7 +1,7 @@
 use crate::{
     app_state::AppState,
     components::{Component, ComponentLayout, MouseScrollDirection, ScrollDirection},
-    states::{Action, ComponentId, WidgetSlot},
+    states::{Action, ComponentId},
     ui::ToRichText,
     view::item_details::draw_details,
 };
@@ -16,7 +16,6 @@ where
     T: ToRichText + Send + Sync + 'static,
 {
     id: ComponentId,
-    slot: WidgetSlot,
     title: &'static str,
     data_accessor: DataAccessor<T>,
     _phantom: PhantomData<T>,
@@ -26,15 +25,9 @@ impl<T> DetailsComponent<T>
 where
     T: ToRichText + Send + Sync + 'static,
 {
-    pub fn new(
-        id: ComponentId,
-        slot: WidgetSlot,
-        title: &'static str,
-        data_accessor: DataAccessor<T>,
-    ) -> Self {
+    pub fn new(id: ComponentId, title: &'static str, data_accessor: DataAccessor<T>) -> Self {
         Self {
             id,
-            slot,
             title,
             data_accessor,
             _phantom: PhantomData,
@@ -68,7 +61,7 @@ where
         let Some(&area) = layout.get(&self.id) else {
             return;
         };
-        let is_focused = s.layout_model.is_focused(self.slot);
+        let is_focused = s.layout_model.is_component_focused(self.id);
         let selected_item = (self.data_accessor)(s);
         draw_details(f, area, self.title.to_string(), selected_item, is_focused);
     }

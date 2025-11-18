@@ -24,33 +24,55 @@ impl Update for ScrollUpdate {
         }) else {
             return Vec::new();
         };
+        debug!(
+            "ScrollUpdate: Handling scroll direction: {:?}, current focus: {:?}",
+            direction,
+            s.layout_model.get_focus()
+        );
 
-        match s.layout_model.get_focus() {
+        let slot = s
+            .component_id_to_widget_slot(s.layout_model.get_focus())
+            .unwrap_or_else(|| {
+                panic!(
+                    "No widget slot for component id {}",
+                    s.layout_model.get_focus()
+                )
+            });
+        match slot {
             WidgetSlot::LedgerOptions => match s.get_ledger_mode_tabs().selected() {
                 LedgerMode::Browse => {
+                    debug!("ScrollUpdate: Dispatching scroll to LedgerBrowseOptions");
                     return s.get_ledger_browse_options_mut().handle_scroll(direction);
                 }
-                LedgerMode::Search => match direction {
-                    ScrollDirection::Up => {
-                        s.get_ledger_search_options_mut().model_view.cursor_back()
+                LedgerMode::Search => {
+                    debug!("ScrollUpdate: Dispatching scroll to LedgerSearchOptions");
+                    match direction {
+                        ScrollDirection::Up => {
+                            s.get_ledger_search_options_mut().model_view.cursor_back()
+                        }
+                        ScrollDirection::Down => {
+                            s.get_ledger_search_options_mut().model_view.cursor_next()
+                        }
                     }
-                    ScrollDirection::Down => {
-                        s.get_ledger_search_options_mut().model_view.cursor_next()
-                    }
-                },
+                }
             },
             WidgetSlot::List => match s.get_inspect_tabs().cursor.current() {
                 InspectOption::Ledger => match s.get_ledger_mode_tabs().selected() {
-                    LedgerMode::Browse => scroll_ledger_list(s, direction),
+                    LedgerMode::Browse => {
+                        debug!("ScrollUpdate: Dispatching scroll to scroll_ledger_list");
+                        scroll_ledger_list(s, direction)
+                    }
                     LedgerMode::Search => {
                         if let Some(search_res) =
                             s.ledger_mvs.utxos_by_addr_search.get_current_res_mut()
                         {
+                            trace!("ScrollUpdate: Dispatching scroll to utxos_by_addr_search");
                             return search_res.handle_scroll(direction);
                         }
                     }
                 },
                 InspectOption::Otel => {
+                    debug!("ScrollUpdate: Dispatching scroll to OtelTraceList");
                     // TODO: Make this logic simpler by taking advantage of the
                     // DynamicList struct
 
@@ -74,17 +96,38 @@ impl Update for ScrollUpdate {
                     // If we've scrolled to a new Trace, the selected span is reset
                     s.otel_view.selected_span = None;
                 }
-                InspectOption::Prometheus => { /* There's no list widget in the Prometheus tab */ }
-                InspectOption::Chain => {} // No list widget in the Chain tab currently
+                InspectOption::Prometheus => {
+                    debug!("ScrollUpdate: No scroll logic for Prometheus tab list");
+                    /* There's no list widget in the Prometheus tab */
+                }
+                InspectOption::Chain => {
+                    debug!("ScrollUpdate: No scroll logic for Chain tab list");
+                    // No list widget in the Chain tab currently
+                }
             },
             WidgetSlot::Details => match s.get_inspect_tabs().cursor.current() {
-                InspectOption::Otel => scroll_trace_details(s, direction),
-                InspectOption::Ledger => { /* TODO: Impl item details scroll */ }
+                InspectOption::Otel => {
+                    debug!("ScrollUpdate: Dispatching scroll to scroll_trace_details");
+                    scroll_trace_details(s, direction)
+                }
+                InspectOption::Ledger => {
+                    debug!("ScrollUpdate: No scroll logic for Ledger item details");
+                    /* TODO: Impl item details scroll */
+                }
                 // InspectOption::Chain => {}
-                InspectOption::Prometheus => { /* TODO: Impl metrics scroll */ }
-                InspectOption::Chain => {} // DetailsComponent for Chain page doesn't scroll currently
+                InspectOption::Prometheus => {
+                    debug!("ScrollUpdate: No scroll logic for Prometheus metrics details");
+                    /* TODO: Impl metrics scroll */
+                }
+                InspectOption::Chain => {
+                    debug!("ScrollUpdate: No scroll logic for Chain page details");
+                    // DetailsComponent for Chain page doesn't scroll currently
+                }
             },
-            _ => trace!("No scroll logic for slot {:?}", s.layout_model.get_focus()),
+            other_slot => debug!(
+                "ScrollUpdate: No specific scroll logic for slot {:?}",
+                other_slot
+            ),
         }
         Vec::new()
     }

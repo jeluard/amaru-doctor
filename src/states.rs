@@ -58,7 +58,7 @@ pub enum Action {
     Tick,
     Render,
     Resize(u16, u16),
-    SetWindowSize(WidgetSlot, usize),
+    SetWindowSize(ComponentId, usize),
     Suspend,
     Resume,
     Quit,
@@ -100,6 +100,7 @@ impl Action {
                 | Self::SyncTraceGraph
                 | Self::GetButtonEvents
                 | Self::MouseEvent(_)
+                | Self::PollUtxoSearch
         )
     }
 }
@@ -161,8 +162,9 @@ impl WidgetSlot {
     }
 }
 
-#[derive(Clone, Copy, Debug, EnumIter, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Default, Debug, EnumIter, PartialEq, Eq, Serialize)]
 pub enum LedgerSearch {
+    #[default]
     #[serde(rename = "utxos by address")]
     UtxosByAddress,
 }

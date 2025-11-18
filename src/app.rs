@@ -229,11 +229,15 @@ impl App {
                 self.last_store_option = self.app_state.get_inspect_tabs().selected();
             }
 
-            for (slot, area) in self.app_state.layout_model.get_layout().clone().iter() {
-                if let Some(view) = self.slot_views.get(slot) {
-                    view.render(f, *area, &self.app_state);
+            for (component_id, area) in self.app_state.layout_model.get_layout().clone().iter() {
+                if let Some(slot) = self.app_state.component_id_to_widget_slot(*component_id) {
+                    if let Some(view) = self.slot_views.get(&slot) {
+                        view.render(f, *area, &self.app_state);
+                    } else {
+                        error!("Found no view for slot {}", slot);
+                    }
                 } else {
-                    error!("Found no view for slot {}", slot);
+                    error!("No WidgetSlot mapping for ComponentId: {:?}", component_id);
                 }
             }
         })

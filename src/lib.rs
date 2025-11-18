@@ -13,7 +13,7 @@ mod app_state;
 pub mod cli;
 pub mod components;
 mod config;
-mod controller;
+pub mod controller;
 pub mod detection;
 pub mod logging;
 pub mod model;
@@ -27,7 +27,7 @@ mod update;
 mod view;
 pub mod viewmodel;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum ScreenMode {
     Large,
     Small,

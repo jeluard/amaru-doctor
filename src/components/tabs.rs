@@ -3,7 +3,7 @@ use crate::{
     app_state::AppState,
     components::{Component, ComponentLayout},
     model::cursor::Cursor,
-    states::{Action, ComponentId, WidgetSlot},
+    states::{Action, ComponentId},
 };
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
@@ -23,7 +23,6 @@ where
     T: IntoEnumIterator + ToLine + Copy + PartialEq + Eq,
 {
     id: ComponentId,
-    slot: WidgetSlot,
     pub cursor: Cursor<T>,
     _phantom: PhantomData<T>,
 }
@@ -32,10 +31,9 @@ impl<T> TabsComponent<T>
 where
     T: IntoEnumIterator + ToLine + Copy + PartialEq + Eq,
 {
-    pub fn new(id: ComponentId, slot: WidgetSlot) -> Self {
+    pub fn new(id: ComponentId) -> Self {
         Self {
             id,
-            slot,
             cursor: Cursor::new(T::iter().collect()).expect("TabsComponent must have options"),
             _phantom: PhantomData,
         }
@@ -105,7 +103,7 @@ where
         let Some(&area) = layout.get(&self.id) else {
             return;
         };
-        let is_focused = s.layout_model.is_focused(self.slot);
+        let is_focused = s.layout_model.is_component_focused(self.id);
         let mut block = Block::default().borders(Borders::ALL);
         if is_focused {
             block = block

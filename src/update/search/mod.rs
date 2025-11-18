@@ -105,7 +105,7 @@ where
     H: SearchHandler,
     <H::Query as FromStr>::Err: Display,
 {
-    if !s.layout_model.is_focused(handler.slot()) || !handler.is_active(s) {
+    if !s.layout_model.is_focused(s, handler.slot()) || !handler.is_active(s) {
         return Vec::new();
     }
     trace!(

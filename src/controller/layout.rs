@@ -1,61 +1,44 @@
 use crate::{
     ScreenMode,
-    controller::LayoutSpec,
-    states::{InspectOption, LedgerMode, WidgetSlot},
+    controller::{LayoutContext, LayoutSpec},
+    states::{ComponentId, InspectOption, LedgerBrowse, LedgerMode, LedgerSearch},
 };
 use either::Either::{Left, Right};
 use ratatui::layout::{Constraint, Direction};
 
-// TODO: Use a builder in here
-pub fn build_layout_spec(
-    screen_mode: ScreenMode,
-    inspect_tabs: InspectOption,
-    ledger_mode: LedgerMode,
-) -> LayoutSpec {
-    match inspect_tabs {
-        InspectOption::Ledger => build_ledger_ls(screen_mode, ledger_mode),
+pub fn build_layout_spec(ctx: &LayoutContext) -> LayoutSpec {
+    match ctx.inspect_option {
+        InspectOption::Ledger => build_ledger_ls(ctx),
         InspectOption::Chain => build_chain_ls(),
         InspectOption::Otel => build_otel_ls(),
         InspectOption::Prometheus => build_prom_ls(),
     }
 }
 
-fn build_ledger_ls(screen_mode: ScreenMode, ledger_mode: LedgerMode) -> LayoutSpec {
-    match screen_mode {
-        ScreenMode::Large => LayoutSpec {
+fn build_ledger_ls(ctx: &LayoutContext) -> LayoutSpec {
+    match ctx.screen_mode {
+        ScreenMode::Large | ScreenMode::Small => LayoutSpec {
             direction: Direction::Vertical,
-            constraints: vec![(
-                Constraint::Fill(1),
-                Right(build_ledger_rest_ls(screen_mode, ledger_mode)),
-            )],
-        },
-        // No bottom bar for small screens
-        ScreenMode::Small => LayoutSpec {
-            direction: Direction::Vertical,
-            constraints: vec![(
-                Constraint::Fill(1),
-                Right(build_ledger_rest_ls(screen_mode, ledger_mode)),
-            )],
+            constraints: vec![(Constraint::Fill(1), Right(build_ledger_rest_ls(ctx)))],
         },
     }
 }
 
-fn build_ledger_rest_ls(screen_mode: ScreenMode, ledger_mode: LedgerMode) -> LayoutSpec {
-    match screen_mode {
+fn build_ledger_rest_ls(ctx: &LayoutContext) -> LayoutSpec {
+    match ctx.screen_mode {
         ScreenMode::Large => LayoutSpec {
             direction: Direction::Vertical,
             constraints: vec![
                 (
                     Constraint::Length(3),
-                    Right(build_ledger_header_ls(ledger_mode)),
+                    Right(build_ledger_header_ls(ctx.ledger_mode)),
                 ),
-                (Constraint::Fill(1), Right(build_ledger_body_ls())),
+                (Constraint::Fill(1), Right(build_ledger_body_ls(ctx))),
             ],
         },
         ScreenMode::Small => LayoutSpec {
-            // Small screen only has the body
             direction: Direction::Vertical,
-            constraints: vec![(Constraint::Fill(1), Right(build_ledger_body_ls()))],
+            constraints: vec![(Constraint::Fill(1), Right(build_ledger_body_ls(ctx)))],
         },
     }
 }
@@ -63,13 +46,13 @@ fn build_ledger_rest_ls(screen_mode: ScreenMode, ledger_mode: LedgerMode) -> Lay
 fn build_ledger_header_ls(ledger_mode: LedgerMode) -> LayoutSpec {
     let constraints = match ledger_mode {
         LedgerMode::Browse => vec![
-            (Constraint::Fill(1), Left(WidgetSlot::InspectOption)),
-            //(Constraint::Fill(1), Left(WidgetSlot::LedgerMode)),
+            (Constraint::Fill(1), Left(ComponentId::InspectTabs)),
+            (Constraint::Fill(1), Left(ComponentId::LedgerModeTabs)),
         ],
         LedgerMode::Search => vec![
-            (Constraint::Length(30), Left(WidgetSlot::InspectOption)),
-            //(Constraint::Length(20), Left(WidgetSlot::LedgerMode)),
-            //(Constraint::Fill(1), Left(WidgetSlot::SearchBar)),
+            (Constraint::Length(30), Left(ComponentId::InspectTabs)),
+            (Constraint::Length(20), Left(ComponentId::LedgerModeTabs)),
+            (Constraint::Fill(1), Left(ComponentId::SearchBar)),
         ],
     };
     LayoutSpec {
@@ -78,30 +61,64 @@ fn build_ledger_header_ls(ledger_mode: LedgerMode) -> LayoutSpec {
     }
 }
 
-fn build_ledger_body_ls() -> LayoutSpec {
+fn build_ledger_body_ls(ctx: &LayoutContext) -> LayoutSpec {
+    // Determine the correct details component based on mode
+    let details_component = match ctx.ledger_mode {
+        LedgerMode::Browse => match ctx.ledger_browse {
+            LedgerBrowse::Accounts => ComponentId::LedgerAccountDetails,
+            LedgerBrowse::BlockIssuers => ComponentId::LedgerBlockIssuerDetails,
+            LedgerBrowse::DReps => ComponentId::LedgerDRepDetails,
+            LedgerBrowse::Pools => ComponentId::LedgerPoolDetails,
+            LedgerBrowse::Proposals => ComponentId::LedgerProposalDetails,
+            LedgerBrowse::Utxos => ComponentId::LedgerUtxoDetails,
+        },
+        LedgerMode::Search => match ctx.ledger_search {
+            LedgerSearch::UtxosByAddress => ComponentId::LedgerUtxosByAddrDetails,
+        },
+    };
+
     LayoutSpec {
         direction: Direction::Horizontal,
         constraints: vec![
             (
                 Constraint::Percentage(20),
-                Right(build_ledger_left_col_ls()),
+                Right(build_ledger_left_col_ls(ctx)),
             ),
-            (Constraint::Percentage(80), Left(WidgetSlot::Details)),
+            (Constraint::Percentage(80), Left(details_component)),
         ],
     }
 }
 
-fn build_ledger_left_col_ls() -> LayoutSpec {
+fn build_ledger_left_col_ls(ctx: &LayoutContext) -> LayoutSpec {
+    let (options_component, list_component) = match ctx.ledger_mode {
+        LedgerMode::Browse => {
+            let list = match ctx.ledger_browse {
+                LedgerBrowse::Accounts => ComponentId::LedgerAccountsList,
+                LedgerBrowse::BlockIssuers => ComponentId::LedgerBlockIssuersList,
+                LedgerBrowse::DReps => ComponentId::LedgerDRepsList,
+                LedgerBrowse::Pools => ComponentId::LedgerPoolsList,
+                LedgerBrowse::Proposals => ComponentId::LedgerProposalsList,
+                LedgerBrowse::Utxos => ComponentId::LedgerUtxosList,
+            };
+            (ComponentId::LedgerBrowseOptions, list)
+        }
+        LedgerMode::Search => {
+            let list = match ctx.ledger_search {
+                LedgerSearch::UtxosByAddress => ComponentId::LedgerUtxosByAddrList,
+            };
+            (ComponentId::LedgerSearchOptions, list)
+        }
+    };
+
     LayoutSpec {
         direction: Direction::Vertical,
         constraints: vec![
-            (Constraint::Fill(1), Left(WidgetSlot::LedgerOptions)),
-            (Constraint::Fill(3), Left(WidgetSlot::List)),
+            (Constraint::Fill(1), Left(options_component)),
+            (Constraint::Fill(3), Left(list_component)),
         ],
     }
 }
 
-#[allow(dead_code)]
 fn build_chain_ls() -> LayoutSpec {
     LayoutSpec {
         direction: Direction::Vertical,
@@ -123,8 +140,8 @@ fn build_chain_header_ls() -> LayoutSpec {
     LayoutSpec {
         direction: Direction::Horizontal,
         constraints: vec![
-            (Constraint::Fill(1), Left(WidgetSlot::InspectOption)),
-            (Constraint::Fill(1), Left(WidgetSlot::SearchBar)),
+            (Constraint::Fill(1), Left(ComponentId::InspectTabs)),
+            (Constraint::Fill(1), Left(ComponentId::SearchBar)),
         ],
     }
 }
@@ -133,9 +150,9 @@ fn build_chain_body_ls() -> LayoutSpec {
     LayoutSpec {
         direction: Direction::Horizontal,
         constraints: vec![
-            (Constraint::Fill(1), Left(WidgetSlot::LedgerHeaderDetails)),
-            (Constraint::Fill(1), Left(WidgetSlot::LedgerBlockDetails)),
-            (Constraint::Fill(1), Left(WidgetSlot::LedgerNoncesDetails)),
+            (Constraint::Fill(1), Left(ComponentId::ChainSearchHeader)),
+            (Constraint::Fill(1), Left(ComponentId::ChainSearchBlock)),
+            (Constraint::Fill(1), Left(ComponentId::ChainSearchNonces)),
         ],
     }
 }
@@ -160,7 +177,7 @@ fn build_otel_rest_ls() -> LayoutSpec {
 fn build_otel_header_ls() -> LayoutSpec {
     LayoutSpec {
         direction: Direction::Horizontal,
-        constraints: vec![(Constraint::Fill(1), Left(WidgetSlot::InspectOption))],
+        constraints: vec![(Constraint::Fill(1), Left(ComponentId::InspectTabs))],
     }
 }
 
@@ -168,7 +185,7 @@ fn build_otel_body_ls() -> LayoutSpec {
     LayoutSpec {
         direction: Direction::Horizontal,
         constraints: vec![
-            (Constraint::Percentage(10), Left(WidgetSlot::List)),
+            (Constraint::Percentage(10), Left(ComponentId::OtelTraceList)),
             (Constraint::Percentage(90), Right(build_otel_details_ls())),
         ],
     }
@@ -178,8 +195,14 @@ fn build_otel_details_ls() -> LayoutSpec {
     LayoutSpec {
         direction: Direction::Horizontal,
         constraints: vec![
-            (Constraint::Percentage(70), Left(WidgetSlot::Details)),
-            (Constraint::Percentage(30), Left(WidgetSlot::SubDetails)),
+            (
+                Constraint::Percentage(70),
+                Left(ComponentId::OtelFlameGraph),
+            ),
+            (
+                Constraint::Percentage(30),
+                Left(ComponentId::OtelSpanDetails),
+            ),
         ],
     }
 }
@@ -204,13 +227,13 @@ fn build_prom_rest_ls() -> LayoutSpec {
 fn build_prom_header_ls() -> LayoutSpec {
     LayoutSpec {
         direction: Direction::Horizontal,
-        constraints: vec![(Constraint::Fill(1), Left(WidgetSlot::InspectOption))],
+        constraints: vec![(Constraint::Fill(1), Left(ComponentId::InspectTabs))],
     }
 }
 
 fn build_prom_body_ls() -> LayoutSpec {
     LayoutSpec {
         direction: Direction::Horizontal,
-        constraints: vec![(Constraint::Fill(1), Left(WidgetSlot::Details))],
+        constraints: vec![(Constraint::Fill(1), Left(ComponentId::PrometheusMetrics))],
     }
 }

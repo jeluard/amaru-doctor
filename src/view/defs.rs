@@ -206,7 +206,7 @@ impl View for LedgerUtxosByAddr {
     }
 
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) {
-        let is_focused = s.layout_model.is_focused(self.slot());
+        let is_focused = s.layout_model.is_focused(s, self.slot());
         if let Some(res) = s.ledger_mvs.utxos_by_addr_search.get_current_res() {
             let mut layout = HashMap::new();
             layout.insert(res.id(), area);
@@ -229,7 +229,7 @@ impl View for LedgerSearchUtxoDetails {
                 == Some(LedgerSearch::UtxosByAddress).as_ref()
     }
     fn render(&self, f: &mut Frame, area: Rect, s: &AppState) {
-        let is_focused = s.layout_model.is_focused(self.slot());
+        let is_focused = s.layout_model.is_focused(s, self.slot());
         let res_opt = s.ledger_mvs.utxos_by_addr_search.get_current_res();
         let item_opt = res_opt.and_then(|res| res.selected_item());
         draw_details(f, area, "Utxo Details".to_owned(), item_opt, is_focused);

@@ -2,7 +2,7 @@ use crate::{
     app_state::AppState,
     components::{Component, ComponentLayout, MouseScrollDirection},
     model::async_provider::AsyncProvider,
-    states::{Action, ComponentId, WidgetSlot},
+    states::{Action, ComponentId},
     ui::to_list_item::ToListItem,
     update::scroll::ScrollDirection,
     view::list::ListViewState,
@@ -25,7 +25,6 @@ where
     T: ToListItem + Send + Sync + 'static,
 {
     id: ComponentId,
-    slot: WidgetSlot,
     provider: AsyncProvider<T>,
     pub buffer: Vec<T>,
     pub view: ListViewState,
@@ -37,15 +36,9 @@ impl<T> AsyncListModel<T>
 where
     T: ToListItem + Send + Sync + 'static,
 {
-    pub fn new(
-        id: ComponentId,
-        slot: WidgetSlot,
-        title: &'static str,
-        provider: AsyncProvider<T>,
-    ) -> Self {
+    pub fn new(id: ComponentId, title: &'static str, provider: AsyncProvider<T>) -> Self {
         Self {
             id,
-            slot,
             provider,
             buffer: Vec::new(),
             view: ListViewState::new(title),
@@ -123,7 +116,7 @@ where
             return;
         };
 
-        let is_focused = s.layout_model.is_focused(self.slot);
+        let is_focused = s.layout_model.is_component_focused(self.id);
 
         if self.is_loading && self.buffer.is_empty() {
             // Show a Loading message

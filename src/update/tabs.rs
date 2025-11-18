@@ -24,7 +24,15 @@ impl Update for TabsUpdate {
             return Vec::new();
         };
 
-        match s.layout_model.get_focus() {
+        let slot = s
+            .component_id_to_widget_slot(s.layout_model.get_focus())
+            .unwrap_or_else(|| {
+                panic!(
+                    "No widget slot for component id {}",
+                    s.layout_model.get_focus()
+                )
+            });
+        match slot {
             WidgetSlot::InspectOption => {
                 match direction {
                     ScrollDirection::Left => s.get_inspect_tabs_mut().cursor.next_back(),

@@ -2,13 +2,13 @@ use crate::{
     app_state::AppState,
     components::{Component, ComponentLayout, MouseScrollDirection, ScrollDirection},
     model::list_view::ListModelView,
-    states::{Action, ComponentId, WidgetSlot},
+    states::{Action, ComponentId},
     ui::to_list_item::ToListItem,
 };
 use crossterm::event::KeyEvent;
 use ratatui::{Frame, layout::Rect};
 use std::{any::Any, marker::PhantomData};
-use tracing::info;
+use tracing::{debug, info};
 
 /// A stateful, reusable component that renders a scrollable list.
 /// It encapsulates the `ListModelViewState` (data + view state).
@@ -17,7 +17,6 @@ where
     T: ToListItem + Send + Sync + 'static,
 {
     id: ComponentId,
-    slot: WidgetSlot,
     pub model_view: ListModelView<T>,
     _phantom: PhantomData<T>,
 }
@@ -28,14 +27,12 @@ where
 {
     pub fn new(
         id: ComponentId,
-        slot: WidgetSlot,
         title: &'static str,
         iter: impl Iterator<Item = T> + Send + Sync + 'static,
         initial_buffer_size: usize,
     ) -> Self {
         Self {
             id,
-            slot,
             model_view: ListModelView::new(title, iter, initial_buffer_size),
             _phantom: PhantomData,
         }
@@ -70,7 +67,7 @@ where
             return;
         };
         // Use the old focus model for now
-        let is_focused = s.layout_model.is_focused(self.slot);
+        let is_focused = s.layout_model.is_component_focused(self.id);
         self.model_view.draw(f, area, is_focused);
     }
 
@@ -88,6 +85,10 @@ where
     }
 
     fn handle_scroll(&mut self, direction: ScrollDirection) -> Vec<Action> {
+        debug!(
+            "ListComponent: handle_scroll for id {:?} with direction {:?}",
+            self.id, direction
+        );
         match direction {
             ScrollDirection::Up => self.model_view.cursor_back(),
             ScrollDirection::Down => self.model_view.cursor_next(),
@@ -96,6 +97,10 @@ where
     }
 
     fn handle_mouse_scroll(&mut self, direction: MouseScrollDirection) -> Vec<Action> {
+        debug!(
+            "ListComponent: handle_mouse_scroll for id {:?} with direction {:?}",
+            self.id, direction
+        );
         match direction {
             MouseScrollDirection::Up => self.model_view.cursor_back(),
             MouseScrollDirection::Down => self.model_view.cursor_next(),
@@ -104,6 +109,10 @@ where
     }
 
     fn handle_mouse_drag(&mut self, direction: ScrollDirection) -> Vec<Action> {
+        debug!(
+            "ListComponent: handle_mouse_drag for id {:?} with direction {:?}",
+            self.id, direction
+        );
         match direction {
             ScrollDirection::Up => self.model_view.advance_window(),
             ScrollDirection::Down => self.model_view.retreat_window(),

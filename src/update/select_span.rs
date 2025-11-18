@@ -13,7 +13,15 @@ impl Update for SelectSpanUpdate {
             return Vec::new();
         }
 
-        if s.layout_model.get_focus() != WidgetSlot::Details
+        let slot = s
+            .component_id_to_widget_slot(s.layout_model.get_focus())
+            .unwrap_or_else(|| {
+                panic!(
+                    "No widget slot for component id {}",
+                    s.layout_model.get_focus()
+                )
+            });
+        if slot != WidgetSlot::Details
             || *s.get_inspect_tabs().cursor.current() != InspectOption::Otel
         {
             return Vec::new();

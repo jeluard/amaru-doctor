@@ -4,6 +4,7 @@ use crate::{
     view::list::ListViewState,
 };
 use ratatui::{prelude::Frame, prelude::Rect};
+use tracing::debug;
 
 /// A stateful component that encapsulates both the data model (`StreamingIter`)
 /// and the view state (`ListViewState`) for a list, providing an ergonomic API.
@@ -18,9 +19,11 @@ impl<T: ToListItem> ListModelView<T> {
         iter: impl Iterator<Item = T> + Send + Sync + 'static,
         initial_buffer_size: usize,
     ) -> Self {
+        let mut view = ListViewState::new(title);
+        view.set_height(initial_buffer_size); // Set the initial height
         Self {
             iter: StreamingIter::new(iter, initial_buffer_size),
-            view: ListViewState::new(title),
+            view,
         }
     }
 
@@ -47,6 +50,10 @@ impl<T: ToListItem> ListModelView<T> {
 
     /// Moves the selection cursor up by one.
     pub fn cursor_back(&mut self) {
+        debug!(
+            "ListModelView: cursor_back. View: {:?}, Iter: {:?}",
+            self.view, self.iter
+        );
         self.view.cursor_back();
         let required_index = self.view.max_visible_index();
         self.iter.load_up_to(required_index);
@@ -54,6 +61,10 @@ impl<T: ToListItem> ListModelView<T> {
 
     /// Moves the selection cursor down by one.
     pub fn cursor_next(&mut self) {
+        debug!(
+            "ListModelView: cursor_next. View: {:?}, Iter: {:?}",
+            self.view, self.iter
+        );
         self.view.cursor_next(self.iter.total_len());
         let required_index = self.view.max_visible_index();
         self.iter.load_up_to(required_index);
@@ -61,6 +72,10 @@ impl<T: ToListItem> ListModelView<T> {
 
     /// Retreats the window. Visually the content moves down the screen.
     pub fn retreat_window(&mut self) {
+        debug!(
+            "ListModelView: retreat_window. View: {:?}, Iter: {:?}",
+            self.view, self.iter
+        );
         self.view.retreat_window();
         let required_index = self.view.max_visible_index();
         self.iter.load_up_to(required_index);
@@ -68,6 +83,10 @@ impl<T: ToListItem> ListModelView<T> {
 
     /// Advances the window. Visually the content moves up the screen.
     pub fn advance_window(&mut self) {
+        debug!(
+            "ListModelView: advance_window. View: {:?}, Iter: {:?}",
+            self.view, self.iter
+        );
         self.view.advance_window(self.iter.total_len());
         let required_index = self.view.max_visible_index();
         self.iter.load_up_to(required_index);

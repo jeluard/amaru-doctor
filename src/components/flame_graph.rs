@@ -8,7 +8,7 @@ use crate::{
         id::{SpanId, TraceId},
         span_ext::SpanExt,
     },
-    states::{Action, ComponentId, WidgetSlot},
+    states::{Action, ComponentId},
     view::span_bar::SpanBarRenderer,
 };
 use anyhow::{Result, anyhow};
@@ -23,12 +23,11 @@ use tracing::{error, info};
 
 pub struct FlameGraphComponent {
     id: ComponentId,
-    slot: WidgetSlot,
 }
 
 impl FlameGraphComponent {
-    pub fn new(id: ComponentId, slot: WidgetSlot) -> Self {
-        Self { id, slot }
+    pub fn new(id: ComponentId) -> Self {
+        Self { id }
     }
 }
 
@@ -55,7 +54,7 @@ impl Component for FlameGraphComponent {
         let Some(&area) = layout.get(&self.id) else {
             return;
         };
-        let is_focused = s.layout_model.is_focused(self.slot);
+        let is_focused = s.layout_model.is_component_focused(self.id);
 
         let mut block = Block::default()
             .title("Trace Details")

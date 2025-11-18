@@ -2,7 +2,7 @@ use crate::{
     app_state::AppState,
     components::{Component, ComponentLayout, MouseScrollDirection, ScrollDirection},
     otel::id::TraceId,
-    states::{Action, ComponentId, WidgetSlot},
+    states::{Action, ComponentId},
     viewmodel::dynamic_list::DynamicListViewModel,
 };
 use crossterm::event::KeyEvent;
@@ -11,15 +11,13 @@ use std::any::Any;
 
 pub struct TraceListComponent {
     id: ComponentId,
-    slot: WidgetSlot,
     list: DynamicListViewModel<TraceId>,
 }
 
 impl TraceListComponent {
-    pub fn new(id: ComponentId, slot: WidgetSlot) -> Self {
+    pub fn new(id: ComponentId) -> Self {
         Self {
             id,
-            slot,
             list: DynamicListViewModel::new("Traces"),
         }
     }
@@ -54,7 +52,7 @@ impl Component for TraceListComponent {
         let Some(&area) = layout.get(&self.id) else {
             return;
         };
-        let is_focused = s.layout_model.is_focused(self.slot);
+        let is_focused = s.layout_model.is_component_focused(self.id);
 
         self.list.draw(f, area, is_focused);
     }
