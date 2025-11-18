@@ -7,7 +7,7 @@ use opentelemetry_proto::tonic::trace::v1::Span;
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use std::time::SystemTime;
-use tracing::{debug, error};
+use tracing::error;
 
 /// A helper struct for updating the Evictor when a new Root is added to the
 /// graph.
@@ -53,8 +53,6 @@ impl TraceGraph {
             .entry(new_root_start)
             .or_default()
             .push(new_root_id);
-
-        debug!("Modified trace_meta: {:?}", trace_meta);
 
         // Insert the full span and SubTree data into the main HashMaps.
         self.subtrees

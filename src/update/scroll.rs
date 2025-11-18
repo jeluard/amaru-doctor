@@ -1,12 +1,11 @@
 use crate::{
     app_state::AppState,
-    components::Component,
     otel::{graph::TraceGraph, id::SpanId, span_ext::SpanExt},
-    states::{Action, InspectOption, LedgerBrowse, LedgerMode, WidgetSlot},
+    states::{Action, ComponentId},
     update::Update,
 };
 use strum::Display;
-use tracing::{debug, trace};
+use tracing::{debug, warn};
 
 #[derive(Display, Debug, Clone, Copy)]
 pub enum ScrollDirection {
@@ -24,157 +23,59 @@ impl Update for ScrollUpdate {
         }) else {
             return Vec::new();
         };
+
+        let focus_id = s.layout_model.get_focus();
         debug!(
             "ScrollUpdate: Handling scroll direction: {:?}, current focus: {:?}",
-            direction,
-            s.layout_model.get_focus()
+            direction, focus_id
         );
 
-        let slot = s
-            .component_id_to_widget_slot(s.layout_model.get_focus())
-            .unwrap_or_else(|| {
-                panic!(
-                    "No widget slot for component id {}",
-                    s.layout_model.get_focus()
-                )
-            });
-        match slot {
-            WidgetSlot::LedgerOptions => match s.get_ledger_mode_tabs().selected() {
-                LedgerMode::Browse => {
-                    debug!("ScrollUpdate: Dispatching scroll to LedgerBrowseOptions");
-                    return s.get_ledger_browse_options_mut().handle_scroll(direction);
+        match focus_id {
+            // Special Case: OTEL Trace List (needs side effect)
+            ComponentId::OtelTraceList => {
+                debug!("ScrollUpdate: Dispatching scroll to OtelTraceList with side effects");
+                // Scroll the list component
+                if let Some(comp) = s.component_registry.get_mut(&focus_id) {
+                    comp.handle_scroll(direction);
                 }
-                LedgerMode::Search => {
-                    debug!("ScrollUpdate: Dispatching scroll to LedgerSearchOptions");
-                    match direction {
-                        ScrollDirection::Up => {
-                            s.get_ledger_search_options_mut().model_view.cursor_back()
-                        }
-                        ScrollDirection::Down => {
-                            s.get_ledger_search_options_mut().model_view.cursor_next()
-                        }
-                    }
-                }
-            },
-            WidgetSlot::List => match s.get_inspect_tabs().cursor.current() {
-                InspectOption::Ledger => match s.get_ledger_mode_tabs().selected() {
-                    LedgerMode::Browse => {
-                        debug!("ScrollUpdate: Dispatching scroll to scroll_ledger_list");
-                        scroll_ledger_list(s, direction)
-                    }
-                    LedgerMode::Search => {
-                        if let Some(search_res) =
-                            s.ledger_mvs.utxos_by_addr_search.get_current_res_mut()
-                        {
-                            trace!("ScrollUpdate: Dispatching scroll to utxos_by_addr_search");
-                            return search_res.handle_scroll(direction);
-                        }
-                    }
-                },
-                InspectOption::Otel => {
-                    debug!("ScrollUpdate: Dispatching scroll to OtelTraceList");
-                    // TODO: Make this logic simpler by taking advantage of the
-                    // DynamicList struct
 
-                    // First scroll the trace list
-                    s.get_trace_list_mut().handle_scroll(direction);
+                // Side effect: Update focused span based on new list selection
+                let graph = s.otel_view.trace_graph_source.load();
+                let new_focused_span = s
+                    .get_trace_list()
+                    .selected_item()
+                    .and_then(|trace_id| graph.traces.get(trace_id))
+                    .and_then(|trace_meta| trace_meta.roots().first_key_value())
+                    .and_then(|(_, root_ids)| root_ids.first())
+                    .and_then(|root_id| graph.spans.get(root_id))
+                    .cloned();
 
-                    let graph = s.otel_view.trace_graph_source.load();
+                s.otel_view.focused_span = new_focused_span;
+                s.otel_view.selected_span = None;
+            }
 
-                    // Then find the new focused span--it's the first span (root) in the
-                    // new trace
-                    let new_focused_span = s
-                        .get_trace_list()
-                        .selected_item()
-                        .and_then(|trace_id| graph.traces.get(trace_id))
-                        .and_then(|trace_meta| trace_meta.roots().first_key_value())
-                        .and_then(|(_, root_ids)| root_ids.first())
-                        .and_then(|root_id| graph.spans.get(root_id))
-                        .cloned();
+            // Special Case: OTEL Details (FlameGraph)
+            // The component itself doesn't scroll, but we scroll the focused span in view state
+            ComponentId::OtelFlameGraph => {
+                debug!("ScrollUpdate: Dispatching scroll to scroll_trace_details");
+                scroll_trace_details(s, direction);
+            }
 
-                    s.otel_view.focused_span = new_focused_span;
-                    // If we've scrolled to a new Trace, the selected span is reset
-                    s.otel_view.selected_span = None;
+            // Default: Dispatch to any component in the registry
+            _ => {
+                if let Some(component) = s.component_registry.get_mut(&focus_id) {
+                    debug!("ScrollUpdate: Dispatching to component {}", focus_id);
+                    return component.handle_scroll(direction);
+                } else {
+                    warn!(
+                        "ScrollUpdate: Focused component {} not found in registry",
+                        focus_id
+                    );
                 }
-                InspectOption::Prometheus => {
-                    debug!("ScrollUpdate: No scroll logic for Prometheus tab list");
-                    /* There's no list widget in the Prometheus tab */
-                }
-                InspectOption::Chain => {
-                    debug!("ScrollUpdate: No scroll logic for Chain tab list");
-                    // No list widget in the Chain tab currently
-                }
-            },
-            WidgetSlot::Details => match s.get_inspect_tabs().cursor.current() {
-                InspectOption::Otel => {
-                    debug!("ScrollUpdate: Dispatching scroll to scroll_trace_details");
-                    scroll_trace_details(s, direction)
-                }
-                InspectOption::Ledger => {
-                    debug!("ScrollUpdate: No scroll logic for Ledger item details");
-                    /* TODO: Impl item details scroll */
-                }
-                // InspectOption::Chain => {}
-                InspectOption::Prometheus => {
-                    debug!("ScrollUpdate: No scroll logic for Prometheus metrics details");
-                    /* TODO: Impl metrics scroll */
-                }
-                InspectOption::Chain => {
-                    debug!("ScrollUpdate: No scroll logic for Chain page details");
-                    // DetailsComponent for Chain page doesn't scroll currently
-                }
-            },
-            other_slot => debug!(
-                "ScrollUpdate: No specific scroll logic for slot {:?}",
-                other_slot
-            ),
+            }
         }
+
         Vec::new()
-    }
-}
-
-/// Scrolls the list within the ledger view.
-fn scroll_ledger_list(s: &mut AppState, direction: ScrollDirection) {
-    if let Some(browse_option) = s.get_ledger_browse_options().model_view.selected_item() {
-        debug!(
-            "Scrolling ledger list cursor for browse option: {:?}",
-            browse_option
-        );
-        match (browse_option, direction) {
-            (LedgerBrowse::Accounts, _) => {
-                s.get_accounts_list_mut().handle_scroll(direction);
-            }
-            (LedgerBrowse::BlockIssuers, ScrollDirection::Up) => {
-                s.get_block_issuers_list_mut().model_view.cursor_back()
-            }
-            (LedgerBrowse::BlockIssuers, ScrollDirection::Down) => {
-                s.get_block_issuers_list_mut().model_view.cursor_next()
-            }
-            (LedgerBrowse::DReps, ScrollDirection::Up) => {
-                s.get_dreps_list_mut().model_view.cursor_back()
-            }
-            (LedgerBrowse::DReps, ScrollDirection::Down) => {
-                s.get_dreps_list_mut().model_view.cursor_next()
-            }
-            (LedgerBrowse::Pools, ScrollDirection::Up) => {
-                s.get_pools_list_mut().model_view.cursor_back()
-            }
-            (LedgerBrowse::Pools, ScrollDirection::Down) => {
-                s.get_pools_list_mut().model_view.cursor_next()
-            }
-            (LedgerBrowse::Proposals, ScrollDirection::Up) => {
-                s.get_proposals_list_mut().model_view.cursor_back()
-            }
-            (LedgerBrowse::Proposals, ScrollDirection::Down) => {
-                s.get_proposals_list_mut().model_view.cursor_next()
-            }
-            (LedgerBrowse::Utxos, ScrollDirection::Up) => {
-                s.get_utxos_list_mut().model_view.cursor_back()
-            }
-            (LedgerBrowse::Utxos, ScrollDirection::Down) => {
-                s.get_utxos_list_mut().model_view.cursor_next()
-            }
-        }
     }
 }
 

@@ -1,6 +1,7 @@
 use crate::{
     app_state::AppState,
-    states::{Action, InspectOption, WidgetSlot},
+    otel::span_ext::SpanExt,
+    states::{Action, ComponentId},
     update::Update,
 };
 use crossterm::event::MouseEventKind;
@@ -22,7 +23,7 @@ impl Update for MouseFocusUpdate {
         s.layout_model
             .set_focus_by_location(mouse_event.column, mouse_event.row);
 
-        let Some((_, rect)) = s
+        let Some((component_id, rect)) = s
             .layout_model
             .find_hovered_slot(mouse_event.column, mouse_event.row)
         else {
@@ -32,17 +33,38 @@ impl Update for MouseFocusUpdate {
 
         let relative_row = mouse_event.row.saturating_sub(rect.y + 1) as usize;
 
-        if *s.get_inspect_tabs().cursor.current() == InspectOption::Otel
-            && s.layout_model.is_focused(s, WidgetSlot::Details)
-            && let Some(selected_trace) = s.get_trace_list().selected_item()
-        {
-            let trace_graph = s.otel_view.trace_graph_source.load();
-            let mut trace_iter = trace_graph.trace_iter(selected_trace);
-
-            if let Some(span_id) = trace_iter.nth(relative_row) {
-                s.otel_view.focused_span = trace_graph.spans.get(&span_id).cloned();
-            }
+        if component_id != ComponentId::OtelFlameGraph {
+            return vec![];
         }
-        Vec::new()
+
+        let trace_graph = s.otel_view.trace_graph_source.load();
+
+        // The render logic displays different lists depending on whether a span is selected.
+        // We iterate the same list to map the mouse row to the correct span.
+        let hovered_span_id = if let Some(selected_span) = &s.otel_view.selected_span {
+            // Zoomed View: Ancestors (Root -> Parent) + Descendants (Span -> Children)
+            let selected_id = selected_span.span_id();
+
+            // Ancestors are iterated Parent -> Root, so we must collect and reverse
+            let ancestors = trace_graph
+                .ancestor_iter(selected_id)
+                .collect::<Vec<_>>()
+                .into_iter()
+                .rev();
+
+            let descendants = trace_graph.descendent_iter(selected_id);
+
+            ancestors.chain(descendants).nth(relative_row)
+        } else if let Some(selected_trace) = s.get_trace_list().selected_item() {
+            // Full View: The entire trace in default order
+            trace_graph.trace_iter(selected_trace).nth(relative_row)
+        } else {
+            None
+        };
+
+        // Update the focused span based on what we found (or clear it if we found nothing)
+        s.otel_view.focused_span =
+            hovered_span_id.and_then(|span_id| trace_graph.spans.get(&span_id).cloned());
+        vec![]
     }
 }
