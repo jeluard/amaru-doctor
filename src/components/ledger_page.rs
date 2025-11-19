@@ -1,9 +1,13 @@
 use crate::{
     ScreenMode,
     app_state::AppState,
-    components::{Component, ComponentLayout, MouseScrollDirection, ScrollDirection},
+    components::{
+        Component, ComponentLayout, InputRoute, MouseScrollDirection, ScrollDirection,
+        route_event_to_children,
+    },
     controller::{LayoutSpec, walk_layout},
     states::{Action, ComponentId, LedgerBrowse, LedgerMode},
+    tui::Event,
 };
 use crossterm::event::KeyEvent;
 use either::Either::{Left, Right};
@@ -130,6 +134,13 @@ impl Component for LedgerPageComponent {
         let mut layout = HashMap::new();
         walk_layout(&mut layout, &spec, area);
         layout
+    }
+
+    fn route_event(&self, event: &Event, s: &AppState) -> InputRoute {
+        let area = s.frame_area;
+        let my_layout = self.calculate_layout(area, s);
+
+        route_event_to_children(event, s, my_layout)
     }
 
     fn render(&self, f: &mut Frame, s: &AppState, _layout: &ComponentLayout) {

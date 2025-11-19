@@ -1,11 +1,12 @@
 use crate::{
     ScreenMode,
     app_state::AppState,
+    components::InputRoute,
     config::Config,
     model::button::InputEvent,
     otel::TraceGraphSnapshot,
     prometheus::model::NodeMetrics,
-    states::{Action, InspectOption},
+    states::{Action, ComponentId, InspectOption},
     tui::{Event, Tui},
     update::{UPDATE_DEFS, UpdateList},
 };
@@ -16,7 +17,7 @@ use ratatui::prelude::{Backend, Rect};
 use serde::{Deserialize, Serialize};
 use std::sync::mpsc;
 use tokio::sync::mpsc::{Receiver, UnboundedReceiver, UnboundedSender, unbounded_channel};
-use tracing::{debug, error, info, trace};
+use tracing::{debug, error};
 
 pub struct App {
     config: Config,
@@ -67,7 +68,7 @@ impl App {
             should_quit: false,
             should_suspend: false,
             config: Config::new()?,
-            mode: Mode::Home,
+            mode: Mode::default(),
             last_tick_key_events: Vec::new(),
             action_tx,
             action_rx,
@@ -116,45 +117,137 @@ impl App {
             return Ok(());
         };
         let action_tx = self.action_tx.clone();
+
         match event {
             Event::Quit => action_tx.send(Action::Quit)?,
             Event::Tick => action_tx.send(Action::Tick)?,
             Event::Render => action_tx.send(Action::Render)?,
             Event::Resize(x, y) => action_tx.send(Action::Resize(x, y))?,
+
             Event::Key(key) => {
-                action_tx.send(Action::Key(key.code))?;
-                self.handle_key_event(key)?
+                // Let the focused component try to handle it
+                let handled = self.dispatch_event(Event::Key(key))?;
+
+                // Global Fallback: If not handled, check Config
+                if !handled {
+                    self.handle_config_key(key)?;
+                }
             }
-            Event::Mouse(mouse) => action_tx.send(Action::MouseEvent(mouse))?,
+
+            Event::Mouse(mouse) => {
+                self.dispatch_event(Event::Mouse(mouse))?;
+            }
             _ => {}
         }
         Ok(())
     }
 
-    fn handle_key_event(&mut self, key: KeyEvent) -> Result<()> {
-        let action_tx = self.action_tx.clone();
-        let Some(keymap) = self.config.keybindings.get(&self.mode) else {
-            trace!("App::handle_key_event - no keymap: {:?}", key);
-            return Ok(());
-        };
-        match keymap.get(&vec![key]) {
-            Some(action) => {
-                info!("Key to action: {action:?}. Will broadcast.");
-                action_tx.send(action.clone())?;
-            }
-            _ => {
-                trace!("App::handle_key_event - no single-key action: {:?}", key);
-                // If the key was not handled as a single key action,
-                // then consider it for multi-key combinations.
-                self.last_tick_key_events.push(key);
+    /// From Root to find the target ComponentId.
+    /// Borrow that specific component mutably to execute logic.
+    fn dispatch_event(&mut self, event: Event) -> Result<bool> {
+        let mut target_id = ComponentId::Root;
+        let mut target_area = self.app_state.frame_area;
 
-                // Check for multi-key combinations
-                if let Some(action) = keymap.get(&self.last_tick_key_events) {
-                    info!("Got action: {action:?}");
-                    action_tx.send(action.clone())?;
+        // Prevent infinite recursion
+        let mut depth = 0;
+        const MAX_DEPTH: usize = 50;
+
+        debug!("Dispatch Start: {:?}", event);
+
+        loop {
+            if depth > MAX_DEPTH {
+                error!("Dispatch Loop Detected. Aborting route at {:?}", target_id);
+                return Ok(false);
+            }
+            depth += 1;
+
+            let Some(comp) = self.app_state.component_registry.get(&target_id) else {
+                debug!("Dispatch Broken: {} not found", target_id);
+                return Ok(false);
+            };
+
+            let route = comp.route_event(&event, &self.app_state);
+            debug!("Route [{}]: {:?}", target_id, route);
+
+            match route {
+                InputRoute::Delegate(child_id, child_rect) => {
+                    // If dividing to self, break immediately
+                    if child_id == target_id {
+                        error!(
+                            "Infinite Loop: Component {} tried to delegate to itself",
+                            target_id
+                        );
+                        return Ok(false);
+                    }
+                    target_id = child_id;
+                    target_area = child_rect;
+                }
+                InputRoute::Handle => {
+                    break;
+                }
+                InputRoute::Ignore => {
+                    return Ok(false);
                 }
             }
         }
+
+        // Handling
+        // Now we have the ID. We can safely take a mutable borrow on this single component.
+        if let Some(comp) = self.app_state.component_registry.get_mut(&target_id) {
+            if let Event::Mouse(_) = event
+                && self.app_state.layout_model.get_focus() != target_id
+            {
+                self.app_state.layout_model.set_focus(target_id);
+            }
+
+            let mut actions = comp.handle_event(&event, target_area);
+
+            if !actions.is_empty() {
+                debug!(
+                    "App: Component {} returned actions: {:?}",
+                    target_id, actions
+                );
+            }
+
+            // Trigger Layout Update for Options Lists
+            // When selection changes in these lists, the whole page layout changes.
+            if matches!(
+                target_id,
+                ComponentId::LedgerBrowseOptions | ComponentId::LedgerSearchOptions
+            ) {
+                // Only trigger if it was an input type that changes selection (Key/Mouse)
+                actions.push(Action::UpdateLayout(self.app_state.frame_area));
+            }
+
+            if !actions.is_empty() {
+                for action in actions {
+                    self.action_tx.send(action)?;
+                }
+                return Ok(true);
+            }
+        }
+
+        Ok(false) // Not Consumed
+    }
+
+    /// Checks the configuration for a matching keybinding and dispatches the action.
+    fn handle_config_key(&mut self, key: KeyEvent) -> Result<()> {
+        let Some(keymap) = self.config.keybindings.get(&self.mode) else {
+            return Ok(());
+        };
+
+        // Single Key match
+        if let Some(action) = keymap.get(&vec![key]) {
+            self.action_tx.send(action.clone())?;
+            return Ok(());
+        }
+
+        self.last_tick_key_events.push(key);
+        if let Some(action) = keymap.get(&self.last_tick_key_events) {
+            self.action_tx.send(action.clone())?;
+            self.last_tick_key_events.clear();
+        }
+
         Ok(())
     }
 

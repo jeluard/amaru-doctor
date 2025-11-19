@@ -1,61 +1,103 @@
 use crate::{
     app_state::AppState,
     components::{Component, list::ListModel},
-    states::{Action, ComponentId},
+    states::{Action, ComponentId::*},
     update::Update,
 };
 use crossterm::event::{MouseButton, MouseEventKind};
-use tracing::debug;
+use tracing::{debug, warn};
 
 pub struct MouseClickUpdate;
 
 impl Update for MouseClickUpdate {
     fn update(&self, action: &Action, s: &mut AppState) -> Vec<Action> {
-        let Action::MouseEvent(mouse_event) = action else {
+        let (column, row) = match action {
+            Action::MouseEvent(mouse_event) => {
+                if mouse_event.kind != MouseEventKind::Down(MouseButton::Left) {
+                    return Vec::new();
+                }
+                (mouse_event.column, mouse_event.row)
+            }
+            Action::MouseClick(col, row) => (*col, *row),
+            _ => return Vec::new(),
+        };
+
+        let Some((component_id, rect)) = s.layout_model.find_hovered_slot(column, row) else {
             return Vec::new();
         };
 
-        if mouse_event.kind != MouseEventKind::Down(MouseButton::Left) {
-            return Vec::new();
-        }
-
-        let Some((component_id, rect)) = s
-            .layout_model
-            .find_hovered_slot(mouse_event.column, mouse_event.row)
-        else {
-            debug!("Couldn't find slot for click {:?}", mouse_event);
-            return Vec::new();
-        };
-
-        // Calculate relative row for list components
         // +1 to account for the border
-        let relative_row = mouse_event.row.saturating_sub(rect.y + 1) as usize;
+        let relative_row = row.saturating_sub(rect.y + 1) as usize;
 
         match component_id {
-            ComponentId::InspectTabs => {
-                s.get_inspect_tabs_mut()
-                    .handle_click(rect, mouse_event.row, mouse_event.column);
-                // Clicking tabs changes layout, so we return an update action
+            InspectTabs => {
+                s.get_inspect_tabs_mut().handle_click(rect, row, column);
                 return vec![Action::UpdateLayout(s.frame_area)];
             }
-            ComponentId::LedgerModeTabs => {
-                if s.get_ledger_mode_tabs_mut()
-                    .select_by_column(rect, mouse_event.column)
-                {
+            LedgerModeTabs => {
+                if s.get_ledger_mode_tabs_mut().select_by_column(rect, column) {
                     return vec![Action::UpdateLayout(s.frame_area)];
                 }
             }
 
-            ComponentId::OtelTraceList => {
-                // Update the list selection
-                s.get_trace_list_mut()
-                    .handle_click(rect, mouse_event.row, mouse_event.column);
+            LedgerBrowseOptions => {
+                s.get_ledger_browse_options_mut()
+                    .model
+                    .select_index_by_row(relative_row);
+                return vec![Action::UpdateLayout(s.frame_area)];
+            }
+            LedgerSearchOptions => {
+                s.get_ledger_search_options_mut()
+                    .model
+                    .select_index_by_row(relative_row);
+                return vec![Action::UpdateLayout(s.frame_area)];
+            }
 
-                // If we switched traces, we clear the selected span so the
-                // flamegraph switches to the new trace's root.
+            LedgerAccountsList => {
+                s.get_accounts_list_mut()
+                    .model
+                    .select_index_by_row(relative_row);
+            }
+            LedgerBlockIssuersList => {
+                s.get_block_issuers_list_mut()
+                    .model
+                    .select_index_by_row(relative_row);
+            }
+            LedgerDRepsList => {
+                s.get_dreps_list_mut()
+                    .model
+                    .select_index_by_row(relative_row);
+            }
+            LedgerPoolsList => {
+                s.get_pools_list_mut()
+                    .model
+                    .select_index_by_row(relative_row);
+            }
+            LedgerProposalsList => {
+                s.get_proposals_list_mut()
+                    .model
+                    .select_index_by_row(relative_row);
+            }
+            LedgerUtxosList => {
+                s.get_utxos_list_mut()
+                    .model
+                    .select_index_by_row(relative_row);
+            }
+
+            LedgerUtxosByAddrList => {
+                if let Some(model) = s.ledger_mvs.utxos_by_addr_search.get_current_res_mut() {
+                    debug!("MouseClickUpdate: Selecting row {}", relative_row);
+                    model.select_index_by_row(relative_row);
+                } else {
+                    warn!("MouseClickUpdate: Click on SearchList but no model found");
+                }
+            }
+
+            OtelTraceList => {
+                s.get_trace_list_mut().handle_click(rect, row, column);
+
+                // Side Effect: Update Focused Span based on new Trace selection
                 let graph = s.otel_view.trace_graph_source.load();
-
-                // Set focused span to the root of the new trace (if any)
                 let new_focused_span = s
                     .get_trace_list()
                     .selected_item()
@@ -66,70 +108,20 @@ impl Update for MouseClickUpdate {
                     .cloned();
 
                 s.otel_view.focused_span = new_focused_span;
-                // Clear the specifically selected span to reset the view
                 s.otel_view.selected_span = None;
             }
-            ComponentId::OtelFlameGraph => {
-                // If clicking the flamegraph, "select" the currently focused span
+            OtelFlameGraph => {
                 if let Some(span) = &s.otel_view.focused_span {
                     s.otel_view.selected_span = Some(span.clone());
                 }
             }
 
-            ComponentId::LedgerBrowseOptions => {
-                s.get_ledger_browse_options_mut().handle_click(
-                    rect,
-                    mouse_event.row,
-                    mouse_event.column,
+            _ => {
+                debug!(
+                    "Clicked component {} with no specific handler",
+                    component_id
                 );
-                return vec![Action::UpdateLayout(s.frame_area)];
             }
-            ComponentId::LedgerSearchOptions => {
-                s.get_ledger_search_options_mut()
-                    .model
-                    .select_index_by_row(relative_row);
-            }
-
-            // Ledger Lists
-            ComponentId::LedgerAccountsList => {
-                s.get_accounts_list_mut()
-                    .model
-                    .select_index_by_row(relative_row);
-            }
-            ComponentId::LedgerBlockIssuersList => {
-                s.get_block_issuers_list_mut()
-                    .model
-                    .select_index_by_row(relative_row);
-            }
-            ComponentId::LedgerDRepsList => {
-                s.get_dreps_list_mut()
-                    .model
-                    .select_index_by_row(relative_row);
-            }
-            ComponentId::LedgerPoolsList => {
-                s.get_pools_list_mut()
-                    .model
-                    .select_index_by_row(relative_row);
-            }
-            ComponentId::LedgerProposalsList => {
-                s.get_proposals_list_mut()
-                    .model
-                    .select_index_by_row(relative_row);
-            }
-            ComponentId::LedgerUtxosList => {
-                s.get_utxos_list_mut()
-                    .model
-                    .select_index_by_row(relative_row);
-            }
-            ComponentId::LedgerUtxosByAddrList => {
-                if let Some(model) = s.ledger_mvs.utxos_by_addr_search.get_current_res_mut() {
-                    // Calculate row relative to the component rect
-                    // +1 accounts for the top border
-                    let relative_row = mouse_event.row.saturating_sub(rect.y + 1) as usize;
-                    model.select_index_by_row(relative_row);
-                }
-            }
-            _ => {}
         }
 
         Vec::new()
