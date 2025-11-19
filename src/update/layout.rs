@@ -1,7 +1,8 @@
+use std::collections::HashMap;
+
 use crate::{
     app_state::AppState,
-    controller::{LayoutContext, compute_component_layout},
-    states::Action,
+    states::{Action, ComponentId},
     update::Update,
 };
 use tracing::trace;
@@ -13,34 +14,29 @@ impl Update for LayoutUpdate {
         let Action::UpdateLayout(frame_area) = a else {
             return Vec::new();
         };
-        trace!("Got layout update, will recompute component layout");
+        trace!("Got layout update, calling RootComponent to calculate layout");
         s.frame_area = *frame_area;
 
-        let ctx = LayoutContext {
-            screen_mode: s.screen_mode,
-            inspect_option: s.get_inspect_tabs().selected(),
-            ledger_mode: s.get_ledger_mode_tabs().selected(),
-            ledger_browse: s
-                .get_ledger_browse_options()
-                .model
-                .selected_item()
-                .cloned()
-                .unwrap_or_default(),
-            ledger_search: s
-                .get_ledger_search_options()
-                .model
-                .selected_item()
-                .cloned()
-                .unwrap_or_default(),
-        };
+        // We build a map of ONLY the interactive leaf widgets
+        let mut interactive_layout = HashMap::new();
 
-        let new_layout = compute_component_layout(ctx, *frame_area);
-        s.layout_model.set_layout(new_layout);
+        if let Some(root) = s.component_registry.get(&ComponentId::Root) {
+            let root_layout = root.calculate_layout(*frame_area, s);
+            for (page_id, page_rect) in root_layout {
+                if let Some(page) = s.component_registry.get(&page_id) {
+                    let page_layout = page.calculate_layout(page_rect, s);
+                    interactive_layout.extend(page_layout);
+                }
+            }
+        }
 
+        s.layout_model.set_layout(interactive_layout);
+
+        // Resize windows based on the new layout
         s.layout_model
             .layout
             .iter()
-            .map(|(component_id, rect)| Action::SetWindowSize(*component_id, rect.height as usize))
+            .map(|(id, rect)| Action::SetWindowSize(*id, rect.height as usize))
             .collect()
     }
 }
