@@ -1,4 +1,4 @@
-use crate::update::search::SearchState;
+use crate::model::search::SearchState;
 use amaru_consensus::{BlockHeader, Nonces};
 use amaru_kernel::{Hash, RawBlock};
 

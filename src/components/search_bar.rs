@@ -48,7 +48,7 @@ impl Component for SearchBarComponent {
         // This is the old, complex logic from view/defs.rs
         let search_query = match s.get_inspect_tabs().selected() {
             InspectOption::Ledger => match s.get_ledger_search_options().model.selected_item() {
-                Some(LedgerSearch::UtxosByAddress) => "", //&s.ledger_mvs.utxos_by_addr_search.builder,
+                Some(LedgerSearch::UtxosByAddress) => &s.ledger_mvs.utxos_by_addr_search.builder,
                 None => "",
             },
             InspectOption::Chain => "", //&s.chain_view.chain_search.builder,

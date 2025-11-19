@@ -12,6 +12,7 @@ pub mod details;
 pub mod flame_graph;
 pub mod list;
 pub mod prom_metrics;
+pub mod proxy_list;
 pub mod search_bar;
 pub mod tabs;
 pub mod trace_list;

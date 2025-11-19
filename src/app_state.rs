@@ -1,9 +1,15 @@
 use crate::{
     ScreenMode,
     components::{
-        Component, details::DetailsComponent, flame_graph::FlameGraphComponent,
-        list::ListComponent, prom_metrics::PromMetricsComponent, search_bar::SearchBarComponent,
-        tabs::TabsComponent, trace_list::TraceListComponent,
+        Component,
+        details::DetailsComponent,
+        flame_graph::FlameGraphComponent,
+        list::{ListComponent, ListModel},
+        prom_metrics::PromMetricsComponent,
+        proxy_list::ProxyListComponent,
+        search_bar::SearchBarComponent,
+        tabs::TabsComponent,
+        trace_list::TraceListComponent,
     },
     controller::{LayoutContext, compute_component_layout},
     model::{
@@ -290,6 +296,30 @@ impl AppState {
                 ComponentId::LedgerUtxoDetails,
                 "Utxo Details",
                 Box::new(|s: &AppState| s.get_utxos_list().model.selected_item()),
+            )
+        );
+
+        register_component!(
+            component_registry,
+            ProxyListComponent::new(
+                ComponentId::LedgerUtxosByAddrList,
+                Box::new(|s: &AppState| s.ledger_mvs.utxos_by_addr_search.get_current_res()),
+                "Utxos by Address",
+                "No search results"
+            )
+        );
+
+        register_component!(
+            component_registry,
+            DetailsComponent::<UtxoItem>::new(
+                ComponentId::LedgerUtxosByAddrDetails,
+                "Utxo Details",
+                Box::new(|s: &AppState| {
+                    s.ledger_mvs
+                        .utxos_by_addr_search
+                        .get_current_res()
+                        .and_then(|list| list.selected_item())
+                })
             )
         );
 
