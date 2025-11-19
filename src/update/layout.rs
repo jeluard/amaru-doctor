@@ -22,13 +22,13 @@ impl Update for LayoutUpdate {
             ledger_mode: s.get_ledger_mode_tabs().selected(),
             ledger_browse: s
                 .get_ledger_browse_options()
-                .model_view
+                .model
                 .selected_item()
                 .cloned()
                 .unwrap_or_default(),
             ledger_search: s
                 .get_ledger_search_options()
-                .model_view
+                .model
                 .selected_item()
                 .cloned()
                 .unwrap_or_default(),

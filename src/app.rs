@@ -8,7 +8,6 @@ use crate::{
     states::{Action, InspectOption},
     tui::{Event, Tui},
     update::{UPDATE_DEFS, UpdateList},
-    view::{SlotViews, compute_slot_views},
 };
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
 use anyhow::Result;
@@ -24,7 +23,6 @@ pub struct App {
     app_state: AppState, // Model
     updates: UpdateList, // Update
     last_store_option: InspectOption,
-    slot_views: SlotViews, // View
     should_quit: bool,
     should_suspend: bool,
     mode: Mode,
@@ -61,13 +59,11 @@ impl App {
             screen_mode,
         )?;
         let last_inspect_tabs = *app_state.get_inspect_tabs().cursor.current();
-        let slot_views = compute_slot_views(&app_state);
 
         Ok(Self {
             app_state,
             updates: UPDATE_DEFS.to_vec(),
             last_store_option: last_inspect_tabs,
-            slot_views,
             should_quit: false,
             should_suspend: false,
             config: Config::new()?,
@@ -168,15 +164,15 @@ impl App {
                 debug!("{action:?}");
             }
 
-            // TODO: These should be created in Upate functions, not here
-            let recompute_slot_widgets = matches!(
-                action,
-                Action::ScrollUp | Action::ScrollDown | Action::MouseEvent(_) | Action::Key(_)
-            );
-
             match action {
                 Action::Tick => {
                     self.last_tick_key_events.clear();
+                    for component in self.app_state.component_registry.values_mut() {
+                        let actions = component.tick();
+                        for a in actions {
+                            self.action_tx.send(a)?;
+                        }
+                    }
                 }
                 Action::Quit => self.should_quit = true,
                 Action::Suspend => self.should_suspend = true,
@@ -190,10 +186,6 @@ impl App {
             }
 
             self.run_updates(&action)?;
-
-            if recompute_slot_widgets {
-                self.slot_views = compute_slot_views(&self.app_state);
-            }
         }
 
         Ok(())
@@ -229,15 +221,15 @@ impl App {
                 self.last_store_option = self.app_state.get_inspect_tabs().selected();
             }
 
-            for (component_id, area) in self.app_state.layout_model.get_layout().clone().iter() {
-                if let Some(slot) = self.app_state.component_id_to_widget_slot(*component_id) {
-                    if let Some(view) = self.slot_views.get(&slot) {
-                        view.render(f, *area, &self.app_state);
-                    } else {
-                        error!("Found no view for slot {}", slot);
-                    }
+            let layout = self.app_state.layout_model.get_layout();
+            for (component_id, _) in layout.iter() {
+                if let Some(component) = self.app_state.component_registry.get(component_id) {
+                    component.render(f, &self.app_state, layout);
                 } else {
-                    error!("No WidgetSlot mapping for ComponentId: {:?}", component_id);
+                    error!(
+                        "Render loop: Component {:?} in layout but not in registry",
+                        component_id
+                    );
                 }
             }
         })

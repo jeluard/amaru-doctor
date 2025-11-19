@@ -5,7 +5,7 @@ use crate::{
     update::Update,
 };
 use strum::Display;
-use tracing::{debug, warn};
+use tracing::debug;
 
 #[derive(Display, Debug, Clone, Copy)]
 pub enum ScrollDirection {
@@ -64,13 +64,15 @@ impl Update for ScrollUpdate {
             // Default: Dispatch to any component in the registry
             _ => {
                 if let Some(component) = s.component_registry.get_mut(&focus_id) {
-                    debug!("ScrollUpdate: Dispatching to component {}", focus_id);
-                    return component.handle_scroll(direction);
-                } else {
-                    warn!(
-                        "ScrollUpdate: Focused component {} not found in registry",
-                        focus_id
-                    );
+                    let mut actions = component.handle_scroll(direction);
+                    if matches!(
+                        focus_id,
+                        ComponentId::LedgerBrowseOptions | ComponentId::LedgerSearchOptions
+                    ) {
+                        actions.push(Action::UpdateLayout(s.frame_area));
+                    }
+
+                    return actions;
                 }
             }
         }

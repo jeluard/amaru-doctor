@@ -2,8 +2,7 @@ use crate::ui::to_list_item::ToListItem;
 use crossterm::event::{KeyCode, MouseEvent};
 use ratatui::{layout::Rect, widgets::ListItem};
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
-use strum::{Display, EnumIter, IntoEnumIterator};
+use strum::{Display, EnumIter};
 
 #[derive(Clone, Copy, Debug, Default, Display, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ComponentId {
@@ -85,6 +84,7 @@ pub enum Action {
     SyncPromMetrics,
     GetButtonEvents,
     PollUtxoSearch,
+    SubmitSearch(String),
     SetFocus(ComponentId),
     FocusNext,
     FocusPrev,
@@ -130,36 +130,6 @@ pub enum LedgerMode {
     #[default]
     Browse,
     Search,
-}
-
-#[derive(
-    Clone, Copy, Debug, Default, Display, EnumIter, Hash, PartialEq, Eq, Serialize, Deserialize,
-)]
-pub enum WidgetSlot {
-    TopLine,
-    #[default] // Default focused slot
-    InspectOption,
-    LedgerMode,
-    SearchBar,
-    // Either the LedgerBrowse (accounts, block issuers, etc.) or LedgerSearch (utxos by
-    // addr) options
-    LedgerOptions,
-    // Listed items
-    List,
-    Details,
-    // Used for span details today
-    SubDetails,
-    LedgerHeaderDetails,
-    LedgerBlockDetails,
-    LedgerNoncesDetails,
-}
-
-impl WidgetSlot {
-    pub fn focusable() -> HashSet<WidgetSlot> {
-        WidgetSlot::iter()
-            .filter(|s| !matches!(s, WidgetSlot::TopLine))
-            .collect()
-    }
 }
 
 #[derive(Clone, Copy, Default, Debug, EnumIter, PartialEq, Eq, Serialize)]

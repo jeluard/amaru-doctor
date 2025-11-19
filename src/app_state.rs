@@ -8,11 +8,11 @@ use crate::{
     controller::{LayoutContext, compute_component_layout},
     model::{
         button::InputEvent, chain_view::ChainViewState, layout::LayoutModel,
-        ledger_view::LedgerModelViewState, otel_view::OtelViewState,
+        ledger_view::LedgerModelViewState, list_view::ListModelView, otel_view::OtelViewState,
     },
     otel::graph::TraceGraph,
     prometheus::model::NodeMetrics,
-    states::{ComponentId, InspectOption, LedgerBrowse, LedgerMode, LedgerSearch, WidgetSlot},
+    states::{ComponentId, InspectOption, LedgerBrowse, LedgerMode, LedgerSearch},
     store::owned_iter::{
         OwnedAccountIter, OwnedBlockIssuerIter, OwnedDRepIter, OwnedPoolIter, OwnedProposalIter,
         OwnedUtxoIter,
@@ -159,31 +159,29 @@ impl AppState {
 
         register_component!(
             component_registry,
-            ListComponent::<LedgerBrowse>::new(
+            ListComponent::new(
                 ComponentId::LedgerBrowseOptions,
-                "Browse Options",
-                LedgerBrowse::iter(),
-                options_height,
+                ListModelView::new("Browse Options", LedgerBrowse::iter(), options_height)
             )
         );
 
         register_component!(
             component_registry,
-            ListComponent::<LedgerSearch>::new(
+            ListComponent::new(
                 ComponentId::LedgerSearchOptions,
-                "Search Options",
-                LedgerSearch::iter(),
-                options_height,
+                ListModelView::new("Search Options", LedgerSearch::iter(), options_height)
             )
         );
 
         register_component!(
             component_registry,
-            ListComponent::<AccountItem>::new(
+            ListComponent::new(
                 ComponentId::LedgerAccountsList,
-                "Accounts",
-                OwnedAccountIter::new(ledger_db_arc.clone()),
-                list_height,
+                ListModelView::new(
+                    "Accounts",
+                    OwnedAccountIter::new(ledger_db_arc.clone()),
+                    list_height,
+                )
             )
         );
         register_component!(
@@ -191,17 +189,19 @@ impl AppState {
             DetailsComponent::<AccountItem>::new(
                 ComponentId::LedgerAccountDetails,
                 "Account Details",
-                Box::new(|s: &AppState| s.get_accounts_list().model_view.selected_item()),
+                Box::new(|s: &AppState| s.get_accounts_list().model.selected_item()),
             )
         );
 
         register_component!(
             component_registry,
-            ListComponent::<BlockIssuerItem>::new(
+            ListComponent::new(
                 ComponentId::LedgerBlockIssuersList,
-                "Block Issuers",
-                OwnedBlockIssuerIter::new(ledger_db_arc.clone()),
-                list_height,
+                ListModelView::new(
+                    "Block Issuers",
+                    OwnedBlockIssuerIter::new(ledger_db_arc.clone()),
+                    list_height,
+                )
             )
         );
         register_component!(
@@ -209,17 +209,19 @@ impl AppState {
             DetailsComponent::<BlockIssuerItem>::new(
                 ComponentId::LedgerBlockIssuerDetails,
                 "Block Issuer Details",
-                Box::new(|s: &AppState| s.get_block_issuers_list().model_view.selected_item()),
+                Box::new(|s: &AppState| s.get_block_issuers_list().model.selected_item()),
             )
         );
 
         register_component!(
             component_registry,
-            ListComponent::<DRepItem>::new(
+            ListComponent::new(
                 ComponentId::LedgerDRepsList,
-                "DReps",
-                OwnedDRepIter::new(ledger_db_arc.clone()),
-                list_height,
+                ListModelView::new(
+                    "DReps",
+                    OwnedDRepIter::new(ledger_db_arc.clone()),
+                    list_height,
+                )
             )
         );
         register_component!(
@@ -227,17 +229,19 @@ impl AppState {
             DetailsComponent::<DRepItem>::new(
                 ComponentId::LedgerDRepDetails,
                 "DRep Details",
-                Box::new(|s: &AppState| s.get_dreps_list().model_view.selected_item()),
+                Box::new(|s: &AppState| s.get_dreps_list().model.selected_item()),
             )
         );
 
         register_component!(
             component_registry,
-            ListComponent::<PoolItem>::new(
+            ListComponent::new(
                 ComponentId::LedgerPoolsList,
-                "Pools",
-                OwnedPoolIter::new(ledger_db_arc.clone()),
-                list_height,
+                ListModelView::new(
+                    "Pools",
+                    OwnedPoolIter::new(ledger_db_arc.clone()),
+                    list_height,
+                )
             )
         );
         register_component!(
@@ -245,17 +249,19 @@ impl AppState {
             DetailsComponent::<PoolItem>::new(
                 ComponentId::LedgerPoolDetails,
                 "Pool Details",
-                Box::new(|s: &AppState| s.get_pools_list().model_view.selected_item()),
+                Box::new(|s: &AppState| s.get_pools_list().model.selected_item()),
             )
         );
 
         register_component!(
             component_registry,
-            ListComponent::<ProposalItem>::new(
+            ListComponent::new(
                 ComponentId::LedgerProposalsList,
-                "Proposals",
-                OwnedProposalIter::new(ledger_db_arc.clone()),
-                list_height,
+                ListModelView::new(
+                    "Proposals",
+                    OwnedProposalIter::new(ledger_db_arc.clone()),
+                    list_height,
+                )
             )
         );
         register_component!(
@@ -263,17 +269,19 @@ impl AppState {
             DetailsComponent::<ProposalItem>::new(
                 ComponentId::LedgerProposalDetails,
                 "Proposal Details",
-                Box::new(|s: &AppState| s.get_proposals_list().model_view.selected_item()),
+                Box::new(|s: &AppState| s.get_proposals_list().model.selected_item()),
             )
         );
 
         register_component!(
             component_registry,
-            ListComponent::<UtxoItem>::new(
+            ListComponent::new(
                 ComponentId::LedgerUtxosList,
-                "Utxos",
-                OwnedUtxoIter::new(ledger_db_arc.clone()),
-                list_height,
+                ListModelView::new(
+                    "Utxos",
+                    OwnedUtxoIter::new(ledger_db_arc.clone()),
+                    list_height,
+                )
             )
         );
         register_component!(
@@ -281,7 +289,7 @@ impl AppState {
             DetailsComponent::<UtxoItem>::new(
                 ComponentId::LedgerUtxoDetails,
                 "Utxo Details",
-                Box::new(|s: &AppState| s.get_utxos_list().model_view.selected_item()),
+                Box::new(|s: &AppState| s.get_utxos_list().model.selected_item()),
             )
         );
 
@@ -386,7 +394,7 @@ impl AppState {
     define_component_getter!(
         get_ledger_browse_options,
         get_ledger_browse_options_mut,
-        ListComponent<LedgerBrowse>,
+        ListComponent<ListModelView<LedgerBrowse>>,
         ComponentId::LedgerBrowseOptions,
         "LedgerBrowseOptions"
     );
@@ -394,7 +402,7 @@ impl AppState {
     define_component_getter!(
         get_ledger_search_options,
         get_ledger_search_options_mut,
-        ListComponent<LedgerSearch>,
+        ListComponent<ListModelView<LedgerSearch>>,
         ComponentId::LedgerSearchOptions,
         "LedgerSearchOptions"
     );
@@ -402,7 +410,7 @@ impl AppState {
     define_component_getter!(
         get_accounts_list,
         get_accounts_list_mut,
-        ListComponent<AccountItem>,
+        ListComponent<ListModelView<AccountItem>>,
         ComponentId::LedgerAccountsList,
         "LedgerAccountsList"
     );
@@ -410,7 +418,7 @@ impl AppState {
     define_component_getter!(
         get_block_issuers_list,
         get_block_issuers_list_mut,
-        ListComponent<BlockIssuerItem>,
+        ListComponent<ListModelView<BlockIssuerItem>>,
         ComponentId::LedgerBlockIssuersList,
         "LedgerBlockIssuersList"
     );
@@ -418,7 +426,7 @@ impl AppState {
     define_component_getter!(
         get_dreps_list,
         get_dreps_list_mut,
-        ListComponent<DRepItem>,
+        ListComponent<ListModelView<DRepItem>>,
         ComponentId::LedgerDRepsList,
         "LedgerDRepsList"
     );
@@ -426,7 +434,7 @@ impl AppState {
     define_component_getter!(
         get_pools_list,
         get_pools_list_mut,
-        ListComponent<PoolItem>,
+        ListComponent<ListModelView<PoolItem>>,
         ComponentId::LedgerPoolsList,
         "LedgerPoolsList"
     );
@@ -434,7 +442,7 @@ impl AppState {
     define_component_getter!(
         get_proposals_list,
         get_proposals_list_mut,
-        ListComponent<ProposalItem>,
+        ListComponent<ListModelView<ProposalItem>>,
         ComponentId::LedgerProposalsList,
         "LedgerProposalsList"
     );
@@ -442,7 +450,7 @@ impl AppState {
     define_component_getter!(
         get_utxos_list,
         get_utxos_list_mut,
-        ListComponent<UtxoItem>,
+        ListComponent<ListModelView<UtxoItem>>,
         ComponentId::LedgerUtxosList,
         "LedgerUtxosList"
     );
@@ -462,98 +470,4 @@ impl AppState {
         ComponentId::PrometheusMetrics,
         "PromMetrics"
     );
-
-    pub fn component_id_to_widget_slot(&self, component_id: ComponentId) -> Option<WidgetSlot> {
-        match component_id {
-            ComponentId::InspectTabs => Some(WidgetSlot::InspectOption),
-            ComponentId::LedgerModeTabs => Some(WidgetSlot::LedgerMode),
-            ComponentId::SearchBar => Some(WidgetSlot::SearchBar),
-            ComponentId::LedgerBrowseOptions => Some(WidgetSlot::LedgerOptions),
-            ComponentId::LedgerSearchOptions => Some(WidgetSlot::LedgerOptions),
-            ComponentId::LedgerAccountsList => Some(WidgetSlot::List),
-            ComponentId::LedgerBlockIssuersList => Some(WidgetSlot::List),
-            ComponentId::LedgerDRepsList => Some(WidgetSlot::List),
-            ComponentId::LedgerPoolsList => Some(WidgetSlot::List),
-            ComponentId::LedgerProposalsList => Some(WidgetSlot::List),
-            ComponentId::LedgerUtxosList => Some(WidgetSlot::List),
-            ComponentId::LedgerUtxosByAddrList => Some(WidgetSlot::List),
-            ComponentId::LedgerAccountDetails => Some(WidgetSlot::Details),
-            ComponentId::LedgerBlockIssuerDetails => Some(WidgetSlot::Details),
-            ComponentId::LedgerDRepDetails => Some(WidgetSlot::Details),
-            ComponentId::LedgerPoolDetails => Some(WidgetSlot::Details),
-            ComponentId::LedgerProposalDetails => Some(WidgetSlot::Details),
-            ComponentId::LedgerUtxoDetails => Some(WidgetSlot::Details),
-            ComponentId::LedgerUtxosByAddrDetails => Some(WidgetSlot::Details),
-            ComponentId::ChainSearchHeader => Some(WidgetSlot::LedgerHeaderDetails),
-            ComponentId::ChainSearchBlock => Some(WidgetSlot::LedgerBlockDetails),
-            ComponentId::ChainSearchNonces => Some(WidgetSlot::LedgerNoncesDetails),
-            ComponentId::OtelTraceList => Some(WidgetSlot::List),
-            ComponentId::OtelFlameGraph => Some(WidgetSlot::Details),
-            ComponentId::OtelSpanDetails => Some(WidgetSlot::SubDetails),
-            ComponentId::PrometheusMetrics => Some(WidgetSlot::Details),
-            _ => None,
-        }
-    }
-
-    pub fn widget_slot_to_component_id(&self, widget_slot: WidgetSlot) -> Option<ComponentId> {
-        match widget_slot {
-            WidgetSlot::InspectOption => Some(ComponentId::InspectTabs),
-            WidgetSlot::LedgerMode => Some(ComponentId::LedgerModeTabs),
-            WidgetSlot::SearchBar => Some(ComponentId::SearchBar),
-            WidgetSlot::LedgerOptions => match self.get_ledger_mode_tabs().selected() {
-                LedgerMode::Browse => Some(ComponentId::LedgerBrowseOptions),
-                LedgerMode::Search => Some(ComponentId::LedgerSearchOptions),
-            },
-            WidgetSlot::List => {
-                match self.get_inspect_tabs().selected() {
-                    InspectOption::Ledger => {
-                        match self.get_ledger_browse_options().model_view.selected_item() {
-                            Some(LedgerBrowse::Accounts) => Some(ComponentId::LedgerAccountsList),
-                            Some(LedgerBrowse::BlockIssuers) => {
-                                Some(ComponentId::LedgerBlockIssuersList)
-                            }
-                            Some(LedgerBrowse::DReps) => Some(ComponentId::LedgerDRepsList),
-                            Some(LedgerBrowse::Pools) => Some(ComponentId::LedgerPoolsList),
-                            Some(LedgerBrowse::Proposals) => Some(ComponentId::LedgerProposalsList),
-                            Some(LedgerBrowse::Utxos) => Some(ComponentId::LedgerUtxosList),
-                            _ => None,
-                        }
-                    }
-                    InspectOption::Chain => None, // No direct list mapping for Chain
-                    InspectOption::Otel => Some(ComponentId::OtelTraceList),
-                    InspectOption::Prometheus => None, // No direct list mapping for Prometheus
-                }
-            }
-            WidgetSlot::Details => {
-                match self.get_inspect_tabs().selected() {
-                    InspectOption::Ledger => {
-                        match self.get_ledger_browse_options().model_view.selected_item() {
-                            Some(LedgerBrowse::Accounts) => Some(ComponentId::LedgerAccountDetails),
-                            Some(LedgerBrowse::BlockIssuers) => {
-                                Some(ComponentId::LedgerBlockIssuerDetails)
-                            }
-                            Some(LedgerBrowse::DReps) => Some(ComponentId::LedgerDRepDetails),
-                            Some(LedgerBrowse::Pools) => Some(ComponentId::LedgerPoolDetails),
-                            Some(LedgerBrowse::Proposals) => {
-                                Some(ComponentId::LedgerProposalDetails)
-                            }
-                            Some(LedgerBrowse::Utxos) => Some(ComponentId::LedgerUtxoDetails),
-                            _ => None,
-                        }
-                    }
-                    InspectOption::Chain => {
-                        // This is ambiguous since there's 3 options, will need to refine later
-                        Some(ComponentId::ChainSearchHeader)
-                    }
-                    InspectOption::Otel => Some(ComponentId::OtelFlameGraph),
-                    InspectOption::Prometheus => Some(ComponentId::PrometheusMetrics),
-                }
-            }
-            WidgetSlot::SubDetails => Some(ComponentId::OtelSpanDetails),
-            WidgetSlot::LedgerHeaderDetails => Some(ComponentId::ChainSearchHeader),
-            WidgetSlot::LedgerBlockDetails => Some(ComponentId::ChainSearchBlock),
-            WidgetSlot::LedgerNoncesDetails => Some(ComponentId::ChainSearchNonces),
-            _ => None,
-        }
-    }
 }

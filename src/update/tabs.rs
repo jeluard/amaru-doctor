@@ -1,6 +1,6 @@
 use crate::{
     app_state::AppState,
-    states::{Action, WidgetSlot},
+    states::{Action, ComponentId},
     update::Update,
 };
 use crossterm::event::KeyCode;
@@ -24,32 +24,27 @@ impl Update for TabsUpdate {
             return Vec::new();
         };
 
-        let slot = s
-            .component_id_to_widget_slot(s.layout_model.get_focus())
-            .unwrap_or_else(|| {
-                panic!(
-                    "No widget slot for component id {}",
-                    s.layout_model.get_focus()
-                )
-            });
-        match slot {
-            WidgetSlot::InspectOption => {
+        let focus = s.layout_model.get_focus();
+
+        match focus {
+            ComponentId::InspectTabs => {
                 match direction {
                     ScrollDirection::Left => s.get_inspect_tabs_mut().cursor.next_back(),
                     ScrollDirection::Right => s.get_inspect_tabs_mut().cursor.non_empty_next(),
                 };
-                return vec![Action::UpdateLayout(s.frame_area)];
+                vec![Action::UpdateLayout(s.frame_area)]
             }
-            WidgetSlot::LedgerMode => {
+            ComponentId::LedgerModeTabs => {
                 match direction {
                     ScrollDirection::Left => s.get_ledger_mode_tabs_mut().cursor.next_back(),
                     ScrollDirection::Right => s.get_ledger_mode_tabs_mut().cursor.non_empty_next(),
                 };
-                return vec![Action::UpdateLayout(s.frame_area)];
+                vec![Action::UpdateLayout(s.frame_area)]
             }
-
-            _ => trace!("No scroll logic for slot {:?}", s.layout_model.get_focus()),
+            _ => {
+                trace!("No tab scroll logic for component {:?}", focus);
+                Vec::new()
+            }
         }
-        Vec::new()
     }
 }

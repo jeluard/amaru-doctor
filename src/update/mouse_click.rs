@@ -12,11 +12,11 @@ pub struct MouseClickUpdate;
 impl Update for MouseClickUpdate {
     fn update(&self, action: &Action, s: &mut AppState) -> Vec<Action> {
         let Action::MouseEvent(mouse_event) = action else {
-            return vec![];
+            return Vec::new();
         };
 
         if mouse_event.kind != MouseEventKind::Down(MouseButton::Left) {
-            return vec![];
+            return Vec::new();
         }
 
         let Some((component_id, rect)) = s
@@ -24,7 +24,7 @@ impl Update for MouseClickUpdate {
             .find_hovered_slot(mouse_event.column, mouse_event.row)
         else {
             debug!("Couldn't find slot for click {:?}", mouse_event);
-            return vec![];
+            return Vec::new();
         };
 
         // Calculate relative row for list components
@@ -86,49 +86,49 @@ impl Update for MouseClickUpdate {
             }
             ComponentId::LedgerSearchOptions => {
                 s.get_ledger_search_options_mut()
-                    .model_view
+                    .model
                     .select_index_by_row(relative_row);
             }
 
             // Ledger Lists
             ComponentId::LedgerAccountsList => {
                 s.get_accounts_list_mut()
-                    .model_view
+                    .model
                     .select_index_by_row(relative_row);
             }
             ComponentId::LedgerBlockIssuersList => {
                 s.get_block_issuers_list_mut()
-                    .model_view
+                    .model
                     .select_index_by_row(relative_row);
             }
             ComponentId::LedgerDRepsList => {
                 s.get_dreps_list_mut()
-                    .model_view
+                    .model
                     .select_index_by_row(relative_row);
             }
             ComponentId::LedgerPoolsList => {
                 s.get_pools_list_mut()
-                    .model_view
+                    .model
                     .select_index_by_row(relative_row);
             }
             ComponentId::LedgerProposalsList => {
                 s.get_proposals_list_mut()
-                    .model_view
+                    .model
                     .select_index_by_row(relative_row);
             }
             ComponentId::LedgerUtxosList => {
                 s.get_utxos_list_mut()
-                    .model_view
+                    .model
                     .select_index_by_row(relative_row);
             }
             ComponentId::LedgerUtxosByAddrList => {
-                if let Some(search_res) = s.ledger_mvs.utxos_by_addr_search.get_current_res_mut() {
-                    search_res.select_index_by_row(relative_row);
+                if let Some(comp) = s.component_registry.get_mut(&component_id) {
+                    comp.handle_click(rect, mouse_event.row, mouse_event.column);
                 }
             }
             _ => {}
         }
 
-        vec![]
+        Vec::new()
     }
 }

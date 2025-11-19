@@ -61,7 +61,7 @@ where
         let Some(&area) = layout.get(&self.id) else {
             return;
         };
-        let is_focused = s.layout_model.is_component_focused(self.id);
+        let is_focused = s.layout_model.is_focused(self.id);
         let selected_item = (self.data_accessor)(s);
         draw_details(f, area, self.title.to_string(), selected_item, is_focused);
     }

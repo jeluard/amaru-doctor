@@ -43,16 +43,15 @@ impl Component for SearchBarComponent {
         let Some(&area) = layout.get(&self.id) else {
             return;
         };
-        let is_focused = s.layout_model.is_component_focused(self.id);
+        let is_focused = s.layout_model.is_focused(self.id);
 
         // This is the old, complex logic from view/defs.rs
         let search_query = match s.get_inspect_tabs().selected() {
-            InspectOption::Ledger => match s.get_ledger_search_options().model_view.selected_item()
-            {
-                Some(LedgerSearch::UtxosByAddress) => &s.ledger_mvs.utxos_by_addr_search.builder,
+            InspectOption::Ledger => match s.get_ledger_search_options().model.selected_item() {
+                Some(LedgerSearch::UtxosByAddress) => "", //&s.ledger_mvs.utxos_by_addr_search.builder,
                 None => "",
             },
-            InspectOption::Chain => &s.chain_view.chain_search.builder,
+            InspectOption::Chain => "", //&s.chain_view.chain_search.builder,
             InspectOption::Otel => "",
             InspectOption::Prometheus => "",
         };
