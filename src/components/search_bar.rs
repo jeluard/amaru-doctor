@@ -2,6 +2,7 @@ use crate::{
     app_state::AppState,
     components::{Component, ComponentLayout, MouseScrollDirection},
     states::{Action, ComponentId, InspectOption, LedgerSearch},
+    tui::Event,
     update::scroll::ScrollDirection,
     view::search::render_search_query,
 };
@@ -58,27 +59,35 @@ impl Component for SearchBarComponent {
 
         render_search_query(f, area, "Search", search_query, is_focused);
     }
+
     fn handle_scroll(&mut self, _direction: ScrollDirection) -> Vec<Action> {
         Vec::new()
     }
-    fn handle_key_event(&mut self, key: KeyEvent) -> Vec<Action> {
-        match key.code {
-            KeyCode::Char(c) => {
-                return vec![Action::Key(KeyCode::Char(c))];
-            }
-            KeyCode::Backspace => {
-                return vec![Action::Key(KeyCode::Backspace)];
-            }
-            _ => {}
+
+    fn handle_event(&mut self, event: &Event, _area: Rect) -> Vec<Action> {
+        if let Event::Key(key) = event {
+            return self.handle_key_event(*key);
         }
         Vec::new()
     }
+
+    fn handle_key_event(&mut self, key: KeyEvent) -> Vec<Action> {
+        match key.code {
+            KeyCode::Char(c) => vec![Action::Key(KeyCode::Char(c))],
+            KeyCode::Backspace => vec![Action::Key(KeyCode::Backspace)],
+            KeyCode::Enter => vec![Action::Key(KeyCode::Enter)],
+            _ => Vec::new(),
+        }
+    }
+
     fn handle_click(&mut self, _area: Rect, _row: u16, _col: u16) -> Vec<Action> {
         Vec::new()
     }
+
     fn handle_mouse_scroll(&mut self, _direction: MouseScrollDirection) -> Vec<Action> {
         Vec::new()
     }
+
     fn handle_mouse_drag(&mut self, _direction: ScrollDirection) -> Vec<Action> {
         Vec::new()
     }

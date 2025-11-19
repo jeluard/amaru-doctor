@@ -4,8 +4,9 @@ use crate::{
     components::{Component, ComponentLayout},
     model::cursor::Cursor,
     states::{Action, ComponentId},
+    tui::Event,
 };
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEventKind};
 use ratatui::{
     Frame,
     layout::Rect,
@@ -97,6 +98,37 @@ where
         let mut layout = ComponentLayout::new();
         layout.insert(self.id, area);
         layout
+    }
+
+    fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
+        match event {
+            Event::Key(key) => {
+                match key.code {
+                    KeyCode::Left => {
+                        self.cursor.next_back();
+                        vec![Action::UpdateLayout(Rect::default())] // Trigger re-layout
+                    }
+                    KeyCode::Right => {
+                        self.cursor.non_empty_next();
+                        vec![Action::UpdateLayout(Rect::default())]
+                    }
+                    _ => Vec::new(),
+                }
+            }
+            Event::Mouse(mouse) => {
+                if let MouseEventKind::Down(MouseButton::Left) = mouse.kind {
+                    // We use the `area` passed in, which comes from the Layout engine via Trampoline
+                    if mouse.row >= area.y
+                        && mouse.row < area.y + area.height
+                        && self.select_by_column(area, mouse.column)
+                    {
+                        return vec![Action::UpdateLayout(Rect::default())];
+                    }
+                }
+                Vec::new()
+            }
+            _ => Vec::new(),
+        }
     }
 
     fn render(&self, f: &mut Frame, s: &AppState, layout: &ComponentLayout) {

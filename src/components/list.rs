@@ -3,10 +3,15 @@ use crate::{
     components::{Component, ComponentLayout, MouseScrollDirection, ScrollDirection},
     model::list_view::ListModelView,
     states::{Action, ComponentId},
+    tui::Event,
     ui::to_list_item::ToListItem,
 };
 use crossterm::event::KeyEvent;
-use ratatui::{Frame, layout::Rect};
+use ratatui::{
+    Frame,
+    crossterm::event::{KeyCode, MouseButton, MouseEventKind},
+    layout::Rect,
+};
 use std::any::Any;
 use tracing::info;
 
@@ -71,6 +76,7 @@ where
 {
     id: ComponentId,
     pub model: M,
+    last_drag_y: Option<u16>,
 }
 
 impl<M> ListComponent<M>
@@ -78,7 +84,11 @@ where
     M: ListModel,
 {
     pub fn new(id: ComponentId, model: M) -> Self {
-        Self { id, model }
+        Self {
+            id,
+            model,
+            last_drag_y: None,
+        }
     }
 }
 
@@ -110,6 +120,47 @@ where
         };
         let is_focused = s.layout_model.is_focused(self.id);
         self.model.draw(f, area, is_focused);
+    }
+
+    fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
+        match event {
+            Event::Key(key) => match key.code {
+                KeyCode::Up => self.handle_scroll(ScrollDirection::Up),
+                KeyCode::Down => self.handle_scroll(ScrollDirection::Down),
+                _ => Vec::new(),
+            },
+            Event::Mouse(mouse) => match mouse.kind {
+                MouseEventKind::ScrollUp => self.handle_mouse_scroll(MouseScrollDirection::Up),
+                MouseEventKind::ScrollDown => self.handle_mouse_scroll(MouseScrollDirection::Down),
+                MouseEventKind::Down(MouseButton::Left) => {
+                    self.last_drag_y = Some(mouse.row);
+                    self.handle_click(area, mouse.row, mouse.column)
+                }
+                MouseEventKind::Drag(ratatui::crossterm::event::MouseButton::Left) => {
+                    let Some(last_y) = self.last_drag_y else {
+                        // Safety: If we missed the Down event, start tracking now
+                        self.last_drag_y = Some(mouse.row);
+                        return Vec::new();
+                    };
+
+                    if mouse.row > last_y {
+                        self.last_drag_y = Some(mouse.row);
+                        self.handle_mouse_drag(ScrollDirection::Down)
+                    } else if mouse.row < last_y {
+                        self.last_drag_y = Some(mouse.row);
+                        self.handle_mouse_drag(ScrollDirection::Up)
+                    } else {
+                        Vec::new()
+                    }
+                }
+                MouseEventKind::Up(_) => {
+                    self.last_drag_y = None;
+                    Vec::new()
+                }
+                _ => Vec::new(),
+            },
+            _ => Vec::new(),
+        }
     }
 
     fn handle_click(&mut self, area: Rect, row: u16, _col: u16) -> Vec<Action> {

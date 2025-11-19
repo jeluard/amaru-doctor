@@ -1,9 +1,10 @@
 use crate::{
     app_state::AppState,
-    components::{Component, ComponentLayout, MouseScrollDirection, ScrollDirection},
+    components::{Component, ComponentLayout, InputRoute, MouseScrollDirection, ScrollDirection},
     states::{Action, ComponentId, InspectOption},
+    tui::Event,
 };
-use crossterm::event::KeyEvent;
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{Frame, layout::Rect};
 use std::{any::Any, collections::HashMap};
 
@@ -42,6 +43,42 @@ impl Component for RootComponent {
         // The Root gives the full screen to the Active Page
         layout.insert(active_page, area);
         layout
+    }
+
+    fn route_event(&self, event: &Event, s: &AppState) -> InputRoute {
+        // Check Global Keys FIRST
+        if let Event::Key(key) = event {
+            // Tab cycles focus
+            if key.code == KeyCode::Tab {
+                return InputRoute::Handle;
+            }
+            // Ctrl+C quits
+            if key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL) {
+                return InputRoute::Handle;
+            }
+        }
+
+        // Delegate everything else to the Active Page
+        let active_page = match s.get_inspect_tabs().selected() {
+            InspectOption::Ledger => ComponentId::LedgerPage,
+            InspectOption::Chain => ComponentId::ChainPage,
+            InspectOption::Otel => ComponentId::OtelPage,
+            InspectOption::Prometheus => ComponentId::PrometheusPage,
+        };
+        InputRoute::Delegate(active_page, s.frame_area)
+    }
+
+    fn handle_event(&mut self, event: &Event, _area: Rect) -> Vec<Action> {
+        // Handle the events we claimed above
+        if let Event::Key(key) = event {
+            if key.code == KeyCode::Tab {
+                return vec![Action::FocusNext];
+            }
+            if key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL) {
+                return vec![Action::Quit];
+            }
+        }
+        Vec::new()
     }
 
     fn render(&self, f: &mut Frame, s: &AppState, _layout: &ComponentLayout) {
