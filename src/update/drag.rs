@@ -1,5 +1,6 @@
 use crate::{
     app_state::AppState,
+    components::list::ListModel,
     states::{Action, ComponentId, InspectOption, LedgerBrowse, LedgerMode},
     update::Update,
 };
@@ -43,6 +44,17 @@ impl Update for DragUpdate {
                 // Check if that specific component is focused
                 if s.layout_model.is_focused(target_id) {
                     scroll_ledger_list(s, direction);
+                }
+            }
+        } else if s.get_ledger_mode_tabs().selected() == LedgerMode::Search {
+            // Check if the Search List is focused
+            if s.layout_model
+                .is_focused(ComponentId::LedgerUtxosByAddrList)
+                && let Some(model) = s.ledger_mvs.utxos_by_addr_search.get_current_res_mut()
+            {
+                match direction {
+                    DragDirection::Up => model.advance_window(),
+                    DragDirection::Down => model.retreat_window(),
                 }
             }
         }

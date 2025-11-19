@@ -1,6 +1,6 @@
 use crate::{
     app_state::AppState,
-    components::Component,
+    components::{Component, list::ListModel},
     states::{Action, ComponentId},
     update::Update,
 };
@@ -122,8 +122,11 @@ impl Update for MouseClickUpdate {
                     .select_index_by_row(relative_row);
             }
             ComponentId::LedgerUtxosByAddrList => {
-                if let Some(comp) = s.component_registry.get_mut(&component_id) {
-                    comp.handle_click(rect, mouse_event.row, mouse_event.column);
+                if let Some(model) = s.ledger_mvs.utxos_by_addr_search.get_current_res_mut() {
+                    // Calculate row relative to the component rect
+                    // +1 accounts for the top border
+                    let relative_row = mouse_event.row.saturating_sub(rect.y + 1) as usize;
+                    model.select_index_by_row(relative_row);
                 }
             }
             _ => {}

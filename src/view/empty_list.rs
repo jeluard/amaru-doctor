@@ -7,7 +7,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Wrap},
 };
 
-pub fn _draw_empty_list(
+pub fn draw_empty_list(
     frame: &mut Frame<'_>,
     area: Rect,
     title: &str,
