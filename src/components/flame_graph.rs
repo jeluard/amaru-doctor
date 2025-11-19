@@ -54,7 +54,7 @@ impl Component for FlameGraphComponent {
         let Some(&area) = layout.get(&self.id) else {
             return;
         };
-        let is_focused = s.layout_model.is_component_focused(self.id);
+        let is_focused = s.layout_model.is_focused(self.id);
 
         let mut block = Block::default()
             .title("Trace Details")

@@ -1,8 +1,7 @@
 use crate::{
     ScreenMode,
-    app_state::AppState,
     components::ComponentLayout,
-    states::{ComponentId, InspectOption, LedgerMode, WidgetSlot},
+    states::{ComponentId, InspectOption, LedgerMode},
 };
 use ratatui::layout::{Position, Rect};
 use tracing::warn;
@@ -59,14 +58,8 @@ impl LayoutModel {
         self.focus
     }
 
-    pub fn is_component_focused(&self, query: ComponentId) -> bool {
+    pub fn is_focused(&self, query: ComponentId) -> bool {
         query == self.focus
-    }
-
-    pub fn is_focused(&self, s: &AppState, query: WidgetSlot) -> bool {
-        query
-            == s.component_id_to_widget_slot(self.focus)
-                .unwrap_or_else(|| panic!("No widget slot found for component id {}", self.focus))
     }
 
     pub fn set_focus(&mut self, new_focus: ComponentId) {

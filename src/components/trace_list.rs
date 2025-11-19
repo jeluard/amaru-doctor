@@ -52,7 +52,7 @@ impl Component for TraceListComponent {
         let Some(&area) = layout.get(&self.id) else {
             return;
         };
-        let is_focused = s.layout_model.is_component_focused(self.id);
+        let is_focused = s.layout_model.is_focused(self.id);
 
         self.list.draw(f, area, is_focused);
     }

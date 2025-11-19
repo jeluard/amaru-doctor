@@ -34,7 +34,7 @@ impl Update for MouseFocusUpdate {
         let relative_row = mouse_event.row.saturating_sub(rect.y + 1) as usize;
 
         if component_id != ComponentId::OtelFlameGraph {
-            return vec![];
+            return Vec::new();
         }
 
         let trace_graph = s.otel_view.trace_graph_source.load();
@@ -65,6 +65,6 @@ impl Update for MouseFocusUpdate {
         // Update the focused span based on what we found (or clear it if we found nothing)
         s.otel_view.focused_span =
             hovered_span_id.and_then(|span_id| trace_graph.spans.get(&span_id).cloned());
-        vec![]
+        Vec::new()
     }
 }

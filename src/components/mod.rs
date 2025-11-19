@@ -34,6 +34,11 @@ pub trait Component {
     /// Returns a mutable Any refernce to the component.
     fn as_any_mut(&mut self) -> &mut dyn Any;
 
+    /// Called on every application tick.
+    fn tick(&mut self) -> Vec<Action> {
+        Vec::new()
+    }
+
     /// Renders the component onto the frame.
     fn render(&self, f: &mut Frame, s: &AppState, layout: &ComponentLayout);
 

@@ -8,7 +8,7 @@ impl Update for FocusUpdate {
             Action::FocusDown => MoveFocus::Down,
             Action::FocusLeft => MoveFocus::Left,
             Action::FocusRight => MoveFocus::Right,
-            _ => return vec![],
+            _ => return Vec::new(),
         };
         app_state.layout_model.set_focus_by_move(dir);
         Vec::new()

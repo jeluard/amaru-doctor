@@ -103,7 +103,7 @@ where
         let Some(&area) = layout.get(&self.id) else {
             return;
         };
-        let is_focused = s.layout_model.is_component_focused(self.id);
+        let is_focused = s.layout_model.is_focused(self.id);
         let mut block = Block::default().borders(Borders::ALL);
         if is_focused {
             block = block

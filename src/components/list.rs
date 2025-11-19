@@ -7,41 +7,84 @@ use crate::{
 };
 use crossterm::event::KeyEvent;
 use ratatui::{Frame, layout::Rect};
-use std::{any::Any, marker::PhantomData};
-use tracing::{debug, info};
+use std::any::Any;
+use tracing::info;
 
-/// A stateful, reusable component that renders a scrollable list.
-/// It encapsulates the `ListModelViewState` (data + view state).
-pub struct ListComponent<T>
-where
-    T: ToListItem + Send + Sync + 'static,
-{
-    id: ComponentId,
-    pub model_view: ListModelView<T>,
-    _phantom: PhantomData<T>,
+/// Abstraction for any list-like data model that can be drawn and navigated.
+pub trait ListModel: Send + Sync + 'static {
+    type Item;
+    fn draw(&self, f: &mut Frame, area: Rect, is_focused: bool);
+    fn selected_item(&self) -> Option<&Self::Item>;
+    fn select_index_by_row(&mut self, relative_row: usize);
+    fn cursor_back(&mut self);
+    fn cursor_next(&mut self);
+    fn retreat_window(&mut self);
+    fn advance_window(&mut self);
+    fn set_height(&mut self, height: usize);
 }
 
-impl<T> ListComponent<T>
+// Implement for the Static List Model (based on StreamingIter)
+impl<T> ListModel for ListModelView<T>
 where
     T: ToListItem + Send + Sync + 'static,
 {
-    pub fn new(
-        id: ComponentId,
-        title: &'static str,
-        iter: impl Iterator<Item = T> + Send + Sync + 'static,
-        initial_buffer_size: usize,
-    ) -> Self {
-        Self {
-            id,
-            model_view: ListModelView::new(title, iter, initial_buffer_size),
-            _phantom: PhantomData,
-        }
+    type Item = T;
+
+    fn draw(&self, f: &mut Frame, area: Rect, is_focused: bool) {
+        self.draw(f, area, is_focused);
+    }
+
+    fn selected_item(&self) -> Option<&Self::Item> {
+        self.selected_item()
+    }
+
+    fn select_index_by_row(&mut self, relative_row: usize) {
+        self.select_index_by_row(relative_row);
+    }
+
+    fn cursor_back(&mut self) {
+        self.cursor_back();
+    }
+
+    fn cursor_next(&mut self) {
+        self.cursor_next();
+    }
+
+    fn retreat_window(&mut self) {
+        self.retreat_window();
+    }
+
+    fn advance_window(&mut self) {
+        self.advance_window();
+    }
+
+    fn set_height(&mut self, height: usize) {
+        self.set_height(height);
     }
 }
 
-impl<T> Component for ListComponent<T>
+/// A stateful, reusable component that renders a scrollable list.
+/// It wraps any model that implements `ListModel`.
+pub struct ListComponent<M>
 where
-    T: ToListItem + Send + Sync + 'static,
+    M: ListModel,
+{
+    id: ComponentId,
+    pub model: M,
+}
+
+impl<M> ListComponent<M>
+where
+    M: ListModel,
+{
+    pub fn new(id: ComponentId, model: M) -> Self {
+        Self { id, model }
+    }
+}
+
+impl<M> Component for ListComponent<M>
+where
+    M: ListModel,
 {
     fn id(&self) -> ComponentId {
         self.id
@@ -61,21 +104,18 @@ where
         layout
     }
 
-    /// Renders the list widget.
     fn render(&self, f: &mut Frame, s: &AppState, layout: &ComponentLayout) {
         let Some(&area) = layout.get(&self.id) else {
             return;
         };
-        // Use the old focus model for now
-        let is_focused = s.layout_model.is_component_focused(self.id);
-        self.model_view.draw(f, area, is_focused);
+        let is_focused = s.layout_model.is_focused(self.id);
+        self.model.draw(f, area, is_focused);
     }
 
-    /// Handles mouse clicks to select an item.
     fn handle_click(&mut self, area: Rect, row: u16, _col: u16) -> Vec<Action> {
         // +1 to account for the border
         let relative_row = row.saturating_sub(area.y + 1) as usize;
-        self.model_view.select_index_by_row(relative_row);
+        self.model.select_index_by_row(relative_row);
         Vec::new()
     }
 
@@ -85,37 +125,25 @@ where
     }
 
     fn handle_scroll(&mut self, direction: ScrollDirection) -> Vec<Action> {
-        debug!(
-            "ListComponent: handle_scroll for id {:?} with direction {:?}",
-            self.id, direction
-        );
         match direction {
-            ScrollDirection::Up => self.model_view.cursor_back(),
-            ScrollDirection::Down => self.model_view.cursor_next(),
+            ScrollDirection::Up => self.model.cursor_back(),
+            ScrollDirection::Down => self.model.cursor_next(),
         }
         Vec::new()
     }
 
     fn handle_mouse_scroll(&mut self, direction: MouseScrollDirection) -> Vec<Action> {
-        debug!(
-            "ListComponent: handle_mouse_scroll for id {:?} with direction {:?}",
-            self.id, direction
-        );
         match direction {
-            MouseScrollDirection::Up => self.model_view.cursor_back(),
-            MouseScrollDirection::Down => self.model_view.cursor_next(),
+            MouseScrollDirection::Up => self.model.cursor_back(),
+            MouseScrollDirection::Down => self.model.cursor_next(),
         }
         Vec::new()
     }
 
     fn handle_mouse_drag(&mut self, direction: ScrollDirection) -> Vec<Action> {
-        debug!(
-            "ListComponent: handle_mouse_drag for id {:?} with direction {:?}",
-            self.id, direction
-        );
         match direction {
-            ScrollDirection::Up => self.model_view.advance_window(),
-            ScrollDirection::Down => self.model_view.retreat_window(),
+            ScrollDirection::Up => self.model.advance_window(),
+            ScrollDirection::Down => self.model.retreat_window(),
         }
         Vec::new()
     }
