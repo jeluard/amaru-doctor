@@ -6,10 +6,14 @@ use crate::{
     ui::to_list_item::UtxoItem,
     update::Update,
 };
-use amaru_kernel::Address;
+use amaru_consensus::BlockHeader;
+use amaru_consensus::ReadOnlyChainStore;
+use amaru_kernel::{Address, Hash};
+use amaru_ledger::store::ReadStore;
 use crossterm::event::KeyCode;
 use std::str::FromStr;
 use tokio::sync::mpsc;
+use tracing::{error, trace};
 
 pub struct SearchUpdate;
 
@@ -35,7 +39,7 @@ impl Update for SearchUpdate {
         // Dispatch based on active tab
         match s.get_inspect_tabs().selected() {
             InspectOption::Ledger => handle_ledger_search(key, s),
-            InspectOption::Chain => { /* TODO: Implement Chain Search Input */ }
+            InspectOption::Chain => handle_chain_search(key, s),
             _ => {}
         }
 
@@ -64,7 +68,7 @@ fn handle_ledger_search(key: &KeyCode, s: &mut AppState) {
 
                 // Create Async Provider
                 let provider = AsyncProvider::new(move |tx: mpsc::Sender<UtxoItem>| {
-                    if let Ok(iter) = amaru_ledger::store::ReadStore::iter_utxos(&*db) {
+                    if let Ok(iter) = db.iter_utxos() {
                         let filtered = iter.filter(move |(_, out)| out.address == owned_addr);
                         for item in filtered {
                             if tx.blocking_send(item).is_err() {
@@ -80,4 +84,51 @@ fn handle_ledger_search(key: &KeyCode, s: &mut AppState) {
         }
         _ => {}
     }
+}
+
+fn handle_chain_search(key: &KeyCode, s: &mut AppState) {
+    let state = &mut s.chain_view.chain_search;
+
+    // Handle non-submit keys immediately
+    match key {
+        KeyCode::Char(c) => {
+            state.push_char(*c);
+            return;
+        }
+        KeyCode::Backspace => {
+            state.pop_char();
+            return;
+        }
+        KeyCode::Enter => {}
+        _ => return,
+    }
+
+    let query_str = state.builder.clone();
+
+    let Ok(hash) = Hash::<32>::from_str(&query_str) else {
+        error!("ChainSearch: Invalid hash format: {}", query_str);
+        return;
+    };
+
+    if state.results.contains_key(&hash) {
+        state.parsed = Some(hash);
+        return;
+    }
+
+    let Some(header) = s.chain_db.load_header(&hash) else {
+        trace!("ChainSearch: Header not found for {}", hash);
+        return;
+    };
+
+    let Ok(block) = ReadOnlyChainStore::<BlockHeader>::load_block(&*s.chain_db, &hash) else {
+        trace!("ChainSearch: Failed to load block for {}", hash);
+        return;
+    };
+
+    let Some(nonces) = ReadOnlyChainStore::<BlockHeader>::get_nonces(&*s.chain_db, &hash) else {
+        trace!("ChainSearch: Failed to load nonces for {}", hash);
+        return;
+    };
+
+    state.cache_result(hash, Some((header, block, nonces)));
 }

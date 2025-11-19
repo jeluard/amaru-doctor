@@ -51,7 +51,7 @@ impl Component for SearchBarComponent {
                 Some(LedgerSearch::UtxosByAddress) => &s.ledger_mvs.utxos_by_addr_search.builder,
                 None => "",
             },
-            InspectOption::Chain => "", //&s.chain_view.chain_search.builder,
+            InspectOption::Chain => &s.chain_view.chain_search.builder,
             InspectOption::Otel => "",
             InspectOption::Prometheus => "",
         };
