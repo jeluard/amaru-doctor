@@ -8,11 +8,16 @@ use ratatui::{Frame, layout::Rect};
 use std::{any::Any, collections::HashMap};
 
 pub mod async_list;
+pub mod chain_page;
 pub mod details;
 pub mod flame_graph;
+pub mod ledger_page;
 pub mod list;
+pub mod otel_page;
 pub mod prom_metrics;
+pub mod prometheus_page;
 pub mod proxy_list;
+pub mod root;
 pub mod search_bar;
 pub mod tabs;
 pub mod trace_list;

@@ -11,7 +11,6 @@ use crate::{
         tabs::TabsComponent,
         trace_list::TraceListComponent,
     },
-    controller::{LayoutContext, compute_component_layout},
     model::{
         button::InputEvent, chain_view::ChainViewState, layout::LayoutModel,
         ledger_view::LedgerModelViewState, list_view::ListModelView, otel_view::OtelViewState,
@@ -119,34 +118,32 @@ impl AppState {
             frame_area,
         );
 
-        let ctx = LayoutContext {
-            screen_mode,
-            inspect_option: InspectOption::default(),
-            ledger_mode: LedgerMode::default(),
-            ledger_browse: LedgerBrowse::default(),
-            ledger_search: LedgerSearch::default(),
-        };
-
-        let initial_layout = compute_component_layout(ctx, frame_area);
-
-        let options_height: usize = initial_layout
-            .get(&ComponentId::LedgerBrowseOptions)
-            .ok_or(anyhow::anyhow!(
-                "No rect for LedgerBrowseOptions in initial layout"
-            ))?
-            .height
-            .into();
-
-        let list_height: usize = initial_layout
-            .get(&ComponentId::LedgerAccountsList)
-            .ok_or(anyhow::anyhow!(
-                "No rect for LedgerAccountsList in initial layout"
-            ))?
-            .height
-            .into();
+        let options_height = 0;
+        let list_height = 0;
 
         let mut component_registry: HashMap<ComponentId, Box<dyn Component + Send + Sync>> =
             HashMap::new();
+
+        register_component!(
+            component_registry,
+            crate::components::root::RootComponent::default()
+        );
+        register_component!(
+            component_registry,
+            crate::components::ledger_page::LedgerPageComponent::default()
+        );
+        register_component!(
+            component_registry,
+            crate::components::chain_page::ChainPageComponent::default()
+        );
+        register_component!(
+            component_registry,
+            crate::components::otel_page::OtelPageComponent::default()
+        );
+        register_component!(
+            component_registry,
+            crate::components::prometheus_page::PrometheusPageComponent::default()
+        );
 
         register_component!(
             component_registry,

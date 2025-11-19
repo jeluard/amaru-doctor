@@ -1,39 +1,18 @@
-use crate::{
-    ScreenMode,
-    controller::layout::build_layout_spec,
-    states::{ComponentId, InspectOption, LedgerBrowse, LedgerMode, LedgerSearch},
-};
+use crate::states::ComponentId;
 use either::Either::{self, Left, Right};
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use std::collections::HashMap;
 
-pub mod layout;
-
 pub type ComponentLayout = HashMap<ComponentId, Rect>;
 
-/// Holds the state required to calculate the specific component layout.
-#[derive(Debug, Clone)]
-pub struct LayoutContext {
-    pub screen_mode: ScreenMode,
-    pub inspect_option: InspectOption,
-    pub ledger_mode: LedgerMode,
-    pub ledger_browse: LedgerBrowse,
-    pub ledger_search: LedgerSearch,
-}
-
+/// A recursive layout specification helper.
 pub struct LayoutSpec {
-    direction: Direction,
-    constraints: Vec<(Constraint, Either<ComponentId, LayoutSpec>)>,
+    pub direction: Direction,
+    pub constraints: Vec<(Constraint, Either<ComponentId, LayoutSpec>)>,
 }
 
-pub fn compute_component_layout(ctx: LayoutContext, area: Rect) -> ComponentLayout {
-    let spec = build_layout_spec(&ctx);
-    let mut out = HashMap::new();
-    walk_layout(&mut out, &spec, area);
-    out
-}
-
-fn walk_layout(out: &mut HashMap<ComponentId, Rect>, spec: &LayoutSpec, area: Rect) {
+/// Helper to convert a recursive LayoutSpec into a flat ComponentLayout map.
+pub fn walk_layout(out: &mut ComponentLayout, spec: &LayoutSpec, area: Rect) {
     let constraints: Vec<Constraint> = spec.constraints.iter().map(|(c, _)| *c).collect();
     let regions = Layout::default()
         .direction(spec.direction)
