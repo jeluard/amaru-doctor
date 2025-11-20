@@ -15,7 +15,7 @@ use anyhow::Result;
 use crossterm::event::KeyEvent;
 use ratatui::prelude::{Backend, Rect};
 use serde::{Deserialize, Serialize};
-use std::sync::mpsc;
+use std::{collections::HashMap, sync::mpsc};
 use tokio::sync::mpsc::{Receiver, UnboundedReceiver, UnboundedSender, unbounded_channel};
 use tracing::{debug, error};
 
@@ -314,16 +314,8 @@ impl App {
                 self.last_store_option = self.app_state.get_inspect_tabs().selected();
             }
 
-            let layout = self.app_state.layout_model.get_layout();
-            for (component_id, _) in layout.iter() {
-                if let Some(component) = self.app_state.component_registry.get(component_id) {
-                    component.render(f, &self.app_state, layout);
-                } else {
-                    error!(
-                        "Render loop: Component {:?} in layout but not in registry",
-                        component_id
-                    );
-                }
+            if let Some(root) = self.app_state.component_registry.get(&ComponentId::Root) {
+                root.render(f, &self.app_state, &HashMap::new());
             }
         })
         .map(|_| ())

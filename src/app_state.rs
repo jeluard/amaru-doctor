@@ -2,26 +2,18 @@ use crate::{
     ScreenMode,
     components::{
         Component, chain_search::ChainSearchComponent, details::DetailsComponent,
-        flame_graph::FlameGraphComponent, list::ListComponent, prom_metrics::PromMetricsComponent,
-        search_bar::SearchBarComponent, search_list::SearchListComponent, tabs::TabsComponent,
-        trace_list::TraceListComponent,
+        flame_graph::FlameGraphComponent, prom_metrics::PromMetricsComponent,
+        search_bar::SearchBarComponent, tabs::TabsComponent, trace_list::TraceListComponent,
     },
     model::{
         button::InputEvent, chain_view::ChainViewState, layout::LayoutModel,
-        ledger_search::LedgerUtxoProvider, ledger_view::LedgerModelViewState,
-        list_view::ListModelView, otel_view::OtelViewState,
+        ledger_view::LedgerModelViewState, otel_view::OtelViewState,
     },
     otel::graph::TraceGraph,
     prometheus::model::NodeMetrics,
-    states::{ComponentId, InspectOption, LedgerBrowse, LedgerMode, LedgerSearch},
-    store::owned_iter::{
-        OwnedAccountIter, OwnedBlockIssuerIter, OwnedDRepIter, OwnedPoolIter, OwnedProposalIter,
-        OwnedUtxoIter,
-    },
-    ui::to_list_item::{AccountItem, BlockIssuerItem, DRepItem, PoolItem, ProposalItem, UtxoItem},
+    states::{ComponentId, InspectOption, LedgerMode},
     update::mouse::MouseState,
 };
-use amaru_kernel::Address;
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
 use anyhow::Result;
 use arc_swap::ArcSwap;
@@ -31,7 +23,6 @@ use std::{
     collections::HashMap,
     sync::{Arc, mpsc},
 };
-use strum::IntoEnumIterator;
 use tokio::sync::mpsc::Receiver;
 
 macro_rules! register_component {
@@ -125,7 +116,7 @@ impl AppState {
         );
         register_component!(
             component_registry,
-            crate::components::ledger_page::LedgerPageComponent::default()
+            crate::components::ledger_page::LedgerPageComponent::new(ledger_db_arc.clone())
         );
         register_component!(
             component_registry,
@@ -153,170 +144,6 @@ impl AppState {
         register_component!(
             component_registry,
             SearchBarComponent::new(ComponentId::SearchBar)
-        );
-
-        register_component!(
-            component_registry,
-            ListComponent::new(
-                ComponentId::LedgerBrowseOptions,
-                ListModelView::new("Browse Options", LedgerBrowse::iter(), options_height)
-            )
-        );
-
-        register_component!(
-            component_registry,
-            ListComponent::new(
-                ComponentId::LedgerSearchOptions,
-                ListModelView::new("Search Options", LedgerSearch::iter(), options_height)
-            )
-        );
-
-        register_component!(
-            component_registry,
-            ListComponent::new(
-                ComponentId::LedgerAccountsList,
-                ListModelView::new(
-                    "Accounts",
-                    OwnedAccountIter::new(ledger_db_arc.clone()),
-                    list_height,
-                )
-            )
-        );
-        register_component!(
-            component_registry,
-            DetailsComponent::<AccountItem>::new(
-                ComponentId::LedgerAccountDetails,
-                "Account Details",
-                Box::new(|s: &AppState| s.get_accounts_list().model.selected_item()),
-            )
-        );
-
-        register_component!(
-            component_registry,
-            ListComponent::new(
-                ComponentId::LedgerBlockIssuersList,
-                ListModelView::new(
-                    "Block Issuers",
-                    OwnedBlockIssuerIter::new(ledger_db_arc.clone()),
-                    list_height,
-                )
-            )
-        );
-        register_component!(
-            component_registry,
-            DetailsComponent::<BlockIssuerItem>::new(
-                ComponentId::LedgerBlockIssuerDetails,
-                "Block Issuer Details",
-                Box::new(|s: &AppState| s.get_block_issuers_list().model.selected_item()),
-            )
-        );
-
-        register_component!(
-            component_registry,
-            ListComponent::new(
-                ComponentId::LedgerDRepsList,
-                ListModelView::new(
-                    "DReps",
-                    OwnedDRepIter::new(ledger_db_arc.clone()),
-                    list_height,
-                )
-            )
-        );
-        register_component!(
-            component_registry,
-            DetailsComponent::<DRepItem>::new(
-                ComponentId::LedgerDRepDetails,
-                "DRep Details",
-                Box::new(|s: &AppState| s.get_dreps_list().model.selected_item()),
-            )
-        );
-
-        register_component!(
-            component_registry,
-            ListComponent::new(
-                ComponentId::LedgerPoolsList,
-                ListModelView::new(
-                    "Pools",
-                    OwnedPoolIter::new(ledger_db_arc.clone()),
-                    list_height,
-                )
-            )
-        );
-        register_component!(
-            component_registry,
-            DetailsComponent::<PoolItem>::new(
-                ComponentId::LedgerPoolDetails,
-                "Pool Details",
-                Box::new(|s: &AppState| s.get_pools_list().model.selected_item()),
-            )
-        );
-
-        register_component!(
-            component_registry,
-            ListComponent::new(
-                ComponentId::LedgerProposalsList,
-                ListModelView::new(
-                    "Proposals",
-                    OwnedProposalIter::new(ledger_db_arc.clone()),
-                    list_height,
-                )
-            )
-        );
-        register_component!(
-            component_registry,
-            DetailsComponent::<ProposalItem>::new(
-                ComponentId::LedgerProposalDetails,
-                "Proposal Details",
-                Box::new(|s: &AppState| s.get_proposals_list().model.selected_item()),
-            )
-        );
-
-        register_component!(
-            component_registry,
-            ListComponent::new(
-                ComponentId::LedgerUtxosList,
-                ListModelView::new(
-                    "Utxos",
-                    OwnedUtxoIter::new(ledger_db_arc.clone()),
-                    list_height,
-                )
-            )
-        );
-        register_component!(
-            component_registry,
-            DetailsComponent::<UtxoItem>::new(
-                ComponentId::LedgerUtxoDetails,
-                "Utxo Details",
-                Box::new(|s: &AppState| s.get_utxos_list().model.selected_item()),
-            )
-        );
-
-        let utxo_provider = Box::new(LedgerUtxoProvider {
-            db: ledger_db_arc.clone(),
-        });
-
-        register_component!(
-            component_registry,
-            SearchListComponent::<Address, UtxoItem>::new(
-                ComponentId::LedgerUtxosByAddrList,
-                "Utxos by Address",
-                utxo_provider
-            )
-        );
-
-        register_component!(
-            component_registry,
-            DetailsComponent::<UtxoItem>::new(
-                ComponentId::LedgerUtxosByAddrDetails,
-                "Utxo Details",
-                Box::new(|s: &AppState| {
-                    s.component_registry
-                        .get(&ComponentId::LedgerUtxosByAddrList)?
-                        .as_any()
-                        .downcast_ref::<SearchListComponent<Address, UtxoItem>>()?
-                        .selected_item()
-                })
-            )
         );
 
         register_component!(
@@ -378,70 +205,6 @@ impl AppState {
         TabsComponent<LedgerMode>,
         ComponentId::LedgerModeTabs,
         "LedgerModeTabs"
-    );
-
-    define_component_getter!(
-        get_ledger_browse_options,
-        get_ledger_browse_options_mut,
-        ListComponent<ListModelView<LedgerBrowse>>,
-        ComponentId::LedgerBrowseOptions,
-        "LedgerBrowseOptions"
-    );
-
-    define_component_getter!(
-        get_ledger_search_options,
-        get_ledger_search_options_mut,
-        ListComponent<ListModelView<LedgerSearch>>,
-        ComponentId::LedgerSearchOptions,
-        "LedgerSearchOptions"
-    );
-
-    define_component_getter!(
-        get_accounts_list,
-        get_accounts_list_mut,
-        ListComponent<ListModelView<AccountItem>>,
-        ComponentId::LedgerAccountsList,
-        "LedgerAccountsList"
-    );
-
-    define_component_getter!(
-        get_block_issuers_list,
-        get_block_issuers_list_mut,
-        ListComponent<ListModelView<BlockIssuerItem>>,
-        ComponentId::LedgerBlockIssuersList,
-        "LedgerBlockIssuersList"
-    );
-
-    define_component_getter!(
-        get_dreps_list,
-        get_dreps_list_mut,
-        ListComponent<ListModelView<DRepItem>>,
-        ComponentId::LedgerDRepsList,
-        "LedgerDRepsList"
-    );
-
-    define_component_getter!(
-        get_pools_list,
-        get_pools_list_mut,
-        ListComponent<ListModelView<PoolItem>>,
-        ComponentId::LedgerPoolsList,
-        "LedgerPoolsList"
-    );
-
-    define_component_getter!(
-        get_proposals_list,
-        get_proposals_list_mut,
-        ListComponent<ListModelView<ProposalItem>>,
-        ComponentId::LedgerProposalsList,
-        "LedgerProposalsList"
-    );
-
-    define_component_getter!(
-        get_utxos_list,
-        get_utxos_list_mut,
-        ListComponent<ListModelView<UtxoItem>>,
-        ComponentId::LedgerUtxosList,
-        "LedgerUtxosList"
     );
 
     define_component_getter!(

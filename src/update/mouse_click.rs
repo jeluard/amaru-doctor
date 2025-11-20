@@ -26,9 +26,6 @@ impl Update for MouseClickUpdate {
             return Vec::new();
         };
 
-        // +1 to account for the border
-        let relative_row = row.saturating_sub(rect.y + 1) as usize;
-
         match component_id {
             InspectTabs => {
                 s.get_inspect_tabs_mut().handle_click(rect, row, column);
@@ -39,14 +36,6 @@ impl Update for MouseClickUpdate {
                     return vec![Action::UpdateLayout(s.frame_area)];
                 }
             }
-
-            LedgerSearchOptions => {
-                s.get_ledger_search_options_mut()
-                    .model
-                    .select_index_by_row(relative_row);
-                return vec![Action::UpdateLayout(s.frame_area)];
-            }
-
             OtelTraceList => {
                 s.get_trace_list_mut().handle_click(rect, row, column);
 

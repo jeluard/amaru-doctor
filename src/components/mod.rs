@@ -22,6 +22,7 @@ pub mod prometheus_page;
 pub mod root;
 pub mod search_bar;
 pub mod search_list;
+pub mod stateful_details;
 pub mod tabs;
 pub mod trace_list;
 
