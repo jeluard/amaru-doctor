@@ -11,7 +11,12 @@ use crossterm::event::{KeyCode, MouseButton, MouseEventKind};
 use ratatui::prelude::*;
 use std::{any::Any, hash::Hash, str::FromStr};
 
-pub type SearchFactory<R> = Box<dyn Fn(&str) -> Option<AsyncListModel<R>> + Send + Sync>;
+pub trait SearchProvider<Q, R>: Send + Sync
+where
+    R: ToListItem + Send + Sync,
+{
+    fn search(&self, query: &Q) -> Option<AsyncListModel<R>>;
+}
 
 pub struct SearchListComponent<Q, R>
 where
@@ -21,7 +26,7 @@ where
     id: ComponentId,
     state: SearchCache<Q, AsyncListModel<R>>,
     title: &'static str,
-    search_factory: SearchFactory<R>,
+    provider: Box<dyn SearchProvider<Q, R>>,
     last_drag_y: Option<u16>,
 }
 
@@ -30,13 +35,32 @@ where
     Q: Clone + Eq + Hash + FromStr + Send + Sync + 'static,
     R: ToListItem + Send + Sync + 'static,
 {
-    pub fn new(id: ComponentId, title: &'static str, search_factory: SearchFactory<R>) -> Self {
+    pub fn new(
+        id: ComponentId,
+        title: &'static str,
+        provider: Box<dyn SearchProvider<Q, R>>,
+    ) -> Self {
         Self {
             id,
             state: SearchCache::default(),
             title,
-            search_factory,
+            provider,
             last_drag_y: None,
+        }
+    }
+
+    pub fn perform_search(&mut self, query_str: String) {
+        let Ok(query) = Q::from_str(&query_str) else {
+            return;
+        };
+
+        if self.state.results.contains_key(&query) {
+            self.state.parsed = Some(query);
+            return;
+        }
+
+        if let Some(model) = self.provider.search(&query) {
+            self.state.cache_result(query, model);
         }
     }
 
@@ -73,20 +97,8 @@ where
         Vec::new()
     }
 
-    fn handle_search(&mut self, query_str: &str) {
-        // Check cache
-        if let Ok(query) = Q::from_str(query_str)
-            && self.state.results.contains_key(&query)
-        {
-            self.state.parsed = Some(query);
-            return;
-        }
-        // Create new model
-        if let Some(model) = (self.search_factory)(query_str)
-            && let Ok(query) = Q::from_str(query_str)
-        {
-            self.state.cache_result(query, model);
-        }
+    fn handle_search(&mut self, query: &str) {
+        self.perform_search(query.to_string());
     }
 
     fn render(&self, f: &mut Frame, s: &AppState, layout: &ComponentLayout) {
@@ -132,10 +144,10 @@ where
                     };
                     if mouse.row > last_y {
                         self.last_drag_y = Some(mouse.row);
-                        model.retreat_window(); // Drag Down -> Retreat
+                        model.retreat_window();
                     } else if mouse.row < last_y {
                         self.last_drag_y = Some(mouse.row);
-                        model.advance_window(); // Drag Up -> Advance
+                        model.advance_window();
                     }
                 }
 
@@ -146,7 +158,6 @@ where
             },
             _ => {}
         }
-
         Vec::new()
     }
 }
