@@ -11,6 +11,7 @@ use tracing::debug;
 
 pub mod async_list;
 pub mod chain_page;
+pub mod chain_search;
 pub mod details;
 pub mod flame_graph;
 pub mod ledger_page;
@@ -18,9 +19,9 @@ pub mod list;
 pub mod otel_page;
 pub mod prom_metrics;
 pub mod prometheus_page;
-pub mod proxy_list;
 pub mod root;
 pub mod search_bar;
+pub mod search_list;
 pub mod tabs;
 pub mod trace_list;
 
@@ -72,19 +73,31 @@ pub trait Component {
     }
 
     /// Handles a logical scroll event.
-    fn handle_scroll(&mut self, _direction: ScrollDirection) -> Vec<Action>;
+    fn handle_scroll(&mut self, _direction: ScrollDirection) -> Vec<Action> {
+        Vec::new()
+    }
 
     /// Handles a raw key event.
-    fn handle_key_event(&mut self, _key: KeyEvent) -> Vec<Action>;
+    fn handle_key_event(&mut self, _key: KeyEvent) -> Vec<Action> {
+        Vec::new()
+    }
 
     /// Handles a mouse click.
-    fn handle_click(&mut self, _area: Rect, _row: u16, _col: u16) -> Vec<Action>;
+    fn handle_click(&mut self, _area: Rect, _row: u16, _col: u16) -> Vec<Action> {
+        Vec::new()
+    }
 
     /// Handles a mouse scroll event.
-    fn handle_mouse_scroll(&mut self, _direction: MouseScrollDirection) -> Vec<Action>;
+    fn handle_mouse_scroll(&mut self, _direction: MouseScrollDirection) -> Vec<Action> {
+        Vec::new()
+    }
 
     /// Handles a mouse drag event.
-    fn handle_mouse_drag(&mut self, _direction: ScrollDirection) -> Vec<Action>;
+    fn handle_mouse_drag(&mut self, _direction: ScrollDirection) -> Vec<Action> {
+        Vec::new()
+    }
+
+    fn handle_search(&mut self, _query: &str) {}
 }
 
 pub fn route_event_to_children(

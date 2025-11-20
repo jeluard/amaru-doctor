@@ -1,6 +1,5 @@
 use crate::{
     app_state::AppState,
-    components::list::ListModel,
     otel::{graph::TraceGraph, id::SpanId, span_ext::SpanExt},
     states::{Action, ComponentId},
     update::Update,
@@ -60,15 +59,6 @@ impl Update for ScrollUpdate {
             ComponentId::OtelFlameGraph => {
                 debug!("ScrollUpdate: Dispatching scroll to scroll_trace_details");
                 scroll_trace_details(s, direction);
-            }
-
-            ComponentId::LedgerUtxosByAddrList => {
-                if let Some(model) = s.ledger_mvs.utxos_by_addr_search.get_current_res_mut() {
-                    match direction {
-                        ScrollDirection::Up => model.cursor_back(),
-                        ScrollDirection::Down => model.cursor_next(),
-                    }
-                }
             }
 
             // Default: Dispatch to any component in the registry

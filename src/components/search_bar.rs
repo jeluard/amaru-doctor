@@ -1,22 +1,31 @@
 use crate::{
     app_state::AppState,
-    components::{Component, ComponentLayout, MouseScrollDirection},
-    states::{Action, ComponentId, InspectOption, LedgerSearch},
+    components::{Component, ComponentLayout},
+    states::{Action, ComponentId},
     tui::Event,
     update::scroll::ScrollDirection,
-    view::search::render_search_query,
 };
-use crossterm::event::{KeyCode, KeyEvent};
-use ratatui::{Frame, layout::Rect};
+use crossterm::event::KeyCode;
+use ratatui::{
+    Frame,
+    layout::Rect,
+    style::{Color, Style},
+    text::{Line, Span},
+    widgets::{Block, Borders, Paragraph},
+};
 use std::any::Any;
 
 pub struct SearchBarComponent {
     id: ComponentId,
+    input: String,
 }
 
 impl SearchBarComponent {
     pub fn new(id: ComponentId) -> Self {
-        Self { id }
+        Self {
+            id,
+            input: String::new(),
+        }
     }
 }
 
@@ -44,20 +53,17 @@ impl Component for SearchBarComponent {
         let Some(&area) = layout.get(&self.id) else {
             return;
         };
+
         let is_focused = s.layout_model.is_focused(self.id);
+        let mut block = Block::default().title("Search").borders(Borders::ALL);
+        if is_focused {
+            block = block
+                .border_style(Style::default().fg(Color::Blue))
+                .title_style(Style::default().fg(Color::White));
+        }
 
-        // This is the old, complex logic from view/defs.rs
-        let search_query = match s.get_inspect_tabs().selected() {
-            InspectOption::Ledger => match s.get_ledger_search_options().model.selected_item() {
-                Some(LedgerSearch::UtxosByAddress) => &s.ledger_mvs.utxos_by_addr_search.builder,
-                None => "",
-            },
-            InspectOption::Chain => &s.chain_view.chain_search.builder,
-            InspectOption::Otel => "",
-            InspectOption::Prometheus => "",
-        };
-
-        render_search_query(f, area, "Search", search_query, is_focused);
+        let paragraph = Paragraph::new(Line::from(Span::raw(&self.input))).block(block);
+        f.render_widget(paragraph, area);
     }
 
     fn handle_scroll(&mut self, _direction: ScrollDirection) -> Vec<Action> {
@@ -66,29 +72,22 @@ impl Component for SearchBarComponent {
 
     fn handle_event(&mut self, event: &Event, _area: Rect) -> Vec<Action> {
         if let Event::Key(key) = event {
-            return self.handle_key_event(*key);
+            match key.code {
+                KeyCode::Char(c) => {
+                    self.input.push(c);
+                    return vec![Action::Render]; // Force redraw
+                }
+                KeyCode::Backspace => {
+                    self.input.pop();
+                    return vec![Action::Render];
+                }
+                KeyCode::Enter => {
+                    // Emit the Submit Action
+                    return vec![Action::SubmitSearch(self.input.clone())];
+                }
+                _ => {}
+            }
         }
-        Vec::new()
-    }
-
-    fn handle_key_event(&mut self, key: KeyEvent) -> Vec<Action> {
-        match key.code {
-            KeyCode::Char(c) => vec![Action::Key(KeyCode::Char(c))],
-            KeyCode::Backspace => vec![Action::Key(KeyCode::Backspace)],
-            KeyCode::Enter => vec![Action::Key(KeyCode::Enter)],
-            _ => Vec::new(),
-        }
-    }
-
-    fn handle_click(&mut self, _area: Rect, _row: u16, _col: u16) -> Vec<Action> {
-        Vec::new()
-    }
-
-    fn handle_mouse_scroll(&mut self, _direction: MouseScrollDirection) -> Vec<Action> {
-        Vec::new()
-    }
-
-    fn handle_mouse_drag(&mut self, _direction: ScrollDirection) -> Vec<Action> {
         Vec::new()
     }
 }

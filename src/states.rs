@@ -39,6 +39,7 @@ pub enum ComponentId {
     LedgerUtxosByAddrDetails,
 
     // --- Chain Page ---
+    ChainSearch,
     ChainSearchHeader,
     ChainSearchBlock,
     ChainSearchNonces,
