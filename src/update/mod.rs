@@ -7,7 +7,7 @@ use crate::{
         mouse_scroll::MouseScrollUpdate, poll_search::PollUtxoSearchUpdate,
         prom_metrics::PromMetricsUpdate, scroll::ScrollUpdate, search::SearchUpdate,
         select_span::SelectSpanUpdate, tabs::TabsUpdate, tick::TickUpdate,
-        trace_graph::TraceGraphUpdate, window::WindowSizeUpdate,
+        trace_graph::TraceGraphUpdate,
     },
 };
 
@@ -26,7 +26,6 @@ pub mod select_span;
 pub mod tabs;
 pub mod tick;
 pub mod trace_graph;
-pub mod window;
 
 pub type UpdateList = Vec<&'static dyn Update>;
 pub trait Update: Sync {
@@ -36,7 +35,6 @@ pub trait Update: Sync {
 pub static UPDATE_DEFS: &[&dyn Update] = &[
     &FocusUpdate,
     &ScrollUpdate,
-    &WindowSizeUpdate,
     &SearchUpdate,
     &PollUtxoSearchUpdate,
     &LayoutUpdate,

@@ -1,11 +1,8 @@
 use crate::{
     app_state::AppState,
-    components::{Component, search_list::SearchListComponent},
     states::{Action, ComponentId, InspectOption},
-    ui::to_list_item::UtxoItem,
     update::Update,
 };
-use amaru_kernel::Address;
 
 pub struct SearchUpdate;
 
@@ -17,14 +14,8 @@ impl Update for SearchUpdate {
 
         match s.get_inspect_tabs().selected() {
             InspectOption::Ledger => {
-                if let Some(comp) = s
-                    .component_registry
-                    .get_mut(&ComponentId::LedgerUtxosByAddrList)
-                    && let Some(list) = comp
-                        .as_any_mut()
-                        .downcast_mut::<SearchListComponent<Address, UtxoItem>>()
-                {
-                    list.handle_search(query);
+                if let Some(page) = s.component_registry.get_mut(&ComponentId::LedgerPage) {
+                    page.handle_search(query);
                 }
             }
             InspectOption::Chain => {
