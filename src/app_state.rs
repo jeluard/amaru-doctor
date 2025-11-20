@@ -3,11 +3,13 @@ use crate::{
     components::{
         Component, chain_search::ChainSearchComponent, details::DetailsComponent,
         flame_graph::FlameGraphComponent, list::ListComponent, prom_metrics::PromMetricsComponent,
-        search_bar::SearchBarComponent, tabs::TabsComponent, trace_list::TraceListComponent,
+        search_bar::SearchBarComponent, search_list::SearchListComponent, tabs::TabsComponent,
+        trace_list::TraceListComponent,
     },
     model::{
         button::InputEvent, chain_view::ChainViewState, layout::LayoutModel,
-        ledger_view::LedgerModelViewState, list_view::ListModelView, otel_view::OtelViewState,
+        ledger_search::LedgerUtxoProvider, ledger_view::LedgerModelViewState,
+        list_view::ListModelView, otel_view::OtelViewState,
     },
     otel::graph::TraceGraph,
     prometheus::model::NodeMetrics,
@@ -19,6 +21,7 @@ use crate::{
     ui::to_list_item::{AccountItem, BlockIssuerItem, DRepItem, PoolItem, ProposalItem, UtxoItem},
     update::mouse::MouseState,
 };
+use amaru_kernel::Address;
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
 use anyhow::Result;
 use arc_swap::ArcSwap;
@@ -285,6 +288,34 @@ impl AppState {
                 ComponentId::LedgerUtxoDetails,
                 "Utxo Details",
                 Box::new(|s: &AppState| s.get_utxos_list().model.selected_item()),
+            )
+        );
+
+        let utxo_provider = Box::new(LedgerUtxoProvider {
+            db: ledger_db_arc.clone(),
+        });
+
+        register_component!(
+            component_registry,
+            SearchListComponent::<Address, UtxoItem>::new(
+                ComponentId::LedgerUtxosByAddrList,
+                "Utxos by Address",
+                utxo_provider
+            )
+        );
+
+        register_component!(
+            component_registry,
+            DetailsComponent::<UtxoItem>::new(
+                ComponentId::LedgerUtxosByAddrDetails,
+                "Utxo Details",
+                Box::new(|s: &AppState| {
+                    s.component_registry
+                        .get(&ComponentId::LedgerUtxosByAddrList)?
+                        .as_any()
+                        .downcast_ref::<SearchListComponent<Address, UtxoItem>>()?
+                        .selected_item()
+                })
             )
         );
 
