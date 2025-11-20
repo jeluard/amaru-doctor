@@ -125,42 +125,60 @@ where
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
         match event {
             Event::Key(key) => match key.code {
-                KeyCode::Up => self.handle_scroll(ScrollDirection::Up),
-                KeyCode::Down => self.handle_scroll(ScrollDirection::Down),
-                _ => Vec::new(),
-            },
-            Event::Mouse(mouse) => match mouse.kind {
-                MouseEventKind::ScrollUp => self.handle_mouse_scroll(MouseScrollDirection::Up),
-                MouseEventKind::ScrollDown => self.handle_mouse_scroll(MouseScrollDirection::Down),
-                MouseEventKind::Down(MouseButton::Left) => {
-                    self.last_drag_y = Some(mouse.row);
-                    self.handle_click(area, mouse.row, mouse.column)
+                KeyCode::Up => {
+                    self.model.cursor_back();
                 }
-                MouseEventKind::Drag(ratatui::crossterm::event::MouseButton::Left) => {
-                    let Some(last_y) = self.last_drag_y else {
-                        // Safety: If we missed the Down event, start tracking now
-                        self.last_drag_y = Some(mouse.row);
-                        return Vec::new();
-                    };
-
-                    if mouse.row > last_y {
-                        self.last_drag_y = Some(mouse.row);
-                        self.handle_mouse_drag(ScrollDirection::Down)
-                    } else if mouse.row < last_y {
-                        self.last_drag_y = Some(mouse.row);
-                        self.handle_mouse_drag(ScrollDirection::Up)
-                    } else {
-                        Vec::new()
+                KeyCode::Down => {
+                    self.model.cursor_next();
+                }
+                _ => {}
+            },
+            Event::Mouse(mouse) => {
+                match mouse.kind {
+                    MouseEventKind::ScrollUp => {
+                        self.model.cursor_back();
                     }
+                    MouseEventKind::ScrollDown => {
+                        self.model.cursor_next();
+                    }
+
+                    MouseEventKind::Down(MouseButton::Left) => {
+                        self.last_drag_y = Some(mouse.row);
+
+                        // Direct Click Handling
+                        // +1 for border
+                        let relative_row = mouse.row.saturating_sub(area.y + 1) as usize;
+                        self.model.select_index_by_row(relative_row);
+                    }
+
+                    MouseEventKind::Drag(MouseButton::Left) => {
+                        let Some(last_y) = self.last_drag_y else {
+                            self.last_drag_y = Some(mouse.row);
+                            return Vec::new();
+                        };
+
+                        if mouse.row > last_y {
+                            self.last_drag_y = Some(mouse.row);
+                            self.model.retreat_window(); // Drag Down -> Retreat
+                        } else if mouse.row < last_y {
+                            self.last_drag_y = Some(mouse.row);
+                            self.model.advance_window(); // Drag Up -> Advance
+                        }
+                    }
+
+                    MouseEventKind::Up(_) => {
+                        self.last_drag_y = None;
+                    }
+
+                    _ => {}
                 }
-                MouseEventKind::Up(_) => {
-                    self.last_drag_y = None;
-                    Vec::new()
-                }
-                _ => Vec::new(),
-            },
-            _ => Vec::new(),
+            }
+            _ => {}
         }
+
+        // We consumed the event and mutated state.
+        // If this is an Options list, App.rs will inject UpdateLayout automatically.
+        Vec::new()
     }
 
     fn handle_click(&mut self, area: Rect, row: u16, _col: u16) -> Vec<Action> {

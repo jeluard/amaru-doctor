@@ -1,11 +1,11 @@
 use crate::{
     app_state::AppState,
-    components::{Component, list::ListModel},
+    components::Component,
     states::{Action, ComponentId::*},
     update::Update,
 };
 use crossterm::event::{MouseButton, MouseEventKind};
-use tracing::{debug, warn};
+use tracing::debug;
 
 pub struct MouseClickUpdate;
 
@@ -40,57 +40,11 @@ impl Update for MouseClickUpdate {
                 }
             }
 
-            LedgerBrowseOptions => {
-                s.get_ledger_browse_options_mut()
-                    .model
-                    .select_index_by_row(relative_row);
-                return vec![Action::UpdateLayout(s.frame_area)];
-            }
             LedgerSearchOptions => {
                 s.get_ledger_search_options_mut()
                     .model
                     .select_index_by_row(relative_row);
                 return vec![Action::UpdateLayout(s.frame_area)];
-            }
-
-            LedgerAccountsList => {
-                s.get_accounts_list_mut()
-                    .model
-                    .select_index_by_row(relative_row);
-            }
-            LedgerBlockIssuersList => {
-                s.get_block_issuers_list_mut()
-                    .model
-                    .select_index_by_row(relative_row);
-            }
-            LedgerDRepsList => {
-                s.get_dreps_list_mut()
-                    .model
-                    .select_index_by_row(relative_row);
-            }
-            LedgerPoolsList => {
-                s.get_pools_list_mut()
-                    .model
-                    .select_index_by_row(relative_row);
-            }
-            LedgerProposalsList => {
-                s.get_proposals_list_mut()
-                    .model
-                    .select_index_by_row(relative_row);
-            }
-            LedgerUtxosList => {
-                s.get_utxos_list_mut()
-                    .model
-                    .select_index_by_row(relative_row);
-            }
-
-            LedgerUtxosByAddrList => {
-                if let Some(model) = s.ledger_mvs.utxos_by_addr_search.get_current_res_mut() {
-                    debug!("MouseClickUpdate: Selecting row {}", relative_row);
-                    model.select_index_by_row(relative_row);
-                } else {
-                    warn!("MouseClickUpdate: Click on SearchList but no model found");
-                }
             }
 
             OtelTraceList => {

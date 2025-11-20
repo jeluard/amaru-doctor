@@ -2,7 +2,7 @@ use crate::{
     app_state::AppState,
     states::Action,
     update::{
-        button::GetButtonEventsUpdate, drag::DragUpdate, focus::FocusUpdate, layout::LayoutUpdate,
+        button::GetButtonEventsUpdate, focus::FocusUpdate, layout::LayoutUpdate,
         mouse::MouseEventUpdate, mouse_click::MouseClickUpdate, mouse_focus::MouseFocusUpdate,
         mouse_scroll::MouseScrollUpdate, poll_search::PollUtxoSearchUpdate,
         prom_metrics::PromMetricsUpdate, scroll::ScrollUpdate, search::SearchUpdate,
@@ -12,7 +12,6 @@ use crate::{
 };
 
 pub mod button;
-pub mod drag;
 pub mod focus;
 pub mod layout;
 pub mod mouse;
@@ -37,7 +36,6 @@ pub trait Update: Sync {
 pub static UPDATE_DEFS: &[&dyn Update] = &[
     &FocusUpdate,
     &ScrollUpdate,
-    &DragUpdate,
     &WindowSizeUpdate,
     &SearchUpdate,
     &PollUtxoSearchUpdate,

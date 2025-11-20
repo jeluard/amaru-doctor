@@ -1,15 +1,9 @@
 use crate::{
     ScreenMode,
     components::{
-        Component,
-        details::DetailsComponent,
-        flame_graph::FlameGraphComponent,
-        list::{ListComponent, ListModel},
-        prom_metrics::PromMetricsComponent,
-        proxy_list::ProxyListComponent,
-        search_bar::SearchBarComponent,
-        tabs::TabsComponent,
-        trace_list::TraceListComponent,
+        Component, chain_search::ChainSearchComponent, details::DetailsComponent,
+        flame_graph::FlameGraphComponent, list::ListComponent, prom_metrics::PromMetricsComponent,
+        search_bar::SearchBarComponent, tabs::TabsComponent, trace_list::TraceListComponent,
     },
     model::{
         button::InputEvent, chain_view::ChainViewState, layout::LayoutModel,
@@ -25,8 +19,6 @@ use crate::{
     ui::to_list_item::{AccountItem, BlockIssuerItem, DRepItem, PoolItem, ProposalItem, UtxoItem},
     update::mouse::MouseState,
 };
-use amaru_consensus::{BlockHeader, Nonces};
-use amaru_kernel::RawBlock;
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
 use anyhow::Result;
 use arc_swap::ArcSwap;
@@ -298,68 +290,7 @@ impl AppState {
 
         register_component!(
             component_registry,
-            ProxyListComponent::new(
-                ComponentId::LedgerUtxosByAddrList,
-                Box::new(|s: &AppState| s.ledger_mvs.utxos_by_addr_search.get_current_res()),
-                "Utxos by Address",
-                "No search results"
-            )
-        );
-
-        register_component!(
-            component_registry,
-            DetailsComponent::<UtxoItem>::new(
-                ComponentId::LedgerUtxosByAddrDetails,
-                "Utxo Details",
-                Box::new(|s: &AppState| {
-                    s.ledger_mvs
-                        .utxos_by_addr_search
-                        .get_current_res()
-                        .and_then(|list| list.selected_item())
-                })
-            )
-        );
-
-        register_component!(
-            component_registry,
-            DetailsComponent::<BlockHeader>::new(
-                ComponentId::ChainSearchHeader,
-                "Header Details",
-                Box::new(|s: &AppState| {
-                    s.chain_view
-                        .chain_search
-                        .get_current_res()
-                        .and_then(|res| res.as_ref().map(|(h, _, _)| h))
-                }),
-            )
-        );
-
-        register_component!(
-            component_registry,
-            DetailsComponent::<RawBlock>::new(
-                ComponentId::ChainSearchBlock,
-                "Block Details",
-                Box::new(|s: &AppState| {
-                    s.chain_view
-                        .chain_search
-                        .get_current_res()
-                        .and_then(|res| res.as_ref().map(|(_, b, _)| b))
-                }),
-            )
-        );
-
-        register_component!(
-            component_registry,
-            DetailsComponent::<Nonces>::new(
-                ComponentId::ChainSearchNonces,
-                "Nonces Details",
-                Box::new(|s: &AppState| {
-                    s.chain_view
-                        .chain_search
-                        .get_current_res()
-                        .and_then(|res| res.as_ref().map(|(_, _, n)| n))
-                }),
-            )
+            ChainSearchComponent::new(ComponentId::ChainSearch, chain_db_arc.clone())
         );
 
         register_component!(

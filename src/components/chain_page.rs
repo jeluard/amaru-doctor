@@ -43,7 +43,6 @@ impl Component for ChainPageComponent {
         let spec = LayoutSpec {
             direction: Direction::Vertical,
             constraints: vec![
-                // Header
                 (
                     Constraint::Length(3),
                     Right(LayoutSpec {
@@ -54,18 +53,7 @@ impl Component for ChainPageComponent {
                         ],
                     }),
                 ),
-                // Body
-                (
-                    Constraint::Fill(1),
-                    Right(LayoutSpec {
-                        direction: Direction::Horizontal,
-                        constraints: vec![
-                            (Constraint::Fill(1), Left(ComponentId::ChainSearchHeader)),
-                            (Constraint::Fill(1), Left(ComponentId::ChainSearchBlock)),
-                            (Constraint::Fill(1), Left(ComponentId::ChainSearchNonces)),
-                        ],
-                    }),
-                ),
+                (Constraint::Fill(1), Left(ComponentId::ChainSearch)),
             ],
         };
 

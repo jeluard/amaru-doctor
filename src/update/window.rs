@@ -59,14 +59,6 @@ static WINDOW_DEFS: &[WindowSizeDef] = &[
             s.get_utxos_list_mut().model.set_height(size);
         }],
     },
-    WindowSizeDef {
-        component_id: ComponentId::LedgerUtxosByAddrList,
-        handlers: &[|s, size| {
-            if let Some(model) = s.ledger_mvs.utxos_by_addr_search.get_current_res_mut() {
-                model.view.set_height(size);
-            }
-        }],
-    },
 ];
 
 impl Update for WindowSizeUpdate {
