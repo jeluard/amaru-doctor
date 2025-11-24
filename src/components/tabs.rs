@@ -24,6 +24,7 @@ where
     T: IntoEnumIterator + ToLine + Copy + PartialEq + Eq,
 {
     id: ComponentId,
+    border: bool,
     pub cursor: Cursor<T>,
     _phantom: PhantomData<T>,
 }
@@ -32,9 +33,10 @@ impl<T> TabsComponent<T>
 where
     T: IntoEnumIterator + ToLine + Copy + PartialEq + Eq,
 {
-    pub fn new(id: ComponentId) -> Self {
+    pub fn new(id: ComponentId, border: bool) -> Self {
         Self {
             id,
+            border,
             cursor: Cursor::new(T::iter().collect()).expect("TabsComponent must have options"),
             _phantom: PhantomData,
         }
@@ -45,8 +47,8 @@ where
     pub fn select_by_column(&mut self, area: Rect, column: u16) -> bool {
         const DIVIDER: &str = " | ";
         let divider_width = DIVIDER.len() as u16;
-        let mut current_col = area.x.saturating_add(1); // +1 for border
-        let max_col = area.x.saturating_add(area.width).saturating_sub(1); // -1 for border
+        let mut current_col = area.x.saturating_add(1);
+        let max_col = area.x.saturating_add(area.width).saturating_sub(1);
 
         for (index, item) in self.cursor.iter().enumerate() {
             if current_col >= max_col {
@@ -136,7 +138,10 @@ where
             return;
         };
         let is_focused = s.layout_model.is_focused(self.id);
-        let mut block = Block::default().borders(Borders::ALL);
+        let mut block = Block::default();
+        if self.border {
+            block = block.borders(Borders::ALL);
+        }
         if is_focused {
             block = block
                 .border_style(Style::default().fg(Color::Blue))

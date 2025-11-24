@@ -1,5 +1,6 @@
 use crate::{
     app_state::AppState,
+    components::root::RootComponent, // Import RootComponent
     states::{Action, ComponentId, InspectOption},
     update::Update,
 };
@@ -12,7 +13,14 @@ impl Update for SearchUpdate {
             return Vec::new();
         };
 
-        match s.get_inspect_tabs().selected() {
+        let selected_tab = s
+            .component_registry
+            .get(&ComponentId::Root)
+            .and_then(|comp| comp.as_any().downcast_ref::<RootComponent>())
+            .map(|root| root.tabs.selected())
+            .unwrap_or(InspectOption::Ledger);
+
+        match selected_tab {
             InspectOption::Ledger => {
                 if let Some(page) = s.component_registry.get_mut(&ComponentId::LedgerPage) {
                     page.handle_search(query);

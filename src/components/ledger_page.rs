@@ -201,12 +201,8 @@ impl LedgerPageComponent {
         let screen_mode = s.screen_mode;
 
         let header_constraints = match ledger_mode {
-            LedgerMode::Browse => vec![
-                (Constraint::Fill(1), Left(ComponentId::InspectTabs)),
-                (Constraint::Fill(1), Left(ComponentId::LedgerModeTabs)),
-            ],
+            LedgerMode::Browse => vec![(Constraint::Fill(1), Left(ComponentId::LedgerModeTabs))],
             LedgerMode::Search => vec![
-                (Constraint::Length(30), Left(ComponentId::InspectTabs)),
                 (Constraint::Length(20), Left(ComponentId::LedgerModeTabs)),
                 (Constraint::Fill(1), Left(ComponentId::SearchBar)),
             ],
@@ -291,8 +287,13 @@ impl Component for LedgerPageComponent {
     }
 
     fn route_event(&self, event: &Event, s: &AppState) -> InputRoute {
-        let area = s.frame_area;
-        let my_layout = self.calculate_layout(area, s);
+        let my_area = s
+            .layout_model
+            .get_layout()
+            .get(&self.id)
+            .copied()
+            .unwrap_or(s.frame_area);
+        let my_layout = self.calculate_layout(my_area, s);
         let route = route_event_to_children(event, s, my_layout);
 
         match route {
@@ -404,52 +405,53 @@ impl Component for LedgerPageComponent {
         self.utxos_by_addr_list.handle_search(query);
     }
 
-    fn render(&self, f: &mut Frame, s: &AppState, _layout: &ComponentLayout) {
-        let layout = self.calculate_layout(f.area(), s);
+    fn render(&self, f: &mut Frame, s: &AppState, parent_layout: &ComponentLayout) {
+        let my_area = parent_layout.get(&self.id).copied().unwrap_or(f.area());
+        let my_layout = self.calculate_layout(my_area, s);
 
         {
             let mut layout_guard = self.last_layout.write().unwrap();
-            *layout_guard = layout.clone();
+            *layout_guard = my_layout.clone();
         }
         {
             let mut focus_guard = self.active_focus.write().unwrap();
             *focus_guard = s.layout_model.get_focus();
         }
 
-        for (id, area) in layout.iter() {
+        for (id, area) in my_layout.iter() {
             let area = *area;
             let is_focused = s.layout_model.is_focused(*id);
 
             match id {
                 // --- Options ---
                 ComponentId::LedgerBrowseOptions => {
-                    self.browse_options.render(f, s, &layout);
+                    self.browse_options.render(f, s, &my_layout);
                 }
                 ComponentId::LedgerSearchOptions => {
-                    self.search_options.render(f, s, &layout);
+                    self.search_options.render(f, s, &my_layout);
                 }
 
                 // --- Lists ---
                 ComponentId::LedgerAccountsList => {
-                    self.accounts_list.render(f, s, &layout);
+                    self.accounts_list.render(f, s, &my_layout);
                 }
                 ComponentId::LedgerBlockIssuersList => {
-                    self.block_issuers_list.render(f, s, &layout);
+                    self.block_issuers_list.render(f, s, &my_layout);
                 }
                 ComponentId::LedgerDRepsList => {
-                    self.dreps_list.render(f, s, &layout);
+                    self.dreps_list.render(f, s, &my_layout);
                 }
                 ComponentId::LedgerPoolsList => {
-                    self.pools_list.render(f, s, &layout);
+                    self.pools_list.render(f, s, &my_layout);
                 }
                 ComponentId::LedgerProposalsList => {
-                    self.proposals_list.render(f, s, &layout);
+                    self.proposals_list.render(f, s, &my_layout);
                 }
                 ComponentId::LedgerUtxosList => {
-                    self.utxos_list.render(f, s, &layout);
+                    self.utxos_list.render(f, s, &my_layout);
                 }
                 ComponentId::LedgerUtxosByAddrList => {
-                    self.utxos_by_addr_list.render(f, s, &layout);
+                    self.utxos_by_addr_list.render(f, s, &my_layout);
                 }
 
                 // --- Details ---
@@ -492,7 +494,7 @@ impl Component for LedgerPageComponent {
                 // Fallback
                 _ => {
                     if let Some(child) = s.component_registry.get(id) {
-                        child.render(f, s, &layout);
+                        child.render(f, s, &my_layout);
                     }
                 }
             }

@@ -1,14 +1,10 @@
 use crate::{
     app_state::AppState,
-    components::{
-        Component, ComponentLayout, InputRoute, MouseScrollDirection, ScrollDirection,
-        route_event_to_children,
-    },
+    components::{Component, ComponentLayout, InputRoute, route_event_to_children},
     controller::{LayoutSpec, walk_layout},
-    states::{Action, ComponentId},
+    states::ComponentId,
     tui::Event,
 };
-use crossterm::event::KeyEvent;
 use either::Either::{Left, Right};
 use ratatui::{
     Frame,
@@ -47,10 +43,7 @@ impl Component for ChainPageComponent {
                     Constraint::Length(3),
                     Right(LayoutSpec {
                         direction: Direction::Horizontal,
-                        constraints: vec![
-                            (Constraint::Fill(1), Left(ComponentId::InspectTabs)),
-                            (Constraint::Fill(1), Left(ComponentId::SearchBar)),
-                        ],
+                        constraints: vec![(Constraint::Fill(1), Left(ComponentId::SearchBar))],
                     }),
                 ),
                 (Constraint::Fill(1), Left(ComponentId::ChainSearch)),
@@ -63,9 +56,13 @@ impl Component for ChainPageComponent {
     }
 
     fn route_event(&self, event: &Event, s: &AppState) -> InputRoute {
-        let area = s.frame_area;
-        let my_layout = self.calculate_layout(area, s);
-
+        let my_area = s
+            .layout_model
+            .get_layout()
+            .get(&self.id)
+            .copied()
+            .unwrap_or(s.frame_area);
+        let my_layout = self.calculate_layout(my_area, s);
         route_event_to_children(event, s, my_layout)
     }
 
@@ -77,20 +74,5 @@ impl Component for ChainPageComponent {
                 child.render(f, s, &my_layout);
             }
         }
-    }
-    fn handle_scroll(&mut self, _d: ScrollDirection) -> Vec<Action> {
-        Vec::new()
-    }
-    fn handle_key_event(&mut self, _k: KeyEvent) -> Vec<Action> {
-        Vec::new()
-    }
-    fn handle_click(&mut self, _a: Rect, _r: u16, _c: u16) -> Vec<Action> {
-        Vec::new()
-    }
-    fn handle_mouse_scroll(&mut self, _d: MouseScrollDirection) -> Vec<Action> {
-        Vec::new()
-    }
-    fn handle_mouse_drag(&mut self, _d: ScrollDirection) -> Vec<Action> {
-        Vec::new()
     }
 }

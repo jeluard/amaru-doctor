@@ -1,7 +1,7 @@
 use crate::{
     ScreenMode,
     app_state::AppState,
-    components::InputRoute,
+    components::{InputRoute, root::RootComponent},
     config::Config,
     model::button::InputEvent,
     otel::TraceGraphSnapshot,
@@ -59,12 +59,11 @@ impl App {
             frame_area,
             screen_mode,
         )?;
-        let last_inspect_tabs = *app_state.get_inspect_tabs().cursor.current();
 
         Ok(Self {
             app_state,
             updates: UPDATE_DEFS.to_vec(),
-            last_store_option: last_inspect_tabs,
+            last_store_option: InspectOption::default(),
             should_quit: false,
             should_suspend: false,
             config: Config::new()?,
@@ -304,14 +303,21 @@ impl App {
     fn render<B: Backend>(&mut self, tui: &mut Tui<B>) -> Result<()> {
         tui.draw(|f| {
             let frame_area = f.area();
+            let current_selection = self
+                .app_state
+                .component_registry
+                .get(&ComponentId::Root)
+                .and_then(|c| c.as_any().downcast_ref::<RootComponent>())
+                .map(|root| root.tabs.selected())
+                .unwrap_or_default();
             if frame_area != self.app_state.frame_area
-                || self.app_state.get_inspect_tabs().selected() != self.last_store_option
+                || current_selection != self.last_store_option
             {
+                // TODO: Remove this, we shouldn't be updating the layout here
                 debug!("Frame area or store option changed");
-
                 let action = Action::UpdateLayout(frame_area);
                 let _ = self.run_updates(&action);
-                self.last_store_option = self.app_state.get_inspect_tabs().selected();
+                self.last_store_option = current_selection;
             }
 
             if let Some(root) = self.app_state.component_registry.get(&ComponentId::Root) {
