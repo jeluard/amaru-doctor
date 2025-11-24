@@ -1,7 +1,10 @@
 use crate::{
     app_state::AppState,
-    components::Component,
-    states::{Action, ComponentId::*},
+    components::{Component, root::RootComponent},
+    states::{
+        Action,
+        ComponentId::{self, *},
+    },
     update::Update,
 };
 use crossterm::event::{MouseButton, MouseEventKind};
@@ -28,8 +31,12 @@ impl Update for MouseClickUpdate {
 
         match component_id {
             InspectTabs => {
-                s.get_inspect_tabs_mut().handle_click(rect, row, column);
-                return vec![Action::UpdateLayout(s.frame_area)];
+                if let Some(root) = s.component_registry.get_mut(&ComponentId::Root)
+                    && let Some(root_comp) = root.as_any_mut().downcast_mut::<RootComponent>()
+                {
+                    root_comp.tabs.handle_click(rect, row, column);
+                    return vec![Action::UpdateLayout(s.frame_area)];
+                }
             }
             LedgerModeTabs => {
                 if s.get_ledger_mode_tabs_mut().select_by_column(rect, column) {

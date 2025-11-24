@@ -1,5 +1,6 @@
 use crate::{
     app_state::AppState,
+    components::root::RootComponent,
     states::{Action, ComponentId},
     update::Update,
 };
@@ -28,11 +29,16 @@ impl Update for TabsUpdate {
 
         match focus {
             ComponentId::InspectTabs => {
-                match direction {
-                    ScrollDirection::Left => s.get_inspect_tabs_mut().cursor.next_back(),
-                    ScrollDirection::Right => s.get_inspect_tabs_mut().cursor.non_empty_next(),
-                };
-                vec![Action::UpdateLayout(s.frame_area)]
+                if let Some(root) = s.component_registry.get_mut(&ComponentId::Root)
+                    && let Some(root_comp) = root.as_any_mut().downcast_mut::<RootComponent>()
+                {
+                    match direction {
+                        ScrollDirection::Left => root_comp.tabs.cursor.next_back(),
+                        ScrollDirection::Right => root_comp.tabs.cursor.non_empty_next(),
+                    };
+                    return vec![Action::UpdateLayout(s.frame_area)];
+                }
+                Vec::new()
             }
             ComponentId::LedgerModeTabs => {
                 match direction {

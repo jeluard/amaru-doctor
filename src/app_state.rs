@@ -133,12 +133,7 @@ impl AppState {
 
         register_component!(
             component_registry,
-            TabsComponent::<InspectOption>::new(ComponentId::InspectTabs,)
-        );
-
-        register_component!(
-            component_registry,
-            TabsComponent::<LedgerMode>::new(ComponentId::LedgerModeTabs)
+            TabsComponent::<LedgerMode>::new(ComponentId::LedgerModeTabs, true)
         );
 
         register_component!(
@@ -190,14 +185,6 @@ impl AppState {
             focused_component: ComponentId::InspectTabs,
         })
     }
-
-    define_component_getter!(
-        get_inspect_tabs,
-        get_inspect_tabs_mut,
-        TabsComponent<InspectOption>,
-        ComponentId::InspectTabs,
-        "InspectTabs"
-    );
 
     define_component_getter!(
         get_ledger_mode_tabs,

@@ -1,15 +1,11 @@
 use crate::{
     app_state::AppState,
-    components::{
-        Component, ComponentLayout, InputRoute, MouseScrollDirection, ScrollDirection,
-        route_event_to_children,
-    },
+    components::{Component, ComponentLayout, InputRoute, route_event_to_children},
     controller::{LayoutSpec, walk_layout},
-    states::{Action, ComponentId},
+    states::ComponentId,
     tui::Event,
 };
-use crossterm::event::KeyEvent;
-use either::Either::{Left, Right};
+use either::Either::Left;
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Rect},
@@ -42,18 +38,7 @@ impl Component for PrometheusPageComponent {
     fn calculate_layout(&self, area: Rect, _s: &AppState) -> ComponentLayout {
         let spec = LayoutSpec {
             direction: Direction::Vertical,
-            constraints: vec![
-                // Header
-                (
-                    Constraint::Length(3),
-                    Right(LayoutSpec {
-                        direction: Direction::Horizontal,
-                        constraints: vec![(Constraint::Fill(1), Left(ComponentId::InspectTabs))],
-                    }),
-                ),
-                // Body
-                (Constraint::Fill(1), Left(ComponentId::PrometheusMetrics)),
-            ],
+            constraints: vec![(Constraint::Fill(1), Left(ComponentId::PrometheusMetrics))],
         };
 
         let mut layout = HashMap::new();
@@ -68,28 +53,13 @@ impl Component for PrometheusPageComponent {
         route_event_to_children(event, s, my_layout)
     }
 
-    fn render(&self, f: &mut Frame, s: &AppState, _layout: &ComponentLayout) {
-        let my_layout = self.calculate_layout(f.area(), s);
+    fn render(&self, f: &mut Frame, s: &AppState, parent_layout: &ComponentLayout) {
+        let my_area = parent_layout.get(&self.id).copied().unwrap_or(f.area());
+        let my_layout = self.calculate_layout(my_area, s);
         for (id, _) in my_layout.iter() {
             if let Some(child) = s.component_registry.get(id) {
                 child.render(f, s, &my_layout);
             }
         }
-    }
-
-    fn handle_scroll(&mut self, _d: ScrollDirection) -> Vec<Action> {
-        Vec::new()
-    }
-    fn handle_key_event(&mut self, _k: KeyEvent) -> Vec<Action> {
-        Vec::new()
-    }
-    fn handle_click(&mut self, _a: Rect, _r: u16, _c: u16) -> Vec<Action> {
-        Vec::new()
-    }
-    fn handle_mouse_scroll(&mut self, _d: MouseScrollDirection) -> Vec<Action> {
-        Vec::new()
-    }
-    fn handle_mouse_drag(&mut self, _d: ScrollDirection) -> Vec<Action> {
-        Vec::new()
     }
 }

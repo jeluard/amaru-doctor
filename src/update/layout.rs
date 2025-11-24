@@ -23,6 +23,8 @@ impl Update for LayoutUpdate {
         if let Some(root) = s.component_registry.get(&ComponentId::Root) {
             let root_layout = root.calculate_layout(*frame_area, s);
             for (page_id, page_rect) in root_layout {
+                interactive_layout.insert(page_id, page_rect);
+
                 if let Some(page) = s.component_registry.get(&page_id) {
                     let page_layout = page.calculate_layout(page_rect, s);
                     interactive_layout.extend(page_layout);
