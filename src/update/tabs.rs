@@ -40,13 +40,6 @@ impl Update for TabsUpdate {
                 }
                 Vec::new()
             }
-            ComponentId::LedgerModeTabs => {
-                match direction {
-                    ScrollDirection::Left => s.get_ledger_mode_tabs_mut().cursor.next_back(),
-                    ScrollDirection::Right => s.get_ledger_mode_tabs_mut().cursor.non_empty_next(),
-                };
-                vec![Action::UpdateLayout(s.frame_area)]
-            }
             _ => {
                 trace!("No tab scroll logic for component {:?}", focus);
                 Vec::new()
