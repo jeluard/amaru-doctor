@@ -1,8 +1,12 @@
 use crate::{
     app_state::AppState,
-    components::{Component, ComponentLayout, InputRoute, route_event_to_children},
+    components::{
+        Component, ComponentLayout, InputRoute, prom_metrics::PromMetricsComponent,
+        route_event_to_children,
+    },
     controller::{LayoutSpec, walk_layout},
-    states::ComponentId,
+    prometheus::model::NodeMetrics,
+    states::{Action, ComponentId},
     tui::Event,
 };
 use either::Either::Left;
@@ -11,15 +15,18 @@ use ratatui::{
     layout::{Constraint, Direction, Rect},
 };
 use std::{any::Any, collections::HashMap};
+use tokio::sync::mpsc::Receiver;
 
 pub struct PrometheusPageComponent {
     id: ComponentId,
+    pub metrics: PromMetricsComponent,
 }
 
-impl Default for PrometheusPageComponent {
-    fn default() -> Self {
+impl PrometheusPageComponent {
+    pub fn new(prom_metrics: Receiver<NodeMetrics>) -> Self {
         Self {
             id: ComponentId::PrometheusPage,
+            metrics: PromMetricsComponent::new(ComponentId::PrometheusMetrics, prom_metrics),
         }
     }
 }
@@ -47,19 +54,30 @@ impl Component for PrometheusPageComponent {
     }
 
     fn route_event(&self, event: &Event, s: &AppState) -> InputRoute {
-        let area = s.frame_area;
-        let my_layout = self.calculate_layout(area, s);
+        let my_area = s
+            .layout_model
+            .get_layout()
+            .get(&self.id)
+            .copied()
+            .unwrap_or(s.frame_area);
 
-        route_event_to_children(event, s, my_layout)
+        let my_layout = self.calculate_layout(my_area, s);
+        let route = route_event_to_children(event, s, my_layout);
+        match route {
+            InputRoute::Delegate(ComponentId::PrometheusMetrics, _) => InputRoute::Handle,
+            _ => route,
+        }
+    }
+
+    fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
+        self.metrics.handle_event(event, area)
     }
 
     fn render(&self, f: &mut Frame, s: &AppState, parent_layout: &ComponentLayout) {
         let my_area = parent_layout.get(&self.id).copied().unwrap_or(f.area());
         let my_layout = self.calculate_layout(my_area, s);
-        for (id, _) in my_layout.iter() {
-            if let Some(child) = s.component_registry.get(id) {
-                child.render(f, s, &my_layout);
-            }
+        if let Some(_rect) = my_layout.get(&ComponentId::PrometheusMetrics) {
+            self.metrics.render(f, s, &my_layout);
         }
     }
 }

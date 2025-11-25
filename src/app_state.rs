@@ -1,9 +1,6 @@
 use crate::{
     ScreenMode,
-    components::{
-        Component, chain_search::ChainSearchComponent, prom_metrics::PromMetricsComponent,
-        search_bar::SearchBarComponent,
-    },
+    components::{Component, chain_search::ChainSearchComponent, search_bar::SearchBarComponent},
     model::{
         button::InputEvent, chain_view::ChainViewState, layout::LayoutModel,
         ledger_view::LedgerModelViewState, otel_view::OtelViewState,
@@ -27,36 +24,6 @@ macro_rules! register_component {
     ($registry:ident, $component_expr:expr) => {
         let component = $component_expr;
         $registry.insert(component.id(), Box::new(component));
-    };
-}
-
-macro_rules! define_component_getter {
-    (
-        $fn_name:ident,
-        $fn_name_mut:ident,
-        $ComponentType:ty,
-        $ComponentId:path,
-        $ErrorMsg:literal
-    ) => {
-        pub fn $fn_name(&self) -> &$ComponentType {
-            self.component_registry
-                .get(&$ComponentId)
-                .and_then(|c| c.as_ref().as_any().downcast_ref::<$ComponentType>())
-                .expect(concat!(
-                    $ErrorMsg,
-                    " component not in registry or wrong type"
-                ))
-        }
-
-        pub fn $fn_name_mut(&mut self) -> &mut $ComponentType {
-            self.component_registry
-                .get_mut(&$ComponentId)
-                .and_then(|c| c.as_mut().as_any_mut().downcast_mut::<$ComponentType>())
-                .expect(concat!(
-                    $ErrorMsg,
-                    " component not in registry or wrong type"
-                ))
-        }
     };
 }
 
@@ -126,7 +93,7 @@ impl AppState {
         );
         register_component!(
             component_registry,
-            crate::components::prometheus_page::PrometheusPageComponent::default()
+            crate::components::prometheus_page::PrometheusPageComponent::new(prom_metrics)
         );
 
         register_component!(
@@ -137,11 +104,6 @@ impl AppState {
         register_component!(
             component_registry,
             ChainSearchComponent::new(ComponentId::ChainSearch, chain_db_arc.clone())
-        );
-
-        register_component!(
-            component_registry,
-            PromMetricsComponent::new(ComponentId::PrometheusMetrics, prom_metrics)
         );
 
         Ok(Self {
@@ -159,12 +121,4 @@ impl AppState {
             focused_component: ComponentId::InspectTabs,
         })
     }
-
-    define_component_getter!(
-        get_prom_metrics,
-        get_prom_metrics_mut,
-        PromMetricsComponent,
-        ComponentId::PrometheusMetrics,
-        "PromMetrics"
-    );
 }
