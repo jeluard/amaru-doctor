@@ -1,6 +1,5 @@
-use ratatui::{Frame, layout::Rect};
-
 use crate::{ui::to_list_item::ToListItem, view::list::ListViewState};
+use ratatui::{Frame, layout::Rect};
 
 /// A stateful component for a list whose entire dataset can be replaced
 /// dynamically. It combines the data model (`Vec<T>`) with the view state
@@ -32,6 +31,10 @@ impl<T: Clone + PartialEq + ToListItem> DynamicListViewModel<T> {
             .unwrap_or(0); // Default to the first item if not found or if nothing was selected.
 
         self.view.select(new_selected_index, len);
+    }
+
+    pub fn set_height(&mut self, height: usize) {
+        self.view.set_height(height);
     }
 
     pub fn selected_item(&self) -> Option<&T> {

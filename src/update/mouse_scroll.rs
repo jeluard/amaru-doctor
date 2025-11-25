@@ -20,7 +20,7 @@ impl Update for MouseScrollUpdate {
 
         let Some((component_id, _rect)) = s
             .layout_model
-            .find_hovered_slot(mouse_event.column, mouse_event.row)
+            .find_hovered_component(mouse_event.column, mouse_event.row)
         else {
             return Vec::new();
         };

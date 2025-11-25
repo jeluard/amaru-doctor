@@ -1,5 +1,6 @@
 use crate::{
     app_state::AppState,
+    components::{Component, otel_page::OtelPageComponent},
     otel::{graph::TraceGraph, id::SpanId, span_ext::SpanExt},
     states::{Action, ComponentId},
     update::Update,
@@ -35,15 +36,22 @@ impl Update for ScrollUpdate {
             ComponentId::OtelTraceList => {
                 debug!("ScrollUpdate: Dispatching scroll to OtelTraceList with side effects");
                 // Scroll the list component
-                if let Some(comp) = s.component_registry.get_mut(&focus_id) {
-                    comp.handle_scroll(direction);
+                if let Some(page) = s.component_registry.get_mut(&ComponentId::OtelPage)
+                    && let Some(otel_page) = page.as_any_mut().downcast_mut::<OtelPageComponent>()
+                {
+                    otel_page.trace_list.handle_scroll(direction);
                 }
 
                 // Side effect: Update focused span based on new list selection
                 let graph = s.otel_view.trace_graph_source.load();
-                let new_focused_span = s
-                    .get_trace_list()
-                    .selected_item()
+
+                let selected_item = s
+                    .component_registry
+                    .get(&ComponentId::OtelPage)
+                    .and_then(|c| c.as_any().downcast_ref::<OtelPageComponent>())
+                    .and_then(|p| p.trace_list.selected_item());
+
+                let new_focused_span = selected_item
                     .and_then(|trace_id| graph.traces.get(trace_id))
                     .and_then(|trace_meta| trace_meta.roots().first_key_value())
                     .and_then(|(_, root_ids)| root_ids.first())
@@ -129,8 +137,10 @@ fn get_ordered_spans_for_view(data: &TraceGraph, s: &AppState) -> Option<Vec<Spa
         Some(ancestors.into_iter().chain(self_and_descendants).collect())
     } else {
         // There's no selected span, render the selected trace's entire tree
-        s.get_trace_list()
-            .selected_item()
+        s.component_registry
+            .get(&ComponentId::OtelPage)
+            .and_then(|c| c.as_any().downcast_ref::<OtelPageComponent>())
+            .and_then(|p| p.trace_list.selected_item())
             .map(|trace_id| data.trace_iter(trace_id).collect())
     }
 }

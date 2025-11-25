@@ -151,8 +151,6 @@ impl App {
         let mut depth = 0;
         const MAX_DEPTH: usize = 50;
 
-        debug!("Dispatch Start: {:?}", event);
-
         loop {
             if depth > MAX_DEPTH {
                 error!("Dispatch Loop Detected. Aborting route at {:?}", target_id);
@@ -166,8 +164,6 @@ impl App {
             };
 
             let route = comp.route_event(&event, &self.app_state);
-            debug!("Route [{}]: {:?}", target_id, route);
-
             match route {
                 InputRoute::Delegate(child_id, child_rect) => {
                     // If dividing to self, break immediately
@@ -200,13 +196,6 @@ impl App {
             }
 
             let mut actions = comp.handle_event(&event, target_area);
-
-            if !actions.is_empty() {
-                debug!(
-                    "App: Component {} returned actions: {:?}",
-                    target_id, actions
-                );
-            }
 
             // Trigger Layout Update for Options Lists
             // When selection changes in these lists, the whole page layout changes.

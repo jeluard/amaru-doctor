@@ -1,6 +1,6 @@
 use crate::{
     app_state::AppState,
-    components::{Component, ComponentLayout, MouseScrollDirection, ScrollDirection},
+    components::{Component, ComponentLayout, otel_page::OtelPageComponent},
     model::otel_view::OtelViewState,
     otel::{
         TreeBounds,
@@ -8,18 +8,17 @@ use crate::{
         id::{SpanId, TraceId},
         span_ext::SpanExt,
     },
-    states::{Action, ComponentId},
+    states::ComponentId,
     view::span_bar::SpanBarRenderer,
 };
 use anyhow::{Result, anyhow};
-use crossterm::event::KeyEvent;
 use opentelemetry_proto::tonic::trace::v1::Span;
 use ratatui::{
     prelude::*,
     widgets::{Block, Borders, Paragraph},
 };
 use std::{any::Any, iter, sync::Arc};
-use tracing::{error, info};
+use tracing::error;
 
 pub struct FlameGraphComponent {
     id: ComponentId,
@@ -76,29 +75,6 @@ impl Component for FlameGraphComponent {
         let paragraph = Paragraph::new(lines).block(block);
         f.render_widget(paragraph, area);
     }
-
-    fn handle_key_event(&mut self, _key: KeyEvent) -> Vec<Action> {
-        Vec::new()
-    }
-
-    fn handle_click(&mut self, _area: Rect, _row: u16, _col: u16) -> Vec<Action> {
-        Vec::new()
-    }
-
-    fn handle_scroll(&mut self, _direction: ScrollDirection) -> Vec<Action> {
-        info!("Nothing to scroll");
-        Vec::new()
-    }
-
-    fn handle_mouse_scroll(&mut self, _direction: MouseScrollDirection) -> Vec<Action> {
-        info!("Nothing to scroll");
-        Vec::new()
-    }
-
-    fn handle_mouse_drag(&mut self, _direction: ScrollDirection) -> Vec<Action> {
-        info!("Nothing to drag");
-        Vec::new()
-    }
 }
 
 /// Determines which view to render based on the app state.
@@ -106,11 +82,20 @@ fn get_flame_graph_lines(s: &AppState, max_bar_width: usize) -> Result<Vec<Line<
     if let Some(selected_span) = &s.otel_view.selected_span {
         // A Span is selected
         get_span_tree_lines(&s.otel_view, selected_span, max_bar_width)
-    } else if let Some(trace_id) = s.get_trace_list().selected_item() {
-        // No Span is selected but a Trace is selected
-        get_trace_tree_lines(&s.otel_view, trace_id, max_bar_width)
     } else {
-        Ok(vec![Line::from("No Trace selected.")])
+        // TODO: The registry is going to go away; fix this
+        let selected_trace = s
+            .component_registry
+            .get(&ComponentId::OtelPage)
+            .and_then(|c| c.as_any().downcast_ref::<OtelPageComponent>())
+            .and_then(|p| p.trace_list.selected_item());
+
+        if let Some(trace_id) = selected_trace {
+            // No Span is selected but a Trace is selected
+            get_trace_tree_lines(&s.otel_view, trace_id, max_bar_width)
+        } else {
+            Ok(vec![Line::from("No Trace selected.")])
+        }
     }
 }
 
