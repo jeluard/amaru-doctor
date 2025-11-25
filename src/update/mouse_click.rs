@@ -38,11 +38,6 @@ impl Update for MouseClickUpdate {
                     return vec![Action::UpdateLayout(s.frame_area)];
                 }
             }
-            LedgerModeTabs => {
-                if s.get_ledger_mode_tabs_mut().select_by_column(rect, column) {
-                    return vec![Action::UpdateLayout(s.frame_area)];
-                }
-            }
             OtelTraceList => {
                 s.get_trace_list_mut().handle_click(rect, row, column);
 

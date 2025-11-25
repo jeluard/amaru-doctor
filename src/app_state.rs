@@ -3,7 +3,7 @@ use crate::{
     components::{
         Component, chain_search::ChainSearchComponent, details::DetailsComponent,
         flame_graph::FlameGraphComponent, prom_metrics::PromMetricsComponent,
-        search_bar::SearchBarComponent, tabs::TabsComponent, trace_list::TraceListComponent,
+        search_bar::SearchBarComponent, trace_list::TraceListComponent,
     },
     model::{
         button::InputEvent, chain_view::ChainViewState, layout::LayoutModel,
@@ -133,11 +133,6 @@ impl AppState {
 
         register_component!(
             component_registry,
-            TabsComponent::<LedgerMode>::new(ComponentId::LedgerModeTabs, true)
-        );
-
-        register_component!(
-            component_registry,
             SearchBarComponent::new(ComponentId::SearchBar)
         );
 
@@ -185,14 +180,6 @@ impl AppState {
             focused_component: ComponentId::InspectTabs,
         })
     }
-
-    define_component_getter!(
-        get_ledger_mode_tabs,
-        get_ledger_mode_tabs_mut,
-        TabsComponent<LedgerMode>,
-        ComponentId::LedgerModeTabs,
-        "LedgerModeTabs"
-    );
 
     define_component_getter!(
         get_trace_list,

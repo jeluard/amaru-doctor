@@ -4,6 +4,7 @@ use crate::{
     components::{
         Component, ComponentLayout, InputRoute, list::ListComponent, route_event_to_children,
         search_list::SearchListComponent, stateful_details::StatefulDetailsComponent,
+        tabs::TabsComponent,
     },
     controller::{LayoutSpec, walk_layout},
     model::{ledger_search::LedgerUtxoProvider, list_view::ListModelView},
@@ -31,6 +32,9 @@ use strum::IntoEnumIterator;
 
 pub struct LedgerPageComponent {
     id: ComponentId,
+
+    // Tabs
+    mode_tabs: TabsComponent<LedgerMode>,
     // Details
     account_details: StatefulDetailsComponent<AccountItem>,
     block_details: StatefulDetailsComponent<BlockIssuerItem>,
@@ -67,6 +71,7 @@ impl LedgerPageComponent {
 
         Self {
             id: ComponentId::LedgerPage,
+            mode_tabs: TabsComponent::new(ComponentId::LedgerModeTabs, true),
 
             // Details
             account_details: StatefulDetailsComponent::new(
@@ -152,6 +157,9 @@ impl LedgerPageComponent {
 
     fn dispatch_to_child(&mut self, id: ComponentId, event: &Event, area: Rect) -> Vec<Action> {
         match id {
+            // Mode tabs
+            ComponentId::LedgerModeTabs => self.mode_tabs.handle_event(event, area),
+
             // Options
             ComponentId::LedgerBrowseOptions => self.browse_options.handle_event(event, area),
             ComponentId::LedgerSearchOptions => self.search_options.handle_event(event, area),
@@ -197,7 +205,7 @@ impl LedgerPageComponent {
     }
 
     fn build_layout_spec(&self, s: &AppState) -> LayoutSpec {
-        let ledger_mode = s.get_ledger_mode_tabs().selected();
+        let ledger_mode = self.mode_tabs.selected();
         let screen_mode = s.screen_mode;
 
         let header_constraints = match ledger_mode {
@@ -297,7 +305,9 @@ impl Component for LedgerPageComponent {
         let route = route_event_to_children(event, s, my_layout);
 
         match route {
-            InputRoute::Delegate(ComponentId::LedgerAccountDetails |
+            InputRoute::Delegate(
+                ComponentId::LedgerModeTabs |
+                ComponentId::LedgerAccountDetails |
                 ComponentId::LedgerBlockIssuerDetails |
                 ComponentId::LedgerDRepDetails |
                 ComponentId::LedgerPoolDetails |
@@ -423,6 +433,10 @@ impl Component for LedgerPageComponent {
             let is_focused = s.layout_model.is_focused(*id);
 
             match id {
+                // --- Mode tabs ---
+                ComponentId::LedgerModeTabs => {
+                    self.mode_tabs.render(f, s, &my_layout);
+                }
                 // --- Options ---
                 ComponentId::LedgerBrowseOptions => {
                     self.browse_options.render(f, s, &my_layout);
