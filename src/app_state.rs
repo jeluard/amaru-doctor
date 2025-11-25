@@ -1,9 +1,8 @@
 use crate::{
     ScreenMode,
     components::{
-        Component, chain_search::ChainSearchComponent, details::DetailsComponent,
-        flame_graph::FlameGraphComponent, prom_metrics::PromMetricsComponent,
-        search_bar::SearchBarComponent, trace_list::TraceListComponent,
+        Component, chain_search::ChainSearchComponent, prom_metrics::PromMetricsComponent,
+        search_bar::SearchBarComponent,
     },
     model::{
         button::InputEvent, chain_view::ChainViewState, layout::LayoutModel,
@@ -17,7 +16,6 @@ use crate::{
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
 use anyhow::Result;
 use arc_swap::ArcSwap;
-use opentelemetry_proto::tonic::trace::v1::Span;
 use ratatui::layout::Rect;
 use std::{
     collections::HashMap,
@@ -143,25 +141,6 @@ impl AppState {
 
         register_component!(
             component_registry,
-            TraceListComponent::new(ComponentId::OtelTraceList)
-        );
-
-        register_component!(
-            component_registry,
-            DetailsComponent::<Span>::new(
-                ComponentId::OtelSpanDetails,
-                "Span Details",
-                Box::new(|s: &AppState| s.otel_view.focused_span.as_deref()),
-            )
-        );
-
-        register_component!(
-            component_registry,
-            FlameGraphComponent::new(ComponentId::OtelFlameGraph)
-        );
-
-        register_component!(
-            component_registry,
             PromMetricsComponent::new(ComponentId::PrometheusMetrics, prom_metrics)
         );
 
@@ -180,14 +159,6 @@ impl AppState {
             focused_component: ComponentId::InspectTabs,
         })
     }
-
-    define_component_getter!(
-        get_trace_list,
-        get_trace_list_mut,
-        TraceListComponent,
-        ComponentId::OtelTraceList,
-        "OtelTraceList"
-    );
 
     define_component_getter!(
         get_prom_metrics,

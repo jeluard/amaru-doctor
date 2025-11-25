@@ -69,7 +69,7 @@ impl LayoutModel {
     /// Sets the focus to the widget located at the given screen coordinates.
     /// Returns `true` if the focus was changed.
     pub fn set_focus_by_location(&mut self, column: u16, row: u16) -> bool {
-        self.find_hovered_slot(column, row)
+        self.find_hovered_component(column, row)
             .map(|(component_id, _)| self.focus = component_id)
             .is_some()
     }
@@ -127,18 +127,17 @@ impl LayoutModel {
         }
     }
 
-    /// Finds the widget slot and its `Rect` at the given screen coordinates.
-    pub fn find_hovered_slot(&self, column: u16, row: u16) -> Option<(ComponentId, Rect)> {
-        self.layout.iter().find_map(|(slot, rect)| {
-            if column >= rect.x
-                && column < rect.x + rect.width
-                && row >= rect.y
-                && row < rect.y + rect.height
-            {
-                Some((*slot, *rect))
-            } else {
-                None
-            }
-        })
+    /// Finds the component and its `Rect` at the given screen coordinates.
+    pub fn find_hovered_component(&self, column: u16, row: u16) -> Option<(ComponentId, Rect)> {
+        self.layout
+            .iter()
+            .filter(|(_slot, rect)| {
+                column >= rect.x
+                    && column < rect.x + rect.width
+                    && row >= rect.y
+                    && row < rect.y + rect.height
+            })
+            .min_by_key(|(_slot, rect)| rect.width as u32 * rect.height as u32)
+            .map(|(slot, rect)| (*slot, *rect))
     }
 }

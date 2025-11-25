@@ -123,10 +123,6 @@ pub fn route_event_to_children(
                     && mouse.row < rect.y + rect.height;
 
                 if hit {
-                    debug!(
-                        "Child {:?} at {:?} contains mouse ({}, {})",
-                        child_id, rect, mouse.column, mouse.row
-                    );
                     return InputRoute::Delegate(*child_id, *rect);
                 }
             }

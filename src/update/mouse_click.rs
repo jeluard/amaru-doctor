@@ -1,6 +1,6 @@
 use crate::{
     app_state::AppState,
-    components::{Component, root::RootComponent},
+    components::{Component, otel_page::OtelPageComponent, root::RootComponent},
     states::{
         Action,
         ComponentId::{self, *},
@@ -25,7 +25,7 @@ impl Update for MouseClickUpdate {
             _ => return Vec::new(),
         };
 
-        let Some((component_id, rect)) = s.layout_model.find_hovered_slot(column, row) else {
+        let Some((component_id, rect)) = s.layout_model.find_hovered_component(column, row) else {
             return Vec::new();
         };
 
@@ -39,13 +39,22 @@ impl Update for MouseClickUpdate {
                 }
             }
             OtelTraceList => {
-                s.get_trace_list_mut().handle_click(rect, row, column);
+                // TODO: This should no longer be in an Update Fn
+                if let Some(page) = s.component_registry.get_mut(&OtelPage)
+                    && let Some(otel_page) = page.as_any_mut().downcast_mut::<OtelPageComponent>()
+                {
+                    otel_page.trace_list.handle_click(rect, row, column);
+                }
 
-                // Side Effect: Update Focused Span based on new Trace selection
                 let graph = s.otel_view.trace_graph_source.load();
-                let new_focused_span = s
-                    .get_trace_list()
-                    .selected_item()
+
+                let selected_trace_id = s
+                    .component_registry
+                    .get(&OtelPage)
+                    .and_then(|c| c.as_any().downcast_ref::<OtelPageComponent>())
+                    .and_then(|p| p.trace_list.selected_item());
+
+                let new_focused_span = selected_trace_id
                     .and_then(|trace_id| graph.traces.get(trace_id))
                     .and_then(|trace_meta| trace_meta.roots().first_key_value())
                     .and_then(|(_, root_ids)| root_ids.first())

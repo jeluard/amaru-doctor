@@ -1,5 +1,6 @@
 use crate::{
     app_state::AppState,
+    components::otel_page::OtelPageComponent,
     otel::span_ext::SpanExt,
     states::{Action, ComponentId},
     update::Update,
@@ -25,7 +26,7 @@ impl Update for MouseFocusUpdate {
 
         let Some((component_id, rect)) = s
             .layout_model
-            .find_hovered_slot(mouse_event.column, mouse_event.row)
+            .find_hovered_component(mouse_event.column, mouse_event.row)
         else {
             debug!("Couldn't find slot for click {:?}", mouse_event);
             return Vec::new();
@@ -55,7 +56,12 @@ impl Update for MouseFocusUpdate {
             let descendants = trace_graph.descendent_iter(selected_id);
 
             ancestors.chain(descendants).nth(relative_row)
-        } else if let Some(selected_trace) = s.get_trace_list().selected_item() {
+        } else if let Some(selected_trace) = s
+            .component_registry
+            .get(&ComponentId::OtelPage)
+            .and_then(|c| c.as_any().downcast_ref::<OtelPageComponent>())
+            .and_then(|p| p.trace_list.selected_item())
+        {
             // Full View: The entire trace in default order
             trace_graph.trace_iter(selected_trace).nth(relative_row)
         } else {

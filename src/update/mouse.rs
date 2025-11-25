@@ -27,7 +27,7 @@ impl Update for MouseEventUpdate {
 
         let Some((component_id, _)) = s
             .layout_model
-            .find_hovered_slot(mouse_event.column, mouse_event.row)
+            .find_hovered_component(mouse_event.column, mouse_event.row)
         else {
             return Vec::new();
         };

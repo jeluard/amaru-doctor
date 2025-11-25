@@ -3,14 +3,16 @@ use crate::{
     components::{Component, ComponentLayout, MouseScrollDirection, ScrollDirection},
     otel::id::TraceId,
     states::{Action, ComponentId},
+    tui::Event,
     viewmodel::dynamic_list::DynamicListViewModel,
 };
-use crossterm::event::KeyEvent;
+use crossterm::event::{KeyEvent, MouseButton, MouseEventKind};
 use ratatui::{Frame, layout::Rect};
 use std::any::Any;
 
 pub struct TraceListComponent {
     id: ComponentId,
+    // TODO: Should this be a ListComponent?
     list: DynamicListViewModel<TraceId>,
 }
 
@@ -90,5 +92,23 @@ impl Component for TraceListComponent {
             ScrollDirection::Down => self.list.retreat_window(),
         }
         Vec::new()
+    }
+
+    fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
+        self.list.set_height(area.height as usize);
+
+        match event {
+            Event::Key(key) => self.handle_key_event(*key),
+            Event::Mouse(mouse) => match mouse.kind {
+                MouseEventKind::ScrollUp => self.handle_scroll(ScrollDirection::Up),
+                MouseEventKind::ScrollDown => self.handle_scroll(ScrollDirection::Down),
+                MouseEventKind::Down(MouseButton::Left) => {
+                    self.handle_click(area, mouse.row, mouse.column)
+                }
+                MouseEventKind::Drag(MouseButton::Left) => Vec::new(),
+                _ => Vec::new(),
+            },
+            _ => Vec::new(),
+        }
     }
 }
