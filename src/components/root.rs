@@ -6,6 +6,7 @@ use crate::{
         prometheus_page::PrometheusPageComponent, tabs::TabsComponent,
     },
     controller::{LayoutSpec, walk_layout},
+    otel::TraceGraphSnapshot,
     prometheus::model::NodeMetrics,
     states::{Action, ComponentId, InspectOption},
     tui::Event,
@@ -33,6 +34,7 @@ impl RootComponent {
     pub fn new(
         ledger_db: Arc<ReadOnlyRocksDB>,
         chain_db: Arc<ReadOnlyChainDB>,
+        trace_graph: TraceGraphSnapshot,
         prom_metrics: Receiver<NodeMetrics>,
     ) -> Self {
         Self {
@@ -40,7 +42,7 @@ impl RootComponent {
             tabs: TabsComponent::new(ComponentId::InspectTabs, false),
             ledger_page: LedgerPageComponent::new(ledger_db),
             chain_page: ChainPageComponent::new(chain_db),
-            otel_page: OtelPageComponent::default(),
+            otel_page: OtelPageComponent::new(trace_graph),
             prometheus_page: PrometheusPageComponent::new(prom_metrics),
         }
     }

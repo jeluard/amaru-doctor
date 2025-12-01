@@ -9,7 +9,7 @@ use ratatui::crossterm::event::KeyCode;
 /// The Update fn for selecting the focused span.
 pub struct SelectSpanUpdate;
 impl Update for SelectSpanUpdate {
-    fn update(&self, action: &Action, s: &mut AppState, _root: &mut RootComponent) -> Vec<Action> {
+    fn update(&self, action: &Action, s: &mut AppState, root: &mut RootComponent) -> Vec<Action> {
         if !matches!(action, Action::Key(KeyCode::Enter)) {
             return Vec::new();
         }
@@ -18,9 +18,9 @@ impl Update for SelectSpanUpdate {
             return Vec::new();
         }
 
-        if let Some(focused_span) = &s.otel_view.focused_span {
+        if let Some(focused_span) = &root.otel_page.view_state.focused_span {
             // Set the currently focused span as the selected
-            s.otel_view.selected_span = Some(focused_span.clone());
+            root.otel_page.view_state.selected_span = Some(focused_span.clone());
         }
 
         Vec::new()

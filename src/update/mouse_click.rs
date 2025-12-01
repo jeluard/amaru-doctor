@@ -8,7 +8,6 @@ use crossterm::event::{MouseButton, MouseEventKind};
 use tracing::debug;
 
 pub struct MouseClickUpdate;
-
 impl Update for MouseClickUpdate {
     fn update(&self, action: &Action, s: &mut AppState, root: &mut RootComponent) -> Vec<Action> {
         let (column, row) = match action {
@@ -33,25 +32,12 @@ impl Update for MouseClickUpdate {
             }
             OtelTraceList => {
                 root.otel_page.trace_list.handle_click(rect, row, column);
-
-                let graph = s.otel_view.trace_graph_source.load();
-
-                let selected_trace_id = root.otel_page.trace_list.selected_item();
-
-                let new_focused_span = selected_trace_id
-                    .and_then(|trace_id| graph.traces.get(trace_id))
-                    .and_then(|trace_meta| trace_meta.roots().first_key_value())
-                    .and_then(|(_, root_ids)| root_ids.first())
-                    .and_then(|root_id| graph.spans.get(root_id))
-                    .cloned();
-
-                s.otel_view.focused_span = new_focused_span;
-                s.otel_view.selected_span = None;
-                s.otel_view.selected_trace_id = selected_trace_id.cloned();
+                let selected_trace = root.otel_page.trace_list.selected_item().copied();
+                root.otel_page.view_state.select_trace(selected_trace);
             }
             OtelFlameGraph => {
-                if let Some(span) = &s.otel_view.focused_span {
-                    s.otel_view.selected_span = Some(span.clone());
+                if let Some(span) = &root.otel_page.view_state.focused_span {
+                    root.otel_page.view_state.selected_span = Some(span.clone());
                 }
             }
 

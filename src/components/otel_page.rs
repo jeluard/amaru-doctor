@@ -5,6 +5,8 @@ use crate::{
         flame_graph::FlameGraphComponent, route_event_to_children, trace_list::TraceListComponent,
     },
     controller::{LayoutSpec, walk_layout},
+    model::otel_view::OtelViewState,
+    otel::TraceGraphSnapshot,
     states::{Action, ComponentId},
     tui::Event,
 };
@@ -18,6 +20,8 @@ use std::{any::Any, collections::HashMap, sync::RwLock};
 
 pub struct OtelPageComponent {
     id: ComponentId,
+
+    pub view_state: OtelViewState,
     pub trace_list: TraceListComponent,
     pub flame_graph: FlameGraphComponent,
     pub span_details: DetailsComponent<Span>,
@@ -26,17 +30,14 @@ pub struct OtelPageComponent {
     active_focus: RwLock<ComponentId>,
 }
 
-impl Default for OtelPageComponent {
-    fn default() -> Self {
+impl OtelPageComponent {
+    pub fn new(trace_graph: TraceGraphSnapshot) -> Self {
         Self {
             id: ComponentId::OtelPage,
+            view_state: OtelViewState::new(trace_graph),
             trace_list: TraceListComponent::new(ComponentId::OtelTraceList),
             flame_graph: FlameGraphComponent::new(ComponentId::OtelFlameGraph),
-            span_details: DetailsComponent::new(
-                ComponentId::OtelSpanDetails,
-                "Span Details",
-                Box::new(|s: &AppState| s.otel_view.focused_span.as_deref()),
-            ),
+            span_details: DetailsComponent::new(ComponentId::OtelSpanDetails, "Span Details"),
 
             last_layout: RwLock::new(HashMap::new()),
             active_focus: RwLock::new(ComponentId::OtelTraceList),
@@ -164,11 +165,19 @@ impl Component for OtelPageComponent {
         if let Some(_rect) = my_layout.get(&ComponentId::OtelTraceList) {
             self.trace_list.render(f, s, &my_layout);
         }
-        if let Some(_rect) = my_layout.get(&ComponentId::OtelFlameGraph) {
-            self.flame_graph.render(f, s, &my_layout);
+        if let Some(rect) = my_layout.get(&ComponentId::OtelFlameGraph) {
+            let is_focused = s.layout_model.is_focused(ComponentId::OtelFlameGraph);
+            self.flame_graph
+                .render_with_state(f, *rect, &self.view_state, is_focused);
         }
-        if let Some(_rect) = my_layout.get(&ComponentId::OtelSpanDetails) {
-            self.span_details.render(f, s, &my_layout);
+        if let Some(rect) = my_layout.get(&ComponentId::OtelSpanDetails) {
+            let is_focused = s.layout_model.is_focused(ComponentId::OtelSpanDetails);
+            self.span_details.render_with_data(
+                f,
+                *rect,
+                is_focused,
+                self.view_state.focused_span.as_deref(),
+            );
         }
     }
 }
