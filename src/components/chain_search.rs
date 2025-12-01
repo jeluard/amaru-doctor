@@ -1,6 +1,6 @@
 use crate::{
     app_state::AppState,
-    components::{Component, ComponentLayout, InputRoute},
+    components::{Component, ComponentLayout},
     model::search::SearchCache,
     states::{Action, ComponentId},
     tui::Event,
@@ -47,26 +47,8 @@ impl ChainSearchComponent {
             ])
             .split(area)
     }
-}
 
-impl Component for ChainSearchComponent {
-    fn id(&self) -> ComponentId {
-        self.id
-    }
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
-    }
-
-    fn calculate_layout(&self, area: Rect, _s: &AppState) -> ComponentLayout {
-        let mut l = ComponentLayout::new();
-        l.insert(self.id, area);
-        l
-    }
-
-    fn handle_search(&mut self, query_str: &str) {
+    pub fn handle_search(&mut self, query_str: &str) {
         let Ok(hash) = Hash::<32>::from_str(query_str) else {
             warn!("Invalid hash format: {}", query_str);
             return;
@@ -85,6 +67,24 @@ impl Component for ChainSearchComponent {
         if let (Some(header), Ok(block), Some(nonces)) = (header_opt, block_res, nonces_opt) {
             self.state.cache_result(hash, (header, block, nonces));
         }
+    }
+}
+
+impl Component for ChainSearchComponent {
+    fn id(&self) -> ComponentId {
+        self.id
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+
+    fn calculate_layout(&self, area: Rect, _s: &AppState) -> ComponentLayout {
+        let mut l = ComponentLayout::new();
+        l.insert(self.id, area);
+        l
     }
 
     fn render(&self, f: &mut Frame, s: &AppState, layout: &ComponentLayout) {
@@ -107,10 +107,6 @@ impl Component for ChainSearchComponent {
         draw_details(f, chunks[0], "Header Details".to_string(), header, f0);
         draw_details(f, chunks[1], "Block Details".to_string(), block, f1);
         draw_details(f, chunks[2], "Nonces Details".to_string(), nonces, f2);
-    }
-
-    fn route_event(&self, _event: &crate::tui::Event, _state: &AppState) -> InputRoute {
-        InputRoute::Handle
     }
 
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {

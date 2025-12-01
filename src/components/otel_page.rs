@@ -1,16 +1,16 @@
 use crate::{
     app_state::AppState,
     components::{
-        Component, ComponentLayout, InputRoute, details::DetailsComponent,
-        flame_graph::FlameGraphComponent, route_event_to_children, trace_list::TraceListComponent,
+        Component, ComponentLayout, details::DetailsComponent, flame_graph::FlameGraphComponent,
+        handle_container_event, trace_list::TraceListComponent,
     },
     controller::{LayoutSpec, walk_layout},
     model::otel_view::OtelViewState,
-    otel::{TraceGraphSnapshot, span_ext::SpanExt},
+    otel::{TraceGraphSnapshot, graph::TraceGraph, id::SpanId, span_ext::SpanExt},
     states::{Action, ComponentId},
     tui::Event,
 };
-use crossterm::event::MouseEventKind;
+use crossterm::event::{KeyCode, MouseEventKind};
 use either::Either::{Left, Right};
 use opentelemetry_proto::tonic::trace::v1::Span;
 use ratatui::{
@@ -42,6 +42,46 @@ impl OtelPageComponent {
 
             last_layout: RwLock::new(HashMap::new()),
             active_focus: RwLock::new(ComponentId::OtelTraceList),
+        }
+    }
+
+    fn get_visible_spans(&self, graph: &TraceGraph) -> Vec<SpanId> {
+        if let Some(selected_span) = &self.view_state.selected_span {
+            let selected_id = selected_span.span_id();
+            let mut ancestors: Vec<SpanId> = graph.ancestor_iter(selected_id).collect();
+            ancestors.reverse();
+            let descendants = graph.descendent_iter(selected_id);
+            ancestors.into_iter().chain(descendants).collect()
+        } else if let Some(trace_id) = &self.view_state.selected_trace_id {
+            graph.trace_iter(trace_id).collect()
+        } else {
+            Vec::new()
+        }
+    }
+
+    fn scroll_trace_details(&mut self, direction: i32) {
+        let data = self.view_state.trace_graph.load();
+        let ordered_spans = self.get_visible_spans(&data);
+        if ordered_spans.is_empty() {
+            return;
+        }
+
+        let current_index = self
+            .view_state
+            .focused_span
+            .as_ref()
+            .and_then(|span| ordered_spans.iter().position(|id| *id == span.span_id()));
+
+        let len = ordered_spans.len();
+        let current = current_index.unwrap_or(0) as i32;
+
+        // Wrap around math
+        let new_index = (current + direction).rem_euclid(len as i32) as usize;
+
+        if Some(new_index) != current_index {
+            self.view_state.focused_span = ordered_spans
+                .get(new_index)
+                .and_then(|id| data.spans.get(id).cloned());
         }
     }
 }
@@ -92,31 +132,11 @@ impl Component for OtelPageComponent {
         layout
     }
 
-    fn route_event(&self, event: &Event, s: &AppState) -> InputRoute {
-        let my_area = s
-            .layout_model
-            .get_layout()
-            .get(&self.id)
-            .copied()
-            .unwrap_or(s.frame_area);
-        let my_layout = self.calculate_layout(my_area, s);
-        let route = route_event_to_children(event, s, my_layout);
-        match route {
-            InputRoute::Delegate(
-                ComponentId::OtelTraceList
-                | ComponentId::OtelFlameGraph
-                | ComponentId::OtelSpanDetails,
-                _,
-            ) => InputRoute::Handle,
-            _ => route,
-        }
-    }
-
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
         let layout = self.last_layout.read().unwrap().clone();
         let mut active_focus = *self.active_focus.read().unwrap();
 
-        let mut actions = crate::components::handle_container_event(
+        let mut actions = handle_container_event(
             &layout,
             &mut active_focus,
             event,
@@ -126,47 +146,49 @@ impl Component for OtelPageComponent {
                     ComponentId::OtelTraceList => self.trace_list.handle_event(ev, child_area),
 
                     ComponentId::OtelFlameGraph => {
-                        // Run standard handler
                         let mut acts = self.flame_graph.handle_event(ev, child_area);
 
-                        // Calculate Hovered Span
-                        // TODO: Move this logic into FlameGraphComponent.
-                        if let Event::Mouse(mouse) = ev
-                            && mouse.kind == MouseEventKind::Moved
-                        {
-                            // +1 for border
-                            let relative_row = mouse.row.saturating_sub(child_area.y + 1) as usize;
+                        // Hover Logic
+                        if let Event::Mouse(mouse) = ev {
+                            if mouse.kind == MouseEventKind::Moved {
+                                let relative_row =
+                                    mouse.row.saturating_sub(child_area.y + 1) as usize;
+                                let trace_graph = self.view_state.trace_graph.load();
+                                let visible_spans = self.get_visible_spans(&trace_graph);
+                                let hovered_span_id = visible_spans.get(relative_row).copied();
+                                let new_focus = hovered_span_id
+                                    .and_then(|span_id| trace_graph.spans.get(&span_id).cloned());
+                                if self.view_state.focused_span != new_focus {
+                                    self.view_state.focused_span = new_focus;
+                                    acts.push(Action::Render);
+                                }
+                            }
 
-                            let trace_graph = self.view_state.trace_graph.load();
-
-                            let hovered_span_id = if let Some(selected_span) =
-                                &self.view_state.selected_span
-                            {
-                                // Zoomed View
-                                let selected_id = selected_span.span_id();
-                                let ancestors = trace_graph
-                                    .ancestor_iter(selected_id)
-                                    .collect::<Vec<_>>()
-                                    .into_iter()
-                                    .rev();
-                                let descendants = trace_graph.descendent_iter(selected_id);
-                                ancestors.chain(descendants).nth(relative_row)
-                            } else if let Some(selected_trace) = &self.view_state.selected_trace_id
-                            {
-                                // Full View
-                                trace_graph.trace_iter(selected_trace).nth(relative_row)
-                            } else {
-                                None
-                            };
-
-                            // Update State
-                            let new_focus = hovered_span_id
-                                .and_then(|span_id| trace_graph.spans.get(&span_id).cloned());
-                            if self.view_state.focused_span != new_focus {
-                                self.view_state.focused_span = new_focus;
+                            // Mouse Scroll Logic
+                            if mouse.kind == MouseEventKind::ScrollDown {
+                                self.scroll_trace_details(1);
+                                acts.push(Action::Render);
+                            } else if mouse.kind == MouseEventKind::ScrollUp {
+                                self.scroll_trace_details(-1);
                                 acts.push(Action::Render);
                             }
                         }
+
+                        // Keyboard Scroll Logic (Up/Down)
+                        if let Event::Key(key) = ev {
+                            match key.code {
+                                KeyCode::Down => {
+                                    self.scroll_trace_details(1);
+                                    acts.push(Action::Render);
+                                }
+                                KeyCode::Up => {
+                                    self.scroll_trace_details(-1);
+                                    acts.push(Action::Render);
+                                }
+                                _ => {}
+                            }
+                        }
+
                         acts
                     }
 

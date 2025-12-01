@@ -1,4 +1,3 @@
-use super::{MouseScrollDirection, ScrollDirection};
 use crate::{
     app_state::AppState,
     components::{Component, ComponentLayout},
@@ -6,7 +5,7 @@ use crate::{
     states::{Action, ComponentId},
     tui::Event,
 };
-use crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEventKind};
+use crossterm::event::{KeyCode, MouseButton, MouseEventKind};
 use ratatui::{
     Frame,
     layout::Rect,
@@ -16,7 +15,6 @@ use ratatui::{
 };
 use std::{any::Any, marker::PhantomData};
 use strum::IntoEnumIterator;
-use tracing::info;
 
 /// A stateful component that renders a horizontal, selectable tab bar.
 pub struct TabsComponent<T>
@@ -40,6 +38,10 @@ where
             cursor: Cursor::new(T::iter().collect()).expect("TabsComponent must have options"),
             _phantom: PhantomData,
         }
+    }
+
+    pub fn selected(&self) -> T {
+        *self.cursor.current()
     }
 
     /// Determines which tab was clicked based on the column and updates the
@@ -75,8 +77,11 @@ where
         false
     }
 
-    pub fn selected(&self) -> T {
-        *self.cursor.current()
+    pub fn handle_click(&mut self, area: Rect, row: u16, col: u16) -> Vec<Action> {
+        if row >= area.y && row < area.y + area.height && self.select_by_column(area, col) {
+            return vec![Action::UpdateLayout(Rect::default())];
+        }
+        Vec::new()
     }
 }
 
@@ -119,13 +124,7 @@ where
             }
             Event::Mouse(mouse) => {
                 if let MouseEventKind::Down(MouseButton::Left) = mouse.kind {
-                    // We use the `area` passed in, which comes from the Layout engine via Trampoline
-                    if mouse.row >= area.y
-                        && mouse.row < area.y + area.height
-                        && self.select_by_column(area, mouse.column)
-                    {
-                        return vec![Action::UpdateLayout(Rect::default())];
-                    }
+                    return self.handle_click(area, mouse.row, mouse.column);
                 }
                 Vec::new()
             }
@@ -155,41 +154,5 @@ where
             .highlight_style(Style::default().add_modifier(Modifier::BOLD));
 
         f.render_widget(tabs_widget, area);
-    }
-
-    fn handle_key_event(&mut self, key: KeyEvent) -> Vec<Action> {
-        match key.code {
-            KeyCode::Left => {
-                self.cursor.next_back();
-            }
-            KeyCode::Right => {
-                self.cursor.non_empty_next();
-            }
-            _ => {}
-        }
-        vec![Action::UpdateLayout(Rect::default())]
-    }
-
-    fn handle_click(&mut self, area: Rect, row: u16, col: u16) -> Vec<Action> {
-        if row >= area.y && row < area.y + area.height && self.select_by_column(area, col) {
-            // Click succeeded, trigger a layout update
-            return vec![Action::UpdateLayout(Rect::default())];
-        }
-        Vec::new()
-    }
-
-    fn handle_scroll(&mut self, _direction: ScrollDirection) -> Vec<Action> {
-        info!("Nothing to scroll");
-        Vec::new()
-    }
-
-    fn handle_mouse_scroll(&mut self, _direction: MouseScrollDirection) -> Vec<Action> {
-        info!("Nothing to scroll");
-        Vec::new()
-    }
-
-    fn handle_mouse_drag(&mut self, _direction: ScrollDirection) -> Vec<Action> {
-        info!("Nothing to drag");
-        Vec::new()
     }
 }

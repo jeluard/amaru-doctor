@@ -1,19 +1,17 @@
 use crate::{
     app_state::AppState,
-    components::{Component, ComponentLayout, MouseScrollDirection, ScrollDirection},
+    components::{Component, ComponentLayout},
     model::list_view::ListModelView,
     states::{Action, ComponentId},
     tui::Event,
     ui::to_list_item::ToListItem,
 };
-use crossterm::event::KeyEvent;
 use ratatui::{
     Frame,
     crossterm::event::{KeyCode, MouseButton, MouseEventKind},
     layout::Rect,
 };
 use std::any::Any;
-use tracing::info;
 
 /// Abstraction for any list-like data model that can be drawn and navigated.
 pub trait ListModel: Send + Sync + 'static {
@@ -178,42 +176,6 @@ where
 
         // We consumed the event and mutated state.
         // If this is an Options list, App.rs will inject UpdateLayout automatically.
-        Vec::new()
-    }
-
-    fn handle_click(&mut self, area: Rect, row: u16, _col: u16) -> Vec<Action> {
-        // +1 to account for the border
-        let relative_row = row.saturating_sub(area.y + 1) as usize;
-        self.model.select_index_by_row(relative_row);
-        Vec::new()
-    }
-
-    fn handle_key_event(&mut self, _key: KeyEvent) -> Vec<Action> {
-        info!("No key actions for ListComponent");
-        Vec::new()
-    }
-
-    fn handle_scroll(&mut self, direction: ScrollDirection) -> Vec<Action> {
-        match direction {
-            ScrollDirection::Up => self.model.cursor_back(),
-            ScrollDirection::Down => self.model.cursor_next(),
-        }
-        Vec::new()
-    }
-
-    fn handle_mouse_scroll(&mut self, direction: MouseScrollDirection) -> Vec<Action> {
-        match direction {
-            MouseScrollDirection::Up => self.model.cursor_back(),
-            MouseScrollDirection::Down => self.model.cursor_next(),
-        }
-        Vec::new()
-    }
-
-    fn handle_mouse_drag(&mut self, direction: ScrollDirection) -> Vec<Action> {
-        match direction {
-            ScrollDirection::Up => self.model.advance_window(),
-            ScrollDirection::Down => self.model.retreat_window(),
-        }
         Vec::new()
     }
 }

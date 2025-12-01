@@ -1,6 +1,6 @@
 use crate::{
     app_state::AppState,
-    components::{Component, ComponentLayout, MouseScrollDirection, ScrollDirection},
+    components::{Component, ComponentLayout, ScrollDirection},
     states::{Action, ComponentId},
     tui::Event,
     ui::ToRichText,
@@ -125,24 +125,5 @@ where
             _ => {}
         }
         Vec::new()
-    }
-
-    fn handle_scroll(&mut self, direction: ScrollDirection) -> Vec<Action> {
-        match direction {
-            ScrollDirection::Up => {
-                self.scroll_offset = self.scroll_offset.saturating_sub(1);
-            }
-            ScrollDirection::Down => {
-                self.scroll_offset = self.scroll_offset.saturating_add(1);
-            }
-        }
-        vec![Action::Render]
-    }
-
-    fn handle_mouse_scroll(&mut self, direction: MouseScrollDirection) -> Vec<Action> {
-        match direction {
-            MouseScrollDirection::Up => self.handle_scroll(ScrollDirection::Up),
-            MouseScrollDirection::Down => self.handle_scroll(ScrollDirection::Down),
-        }
     }
 }
