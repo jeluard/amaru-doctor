@@ -98,13 +98,13 @@ impl Component for ChainPageComponent {
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
         let layout = self.last_layout.read().unwrap().clone();
         let mut active_focus = *self.active_focus.read().unwrap();
-        let actions = crate::components::handle_container_event(
+
+        let mut actions = crate::components::handle_container_event(
             &layout,
             &mut active_focus,
             event,
             area,
             |target_id, ev, child_area| {
-                // Dispatch logic
                 let mut acts = Vec::new();
                 if target_id == ComponentId::SearchBar {
                     acts.extend(self.search_bar.handle_event(ev, child_area));
@@ -115,9 +115,16 @@ impl Component for ChainPageComponent {
             },
         );
 
-        // Sync focus back
-        *self.active_focus.write().unwrap() = active_focus;
+        if let Some(pos) = actions
+            .iter()
+            .position(|a| matches!(a, Action::SubmitSearch(_)))
+            && let Action::SubmitSearch(query) = actions.remove(pos)
+        {
+            self.handle_search(&query);
+            actions.push(Action::Render);
+        }
 
+        *self.active_focus.write().unwrap() = active_focus;
         actions
     }
 
