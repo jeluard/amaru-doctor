@@ -1,6 +1,6 @@
 use crate::{
     app_state::AppState,
-    components::{Component, ComponentLayout, otel_page::OtelPageComponent},
+    components::{Component, ComponentLayout},
     model::otel_view::OtelViewState,
     otel::{
         TreeBounds,
@@ -82,20 +82,10 @@ fn get_flame_graph_lines(s: &AppState, max_bar_width: usize) -> Result<Vec<Line<
     if let Some(selected_span) = &s.otel_view.selected_span {
         // A Span is selected
         get_span_tree_lines(&s.otel_view, selected_span, max_bar_width)
+    } else if let Some(trace_id) = &s.otel_view.selected_trace_id {
+        get_trace_tree_lines(&s.otel_view, trace_id, max_bar_width)
     } else {
-        // TODO: The registry is going to go away; fix this
-        let selected_trace = s
-            .component_registry
-            .get(&ComponentId::OtelPage)
-            .and_then(|c| c.as_any().downcast_ref::<OtelPageComponent>())
-            .and_then(|p| p.trace_list.selected_item());
-
-        if let Some(trace_id) = selected_trace {
-            // No Span is selected but a Trace is selected
-            get_trace_tree_lines(&s.otel_view, trace_id, max_bar_width)
-        } else {
-            Ok(vec![Line::from("No Trace selected.")])
-        }
+        Ok(vec![Line::from("No Trace selected.")])
     }
 }
 

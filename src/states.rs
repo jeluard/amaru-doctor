@@ -102,6 +102,7 @@ impl Action {
                 | Self::GetButtonEvents
                 | Self::MouseEvent(_)
                 | Self::PollUtxoSearch
+                | Self::SetWindowSize(_, _)
         )
     }
 }

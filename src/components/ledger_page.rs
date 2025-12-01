@@ -543,13 +543,7 @@ impl Component for LedgerPageComponent {
                     self.utxo_by_addr_details
                         .render_with_data(f, area, is_focused, item);
                 }
-
-                // Fallback
-                _ => {
-                    if let Some(child) = s.component_registry.get(id) {
-                        child.render(f, s, &my_layout);
-                    }
-                }
+                _ => {}
             }
         }
     }

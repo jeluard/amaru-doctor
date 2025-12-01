@@ -1,5 +1,6 @@
 use crate::{
     app_state::AppState,
+    components::root::RootComponent,
     states::{Action, ComponentId},
     update::Update,
 };
@@ -8,7 +9,7 @@ use ratatui::crossterm::event::KeyCode;
 /// The Update fn for selecting the focused span.
 pub struct SelectSpanUpdate;
 impl Update for SelectSpanUpdate {
-    fn update(&self, action: &Action, s: &mut AppState) -> Vec<Action> {
+    fn update(&self, action: &Action, s: &mut AppState, _root: &mut RootComponent) -> Vec<Action> {
         if !matches!(action, Action::Key(KeyCode::Enter)) {
             return Vec::new();
         }

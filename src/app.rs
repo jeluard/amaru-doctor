@@ -1,12 +1,12 @@
 use crate::{
     ScreenMode,
     app_state::AppState,
-    components::{InputRoute, root::RootComponent},
+    components::{Component, root::RootComponent},
     config::Config,
     model::button::InputEvent,
     otel::TraceGraphSnapshot,
     prometheus::model::NodeMetrics,
-    states::{Action, ComponentId, InspectOption},
+    states::{Action, InspectOption},
     tui::{Event, Tui},
     update::{UPDATE_DEFS, UpdateList},
 };
@@ -15,9 +15,12 @@ use anyhow::Result;
 use crossterm::event::KeyEvent;
 use ratatui::prelude::{Backend, Rect};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, sync::mpsc};
+use std::{
+    collections::HashMap,
+    sync::{Arc, mpsc},
+};
 use tokio::sync::mpsc::{Receiver, UnboundedReceiver, UnboundedSender, unbounded_channel};
-use tracing::{debug, error};
+use tracing::debug;
 
 pub struct App {
     config: Config,
@@ -30,6 +33,7 @@ pub struct App {
     last_tick_key_events: Vec<KeyEvent>,
     action_tx: UnboundedSender<Action>,
     action_rx: UnboundedReceiver<Action>,
+    root: RootComponent,
 }
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -50,15 +54,7 @@ impl App {
     ) -> Result<Self> {
         let (action_tx, action_rx) = unbounded_channel();
 
-        let app_state = AppState::new(
-            ledger_db,
-            chain_db,
-            trace_graph,
-            prom_metrics,
-            button_events,
-            frame_area,
-            screen_mode,
-        )?;
+        let app_state = AppState::new(trace_graph, button_events, frame_area, screen_mode)?;
 
         Ok(Self {
             app_state,
@@ -71,6 +67,7 @@ impl App {
             last_tick_key_events: Vec::new(),
             action_tx,
             action_rx,
+            root: RootComponent::new(Arc::new(ledger_db), Arc::new(chain_db), prom_metrics),
         })
     }
 
@@ -124,98 +121,30 @@ impl App {
             Event::Resize(x, y) => action_tx.send(Action::Resize(x, y))?,
 
             Event::Key(key) => {
-                // Let the focused component try to handle it
-                let handled = self.dispatch_event(Event::Key(key))?;
-
-                // Global Fallback: If not handled, check Config
+                let handled = self.dispatch_event(Event::Key(key)).await?;
                 if !handled {
                     self.handle_config_key(key)?;
                 }
             }
 
             Event::Mouse(mouse) => {
-                self.dispatch_event(Event::Mouse(mouse))?;
+                self.dispatch_event(Event::Mouse(mouse)).await?;
+                self.run_updates(&Action::MouseEvent(mouse))?;
             }
             _ => {}
         }
         Ok(())
     }
 
-    /// From Root to find the target ComponentId.
-    /// Borrow that specific component mutably to execute logic.
-    fn dispatch_event(&mut self, event: Event) -> Result<bool> {
-        let mut target_id = ComponentId::Root;
-        let mut target_area = self.app_state.frame_area;
+    async fn dispatch_event(&mut self, event: Event) -> Result<bool> {
+        let actions = self.root.handle_event(&event, self.app_state.frame_area);
+        let handled = !actions.is_empty();
 
-        // Prevent infinite recursion
-        let mut depth = 0;
-        const MAX_DEPTH: usize = 50;
-
-        loop {
-            if depth > MAX_DEPTH {
-                error!("Dispatch Loop Detected. Aborting route at {:?}", target_id);
-                return Ok(false);
-            }
-            depth += 1;
-
-            let Some(comp) = self.app_state.component_registry.get(&target_id) else {
-                debug!("Dispatch Broken: {} not found", target_id);
-                return Ok(false);
-            };
-
-            let route = comp.route_event(&event, &self.app_state);
-            match route {
-                InputRoute::Delegate(child_id, child_rect) => {
-                    // If dividing to self, break immediately
-                    if child_id == target_id {
-                        error!(
-                            "Infinite Loop: Component {} tried to delegate to itself",
-                            target_id
-                        );
-                        return Ok(false);
-                    }
-                    target_id = child_id;
-                    target_area = child_rect;
-                }
-                InputRoute::Handle => {
-                    break;
-                }
-                InputRoute::Ignore => {
-                    return Ok(false);
-                }
-            }
+        for action in actions {
+            self.action_tx.send(action)?;
         }
 
-        // Handling
-        // Now we have the ID. We can safely take a mutable borrow on this single component.
-        if let Some(comp) = self.app_state.component_registry.get_mut(&target_id) {
-            if let Event::Mouse(_) = event
-                && self.app_state.layout_model.get_focus() != target_id
-            {
-                self.app_state.layout_model.set_focus(target_id);
-            }
-
-            let mut actions = comp.handle_event(&event, target_area);
-
-            // Trigger Layout Update for Options Lists
-            // When selection changes in these lists, the whole page layout changes.
-            if matches!(
-                target_id,
-                ComponentId::LedgerBrowseOptions | ComponentId::LedgerSearchOptions
-            ) {
-                // Only trigger if it was an input type that changes selection (Key/Mouse)
-                actions.push(Action::UpdateLayout(self.app_state.frame_area));
-            }
-
-            if !actions.is_empty() {
-                for action in actions {
-                    self.action_tx.send(action)?;
-                }
-                return Ok(true);
-            }
-        }
-
-        Ok(false) // Not Consumed
+        Ok(handled)
     }
 
     /// Checks the configuration for a matching keybinding and dispatches the action.
@@ -248,11 +177,9 @@ impl App {
             match action {
                 Action::Tick => {
                     self.last_tick_key_events.clear();
-                    for component in self.app_state.component_registry.values_mut() {
-                        let actions = component.tick();
-                        for a in actions {
-                            self.action_tx.send(a)?;
-                        }
+                    let actions = self.root.tick();
+                    for a in actions {
+                        self.action_tx.send(a)?;
                     }
                 }
                 Action::Quit => self.should_quit = true,
@@ -275,7 +202,7 @@ impl App {
     fn run_updates(&mut self, action: &Action) -> Result<()> {
         let mut next_actions = Vec::new();
         for updater in &self.updates {
-            next_actions.extend(updater.update(action, &mut self.app_state));
+            next_actions.extend(updater.update(action, &mut self.app_state, &mut self.root));
         }
         for next_action in next_actions {
             self.action_tx.send(next_action)?
@@ -292,13 +219,8 @@ impl App {
     fn render<B: Backend>(&mut self, tui: &mut Tui<B>) -> Result<()> {
         tui.draw(|f| {
             let frame_area = f.area();
-            let current_selection = self
-                .app_state
-                .component_registry
-                .get(&ComponentId::Root)
-                .and_then(|c| c.as_any().downcast_ref::<RootComponent>())
-                .map(|root| root.tabs.selected())
-                .unwrap_or_default();
+            let current_selection = self.root.tabs.selected();
+
             if frame_area != self.app_state.frame_area
                 || current_selection != self.last_store_option
             {
@@ -309,9 +231,7 @@ impl App {
                 self.last_store_option = current_selection;
             }
 
-            if let Some(root) = self.app_state.component_registry.get(&ComponentId::Root) {
-                root.render(f, &self.app_state, &HashMap::new());
-            }
+            self.root.render(f, &self.app_state, &HashMap::new());
         })
         .map(|_| ())
         .map_err(|e| anyhow::Error::msg(format!("{:?}", e)))

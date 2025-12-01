@@ -1,16 +1,29 @@
-use crate::{app_state::AppState, model::layout::MoveFocus, states::Action, update::Update};
+use crate::{
+    app_state::AppState, components::root::RootComponent, model::layout::MoveFocus, states::Action,
+    update::Update,
+};
 
 pub struct FocusUpdate;
 impl Update for FocusUpdate {
-    fn update(&self, action: &Action, app_state: &mut AppState) -> Vec<Action> {
-        let dir = match action {
-            Action::FocusUp => MoveFocus::Up,
-            Action::FocusDown => MoveFocus::Down,
-            Action::FocusLeft => MoveFocus::Left,
-            Action::FocusRight => MoveFocus::Right,
-            _ => return Vec::new(),
+    fn update(
+        &self,
+        action: &Action,
+        app_state: &mut AppState,
+        _root: &mut RootComponent,
+    ) -> Vec<Action> {
+        match action {
+            Action::FocusUp => app_state.layout_model.set_focus_by_move(MoveFocus::Up),
+            Action::FocusDown => app_state.layout_model.set_focus_by_move(MoveFocus::Down),
+            Action::FocusLeft => app_state.layout_model.set_focus_by_move(MoveFocus::Left),
+            Action::FocusRight => app_state.layout_model.set_focus_by_move(MoveFocus::Right),
+            Action::SetFocus(id) => {
+                app_state.layout_model.set_focus(*id);
+                return vec![Action::Render];
+            }
+            _ => {
+                return Vec::new();
+            }
         };
-        app_state.layout_model.set_focus_by_move(dir);
         Vec::new()
     }
 }
