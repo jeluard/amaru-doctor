@@ -1,11 +1,9 @@
 pub mod async_provider;
 pub mod buffer_list;
 pub mod button;
-pub mod chain_view;
 pub mod cursor;
 pub mod layout;
 pub mod ledger_search;
-pub mod ledger_view;
 pub mod list_view;
 pub mod otel_view;
 pub mod search;
