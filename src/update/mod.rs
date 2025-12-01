@@ -7,7 +7,6 @@ use crate::{
         mouse::MouseEventUpdate, mouse_click::MouseClickUpdate, mouse_scroll::MouseScrollUpdate,
         poll_search::PollSearchUpdate, prom_metrics::PromMetricsUpdate, scroll::ScrollUpdate,
         search::SearchUpdate, select_span::SelectSpanUpdate, tabs::TabsUpdate, tick::TickUpdate,
-        trace_graph::TraceGraphUpdate,
     },
 };
 
@@ -24,7 +23,6 @@ pub mod search;
 pub mod select_span;
 pub mod tabs;
 pub mod tick;
-pub mod trace_graph;
 
 pub type UpdateList = Vec<&'static dyn Update>;
 
@@ -44,7 +42,6 @@ pub static UPDATE_DEFS: &[&dyn Update] = &[
     &PollSearchUpdate,
     &LayoutUpdate,
     &TickUpdate,
-    &TraceGraphUpdate,
     &SelectSpanUpdate,
     &PromMetricsUpdate,
     &GetButtonEventsUpdate,

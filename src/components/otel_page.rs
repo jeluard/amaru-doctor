@@ -17,7 +17,7 @@ use ratatui::{
     Frame,
     layout::{Constraint, Direction, Rect},
 };
-use std::{any::Any, collections::HashMap, sync::RwLock};
+use std::{any::Any, cmp::Reverse, collections::HashMap, sync::RwLock};
 
 pub struct OtelPageComponent {
     id: ComponentId,
@@ -183,6 +183,27 @@ impl Component for OtelPageComponent {
         }
 
         actions
+    }
+
+    fn tick(&mut self) -> Vec<Action> {
+        // Get the currently selected trace from the UI list
+        let selected_trace = self.trace_list.selected_item().copied();
+
+        // Sync the ViewState (Data) with the UI selection
+        let changed = self.view_state.sync_state(selected_trace.as_ref());
+
+        if !changed {
+            return Vec::new();
+        }
+
+        // If data changed, update the UI List
+        let data = self.view_state.trace_graph.load();
+        let mut trace_ids: Vec<_> = data.traces.keys().copied().collect();
+        trace_ids.sort_unstable_by_key(|id| Reverse(data.traces.get(id).unwrap().start_time()));
+
+        self.trace_list.sync_state(trace_ids);
+
+        Vec::new()
     }
 
     fn render(&self, f: &mut Frame, s: &AppState, parent_layout: &ComponentLayout) {

@@ -81,7 +81,6 @@ pub enum Action {
     UpdateLayout(Rect),
     MouseEvent(MouseEvent),
     MouseClick(u16, u16),
-    SyncTraceGraph,
     SyncPromMetrics,
     GetButtonEvents,
     PollUtxoSearch,
@@ -98,7 +97,6 @@ impl Action {
             Self::Tick
                 | Self::Render
                 | Self::SyncPromMetrics
-                | Self::SyncTraceGraph
                 | Self::GetButtonEvents
                 | Self::MouseEvent(_)
                 | Self::PollUtxoSearch
