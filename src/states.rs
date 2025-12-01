@@ -81,9 +81,7 @@ pub enum Action {
     UpdateLayout(Rect),
     MouseEvent(MouseEvent),
     MouseClick(u16, u16),
-    SyncPromMetrics,
     GetButtonEvents,
-    PollUtxoSearch,
     SubmitSearch(String),
     SetFocus(ComponentId),
     FocusNext,
@@ -96,10 +94,8 @@ impl Action {
             self,
             Self::Tick
                 | Self::Render
-                | Self::SyncPromMetrics
                 | Self::GetButtonEvents
                 | Self::MouseEvent(_)
-                | Self::PollUtxoSearch
                 | Self::SetWindowSize(_, _)
         )
     }
