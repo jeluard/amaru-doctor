@@ -1,9 +1,6 @@
 use crate::{
     ScreenMode,
-    model::{
-        button::InputEvent, chain_view::ChainViewState, layout::LayoutModel,
-        ledger_view::LedgerModelViewState,
-    },
+    model::{button::InputEvent, layout::LayoutModel},
     states::{ComponentId, InspectOption, LedgerMode},
     update::mouse::MouseState,
 };
@@ -14,17 +11,10 @@ use std::sync::mpsc;
 /// Holds ALL the app's state. Does not self-mutate.
 pub struct AppState {
     pub screen_mode: ScreenMode,
-
     pub frame_area: Rect,
     pub layout_model: LayoutModel,
-
-    pub ledger_mvs: LedgerModelViewState,
-    pub chain_view: ChainViewState,
-
     pub button_events: mpsc::Receiver<InputEvent>,
-
     pub mouse_state: MouseState,
-
     pub focused_component: ComponentId,
 }
 
@@ -41,15 +31,10 @@ impl AppState {
             frame_area,
         );
 
-        let options_height = 0;
-        let list_height = 0;
-
         Ok(Self {
             screen_mode,
             frame_area: Rect::default(),
             layout_model,
-            ledger_mvs: LedgerModelViewState::new(options_height, list_height),
-            chain_view: ChainViewState::default(),
             button_events,
             mouse_state: MouseState::default(),
             focused_component: ComponentId::InspectTabs,

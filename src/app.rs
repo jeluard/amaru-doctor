@@ -134,7 +134,6 @@ impl App {
 
             Event::Mouse(mouse) => {
                 self.dispatch_event(Event::Mouse(mouse)).await?;
-                self.run_updates(&Action::MouseEvent(mouse))?;
             }
             _ => {}
         }

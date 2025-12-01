@@ -4,7 +4,8 @@ use crate::{
     tui::Event,
     update::scroll::ScrollDirection,
 };
-use crossterm::event::KeyEvent;
+use crossterm::event::MouseButton;
+use crossterm::event::{KeyEvent, MouseEventKind};
 use ratatui::{Frame, layout::Rect};
 use std::{any::Any, collections::HashMap};
 use tracing::debug;
@@ -130,4 +131,65 @@ pub fn route_event_to_children(
         }
         _ => InputRoute::Ignore,
     }
+}
+
+/// A reusable event handler for Container Components.
+pub fn handle_container_event<F>(
+    layout: &HashMap<ComponentId, Rect>,
+    active_focus: &mut ComponentId,
+    event: &Event,
+    area: Rect,
+    mut dispatcher: F,
+) -> Vec<Action>
+where
+    F: FnMut(ComponentId, &Event, Rect) -> Vec<Action>,
+{
+    let mut actions = Vec::new();
+
+    let target_id = match event {
+        Event::Mouse(mouse) => {
+            // Find which child is under the mouse
+            let hit = layout
+                .iter()
+                .filter(|(_, rect)| {
+                    mouse.column >= rect.x
+                        && mouse.column < rect.x + rect.width
+                        && mouse.row >= rect.y
+                        && mouse.row < rect.y + rect.height
+                })
+                // Pick the smallest rect to ensure we hit the leaf, not a container
+                .min_by_key(|(_, rect)| rect.width * rect.height);
+
+            if let Some((&child_id, _)) = hit {
+                // "Focus Follows Mouse" Logic
+                if mouse.kind == MouseEventKind::Moved && *active_focus != child_id {
+                    actions.push(Action::SetFocus(child_id));
+                    *active_focus = child_id;
+                }
+                // Click Logic (Ensure focus is set on click too)
+                if mouse.kind == MouseEventKind::Down(MouseButton::Left)
+                    && *active_focus != child_id
+                {
+                    actions.push(Action::SetFocus(child_id));
+                    *active_focus = child_id;
+                }
+
+                child_id
+            } else {
+                // Missed all children? Fallback to current focus so keys still go somewhere.
+                *active_focus
+            }
+        }
+        Event::Key(_) => *active_focus,
+        _ => *active_focus,
+    };
+
+    // If the child isn't in the layout (e.g. hidden tab), fallback to the full area
+    let child_area = layout.get(&target_id).copied().unwrap_or(area);
+
+    // Call the provided closure to delegate the actual work
+    let child_actions = dispatcher(target_id, event, child_area);
+    actions.extend(child_actions);
+
+    actions
 }

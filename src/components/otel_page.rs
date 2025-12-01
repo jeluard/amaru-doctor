@@ -6,10 +6,11 @@ use crate::{
     },
     controller::{LayoutSpec, walk_layout},
     model::otel_view::OtelViewState,
-    otel::TraceGraphSnapshot,
+    otel::{TraceGraphSnapshot, span_ext::SpanExt},
     states::{Action, ComponentId},
     tui::Event,
 };
+use crossterm::event::MouseEventKind;
 use either::Either::{Left, Right};
 use opentelemetry_proto::tonic::trace::v1::Span;
 use ratatui::{
@@ -112,35 +113,70 @@ impl Component for OtelPageComponent {
     }
 
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
-        let target_id = match event {
-            Event::Key(_) => *self.active_focus.read().unwrap(),
-            Event::Mouse(mouse) => {
-                let layout = self.last_layout.read().unwrap();
-                layout
-                    .iter()
-                    .find(|(_, rect)| {
-                        mouse.column >= rect.x
-                            && mouse.column < rect.x + rect.width
-                            && mouse.row >= rect.y
-                            && mouse.row < rect.y + rect.height
-                    })
-                    .map(|(id, _)| *id)
-                    .unwrap_or_else(|| *self.active_focus.read().unwrap())
-            }
-            _ => return Vec::new(),
-        };
+        let layout = self.last_layout.read().unwrap().clone();
+        let mut active_focus = *self.active_focus.read().unwrap();
 
-        let child_area = {
-            let layout = self.last_layout.read().unwrap();
-            layout.get(&target_id).copied().unwrap_or(area)
-        };
+        let mut actions = crate::components::handle_container_event(
+            &layout,
+            &mut active_focus,
+            event,
+            area,
+            |target_id, ev, child_area| {
+                match target_id {
+                    ComponentId::OtelTraceList => self.trace_list.handle_event(ev, child_area),
 
-        let mut actions = match target_id {
-            ComponentId::OtelTraceList => self.trace_list.handle_event(event, child_area),
-            ComponentId::OtelFlameGraph => self.flame_graph.handle_event(event, child_area),
-            ComponentId::OtelSpanDetails => self.span_details.handle_event(event, child_area),
-            _ => Vec::new(),
-        };
+                    ComponentId::OtelFlameGraph => {
+                        // Run standard handler
+                        let mut acts = self.flame_graph.handle_event(ev, child_area);
+
+                        // Calculate Hovered Span
+                        // TODO: Move this logic into FlameGraphComponent.
+                        if let Event::Mouse(mouse) = ev
+                            && mouse.kind == MouseEventKind::Moved
+                        {
+                            // +1 for border
+                            let relative_row = mouse.row.saturating_sub(child_area.y + 1) as usize;
+
+                            let trace_graph = self.view_state.trace_graph.load();
+
+                            let hovered_span_id = if let Some(selected_span) =
+                                &self.view_state.selected_span
+                            {
+                                // Zoomed View
+                                let selected_id = selected_span.span_id();
+                                let ancestors = trace_graph
+                                    .ancestor_iter(selected_id)
+                                    .collect::<Vec<_>>()
+                                    .into_iter()
+                                    .rev();
+                                let descendants = trace_graph.descendent_iter(selected_id);
+                                ancestors.chain(descendants).nth(relative_row)
+                            } else if let Some(selected_trace) = &self.view_state.selected_trace_id
+                            {
+                                // Full View
+                                trace_graph.trace_iter(selected_trace).nth(relative_row)
+                            } else {
+                                None
+                            };
+
+                            // Update State
+                            let new_focus = hovered_span_id
+                                .and_then(|span_id| trace_graph.spans.get(&span_id).cloned());
+                            if self.view_state.focused_span != new_focus {
+                                self.view_state.focused_span = new_focus;
+                                acts.push(Action::Render);
+                            }
+                        }
+                        acts
+                    }
+
+                    ComponentId::OtelSpanDetails => self.span_details.handle_event(ev, child_area),
+                    _ => Vec::new(),
+                }
+            },
+        );
+
+        *self.active_focus.write().unwrap() = active_focus;
 
         if let Event::Mouse(mouse) = event {
             actions.push(Action::MouseEvent(*mouse));
