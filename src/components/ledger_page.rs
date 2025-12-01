@@ -3,8 +3,8 @@ use crate::{
     app_state::AppState,
     components::{
         Component, ComponentLayout, InputRoute, list::ListComponent, route_event_to_children,
-        search_list::SearchListComponent, stateful_details::StatefulDetailsComponent,
-        tabs::TabsComponent,
+        search_bar::SearchBarComponent, search_list::SearchListComponent,
+        stateful_details::StatefulDetailsComponent, tabs::TabsComponent,
     },
     controller::{LayoutSpec, walk_layout},
     model::{ledger_search::LedgerUtxoProvider, list_view::ListModelView},
@@ -29,6 +29,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 use strum::IntoEnumIterator;
+use tracing::{debug, warn};
 
 pub struct LedgerPageComponent {
     id: ComponentId,
@@ -58,6 +59,7 @@ pub struct LedgerPageComponent {
     utxos_list: ListComponent<ListModelView<UtxoItem>>,
 
     // Search
+    search_bar: SearchBarComponent,
     utxos_by_addr_list: SearchListComponent<Address, UtxoItem>,
 
     last_layout: RwLock<ComponentLayout>,
@@ -143,7 +145,8 @@ impl LedgerPageComponent {
                 ListModelView::new("Utxos", OwnedUtxoIter::new(db.clone()), list_height),
             ),
 
-            // Search Lists
+            // Search
+            search_bar: SearchBarComponent::new(ComponentId::SearchBar),
             utxos_by_addr_list: SearchListComponent::new(
                 ComponentId::LedgerUtxosByAddrList,
                 "Utxos by Address",
@@ -159,6 +162,9 @@ impl LedgerPageComponent {
         match id {
             // Mode tabs
             ComponentId::LedgerModeTabs => self.mode_tabs.handle_event(event, area),
+
+            // Search
+            ComponentId::SearchBar => self.search_bar.handle_event(event, area),
 
             // Options
             ComponentId::LedgerBrowseOptions => self.browse_options.handle_event(event, area),
@@ -304,9 +310,19 @@ impl Component for LedgerPageComponent {
         let my_layout = self.calculate_layout(my_area, s);
         let route = route_event_to_children(event, s, my_layout);
 
+        if let Event::Key(_) = event {
+            let focus = s.layout_model.get_focus();
+            debug!(
+                "LedgerPage: Routing Key. Global Focus: {:?}. Calculated Route: {:?}",
+                focus, route
+            );
+        }
+
         match route {
+            InputRoute::Delegate(id, _) if id == self.id => InputRoute::Handle,
             InputRoute::Delegate(
                 ComponentId::LedgerModeTabs |
+                ComponentId::SearchBar |
                 ComponentId::LedgerAccountDetails |
                 ComponentId::LedgerBlockIssuerDetails |
                 ComponentId::LedgerDRepDetails |
@@ -326,6 +342,9 @@ impl Component for LedgerPageComponent {
                 ComponentId::LedgerUtxosList |
                 ComponentId::LedgerUtxosByAddrList, _) =>
             {
+                if let Event::Key(_) = event {
+                    debug!("LedgerPage: Upgrading Route to HANDLE for {:?}", route);
+                }
                 InputRoute::Handle
             }
             _ => route,
@@ -336,10 +355,14 @@ impl Component for LedgerPageComponent {
         let old_browse = self.browse_options.model.selected_item().cloned();
         let old_search = self.search_options.model.selected_item().cloned();
 
-        let target_id = match event {
+        let mut target_id = match event {
             Event::Key(_) => {
-                // For keys, route to the focused component
-                *self.active_focus.read().unwrap()
+                let focus = *self.active_focus.read().unwrap();
+                debug!(
+                    "LedgerPage: Handle Event (Key). Active Focus is: {:?}",
+                    focus
+                );
+                focus
             }
             Event::Mouse(mouse) => {
                 // For mouse, hit-test against the cached layout
@@ -358,11 +381,23 @@ impl Component for LedgerPageComponent {
             _ => *self.active_focus.read().unwrap(),
         };
 
+        if target_id == self.id {
+            warn!("LedgerPage: Focus trap triggered. Redirecting from Self to Child.");
+            target_id = match self.mode_tabs.selected() {
+                LedgerMode::Search => ComponentId::SearchBar,
+                LedgerMode::Browse => ComponentId::LedgerBrowseOptions,
+            };
+        }
+
         // Dispatch to the target
         let child_area = {
             let layout = self.last_layout.read().unwrap();
             layout.get(&target_id).copied().unwrap_or(area)
         };
+
+        if let Event::Key(_) = event {
+            debug!("LedgerPage: Dispatching Key to Child: {:?}", target_id);
+        }
 
         let mut actions = self.dispatch_to_child(target_id, event, child_area);
 
@@ -436,6 +471,10 @@ impl Component for LedgerPageComponent {
                 // --- Mode tabs ---
                 ComponentId::LedgerModeTabs => {
                     self.mode_tabs.render(f, s, &my_layout);
+                }
+                // --- Search bar ---
+                ComponentId::SearchBar => {
+                    self.search_bar.render(f, s, &my_layout);
                 }
                 // --- Options ---
                 ComponentId::LedgerBrowseOptions => {

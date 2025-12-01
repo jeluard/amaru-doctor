@@ -4,7 +4,7 @@ use crate::{
     update::{
         button::GetButtonEventsUpdate, focus::FocusUpdate, layout::LayoutUpdate,
         mouse::MouseEventUpdate, mouse_click::MouseClickUpdate, mouse_focus::MouseFocusUpdate,
-        mouse_scroll::MouseScrollUpdate, poll_search::PollUtxoSearchUpdate,
+        mouse_scroll::MouseScrollUpdate, poll_search::PollSearchUpdate,
         prom_metrics::PromMetricsUpdate, scroll::ScrollUpdate, search::SearchUpdate,
         select_span::SelectSpanUpdate, tabs::TabsUpdate, tick::TickUpdate,
         trace_graph::TraceGraphUpdate,
@@ -36,7 +36,7 @@ pub static UPDATE_DEFS: &[&dyn Update] = &[
     &FocusUpdate,
     &ScrollUpdate,
     &SearchUpdate,
-    &PollUtxoSearchUpdate,
+    &PollSearchUpdate,
     &LayoutUpdate,
     &TickUpdate,
     &TraceGraphUpdate,

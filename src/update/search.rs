@@ -1,6 +1,6 @@
 use crate::{
     app_state::AppState,
-    components::root::RootComponent, // Import RootComponent
+    components::{chain_page::ChainPageComponent, root::RootComponent},
     states::{Action, ComponentId, InspectOption},
     update::Update,
 };
@@ -27,8 +27,10 @@ impl Update for SearchUpdate {
                 }
             }
             InspectOption::Chain => {
-                if let Some(comp) = s.component_registry.get_mut(&ComponentId::ChainSearch) {
-                    comp.handle_search(query);
+                if let Some(page) = s.component_registry.get_mut(&ComponentId::ChainPage)
+                    && let Some(chain_page) = page.as_any_mut().downcast_mut::<ChainPageComponent>()
+                {
+                    chain_page.handle_search(query);
                 }
             }
             _ => {}

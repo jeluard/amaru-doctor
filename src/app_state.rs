@@ -1,6 +1,6 @@
 use crate::{
     ScreenMode,
-    components::{Component, chain_search::ChainSearchComponent, search_bar::SearchBarComponent},
+    components::Component,
     model::{
         button::InputEvent, chain_view::ChainViewState, layout::LayoutModel,
         ledger_view::LedgerModelViewState, otel_view::OtelViewState,
@@ -85,7 +85,7 @@ impl AppState {
         );
         register_component!(
             component_registry,
-            crate::components::chain_page::ChainPageComponent::default()
+            crate::components::chain_page::ChainPageComponent::new(chain_db_arc.clone())
         );
         register_component!(
             component_registry,
@@ -94,16 +94,6 @@ impl AppState {
         register_component!(
             component_registry,
             crate::components::prometheus_page::PrometheusPageComponent::new(prom_metrics)
-        );
-
-        register_component!(
-            component_registry,
-            SearchBarComponent::new(ComponentId::SearchBar)
-        );
-
-        register_component!(
-            component_registry,
-            ChainSearchComponent::new(ComponentId::ChainSearch, chain_db_arc.clone())
         );
 
         Ok(Self {
