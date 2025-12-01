@@ -1,6 +1,7 @@
 use crate::{
     app_state::AppState,
     components::{Component, root::RootComponent},
+    model::otel_view::OtelViewState,
     otel::{graph::TraceGraph, id::SpanId, span_ext::SpanExt},
     states::{Action, ComponentId, InspectOption},
     update::Update,
@@ -34,35 +35,18 @@ impl Update for ScrollUpdate {
         match focus_id {
             ComponentId::OtelTraceList => {
                 debug!("ScrollUpdate: Dispatching scroll to OtelTraceList with side effects");
-
-                // TODO: Transitional: Scroll via Root. Move this logic into OtelPageComponent::handle_event.
                 root.otel_page.trace_list.handle_scroll(direction);
-
-                // TODO: Transitional: Sync side-effects manually. Move to OtelPageComponent or a dedicated event handler.
-                let graph = s.otel_view.trace_graph_source.load();
-                let selected_item = root.otel_page.trace_list.selected_item();
-
-                let new_focused_span = selected_item
-                    .and_then(|trace_id| graph.traces.get(trace_id))
-                    .and_then(|trace_meta| trace_meta.roots().first_key_value())
-                    .and_then(|(_, root_ids)| root_ids.first())
-                    .and_then(|root_id| graph.spans.get(root_id))
-                    .cloned();
-
-                s.otel_view.focused_span = new_focused_span;
-                s.otel_view.selected_span = None;
-                s.otel_view.selected_trace_id = selected_item.cloned();
+                let selected_trace = root.otel_page.trace_list.selected_item().copied();
+                root.otel_page.view_state.select_trace(selected_trace);
             }
 
             ComponentId::OtelFlameGraph => {
                 debug!("ScrollUpdate: Dispatching scroll to scroll_trace_details");
-                // TODO: Transitional: Logic lives in helper fn. Move to FlameGraphComponent or OtelPageComponent.
-                scroll_trace_details(s, direction);
+                scroll_trace_details(&mut root.otel_page.view_state, direction);
             }
 
             _ => {
                 // TODO: Transitional: Manual dispatch to active page.
-                // Future: Remove ScrollUpdate entirely; Components should handle Action::ScrollUp/Down in handle_event.
                 let active_page = match root.tabs.selected() {
                     InspectOption::Ledger => &mut root.ledger_page as &mut dyn Component,
                     InspectOption::Chain => &mut root.chain_page as &mut dyn Component,
@@ -86,9 +70,9 @@ impl Update for ScrollUpdate {
 }
 
 /// Scrolls to the next focused span within the OTEL trace details view.
-fn scroll_trace_details(s: &mut AppState, direction: ScrollDirection) {
-    let data = s.otel_view.trace_graph_source.load();
-    let Some(ordered_spans) = get_ordered_spans_for_view(&data, s) else {
+fn scroll_trace_details(view_state: &mut OtelViewState, direction: ScrollDirection) {
+    let data = view_state.trace_graph.load();
+    let Some(ordered_spans) = get_ordered_spans_for_view(&data, view_state) else {
         return;
     };
     if ordered_spans.is_empty() {
@@ -96,8 +80,7 @@ fn scroll_trace_details(s: &mut AppState, direction: ScrollDirection) {
     }
 
     // Find the index of the currently focused span in the span list
-    let current_index = s
-        .otel_view
+    let current_index = view_state
         .focused_span
         .as_ref()
         .and_then(|span| ordered_spans.iter().position(|id| *id == span.span_id()));
@@ -112,18 +95,19 @@ fn scroll_trace_details(s: &mut AppState, direction: ScrollDirection) {
 
     if Some(new_index) != current_index {
         // Update the focused span given the new index
-        s.otel_view.focused_span = ordered_spans
+        view_state.focused_span = ordered_spans
             .get(new_index)
             .and_then(|id| data.spans.get(id).cloned());
     }
 }
 
-/// Helper to get the list of spans for scrolling. If a span is selected, we
-/// only get that span's subtree. If a span isn't selected, we get all the spans
-/// for the selected trace.
-fn get_ordered_spans_for_view(data: &TraceGraph, s: &AppState) -> Option<Vec<SpanId>> {
+/// Helper to get the list of spans for scrolling.
+fn get_ordered_spans_for_view(
+    data: &TraceGraph,
+    view_state: &OtelViewState,
+) -> Option<Vec<SpanId>> {
     // Determine if a span is selected
-    if let Some(selected_span) = &s.otel_view.selected_span {
+    if let Some(selected_span) = &view_state.selected_span {
         let selected_span_id = selected_span.span_id();
         // Get the span's ancestors. The iter starts at the span's parent and walks *up*
         // the tree--we reverse this so that the resulting list is in ascending order.
@@ -133,7 +117,7 @@ fn get_ordered_spans_for_view(data: &TraceGraph, s: &AppState) -> Option<Vec<Spa
         Some(ancestors.into_iter().chain(self_and_descendants).collect())
     } else {
         // There's no selected span, render the selected trace's entire tree
-        s.otel_view
+        view_state
             .selected_trace_id
             .as_ref()
             .map(|trace_id| data.trace_iter(trace_id).collect())

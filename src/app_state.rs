@@ -2,16 +2,14 @@ use crate::{
     ScreenMode,
     model::{
         button::InputEvent, chain_view::ChainViewState, layout::LayoutModel,
-        ledger_view::LedgerModelViewState, otel_view::OtelViewState,
+        ledger_view::LedgerModelViewState,
     },
-    otel::graph::TraceGraph,
     states::{ComponentId, InspectOption, LedgerMode},
     update::mouse::MouseState,
 };
 use anyhow::Result;
-use arc_swap::ArcSwap;
 use ratatui::layout::Rect;
-use std::sync::{Arc, mpsc};
+use std::sync::mpsc;
 
 /// Holds ALL the app's state. Does not self-mutate.
 pub struct AppState {
@@ -23,8 +21,6 @@ pub struct AppState {
     pub ledger_mvs: LedgerModelViewState,
     pub chain_view: ChainViewState,
 
-    pub otel_view: OtelViewState,
-
     pub button_events: mpsc::Receiver<InputEvent>,
 
     pub mouse_state: MouseState,
@@ -34,7 +30,6 @@ pub struct AppState {
 
 impl AppState {
     pub fn new(
-        trace_graph: Arc<ArcSwap<TraceGraph>>,
         button_events: mpsc::Receiver<InputEvent>,
         frame_area: Rect,
         screen_mode: ScreenMode,
@@ -55,7 +50,6 @@ impl AppState {
             layout_model,
             ledger_mvs: LedgerModelViewState::new(options_height, list_height),
             chain_view: ChainViewState::default(),
-            otel_view: OtelViewState::new(trace_graph),
             button_events,
             mouse_state: MouseState::default(),
             focused_component: ComponentId::InspectTabs,

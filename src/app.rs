@@ -54,7 +54,7 @@ impl App {
     ) -> Result<Self> {
         let (action_tx, action_rx) = unbounded_channel();
 
-        let app_state = AppState::new(trace_graph, button_events, frame_area, screen_mode)?;
+        let app_state = AppState::new(button_events, frame_area, screen_mode)?;
 
         Ok(Self {
             app_state,
@@ -67,7 +67,12 @@ impl App {
             last_tick_key_events: Vec::new(),
             action_tx,
             action_rx,
-            root: RootComponent::new(Arc::new(ledger_db), Arc::new(chain_db), prom_metrics),
+            root: RootComponent::new(
+                Arc::new(ledger_db),
+                Arc::new(chain_db),
+                trace_graph,
+                prom_metrics,
+            ),
         })
     }
 

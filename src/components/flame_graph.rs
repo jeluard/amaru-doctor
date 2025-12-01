@@ -28,6 +28,35 @@ impl FlameGraphComponent {
     pub fn new(id: ComponentId) -> Self {
         Self { id }
     }
+
+    pub fn render_with_state(
+        &self,
+        f: &mut Frame,
+        area: Rect,
+        state: &OtelViewState,
+        is_focused: bool,
+    ) {
+        let mut block = Block::default()
+            .title("Trace Details")
+            .borders(Borders::ALL);
+
+        if is_focused {
+            block = block
+                .border_style(Style::default().fg(Color::Blue))
+                .title_style(Style::default().fg(Color::White));
+        }
+
+        let lines = match get_flame_graph_lines(state, area.width.saturating_sub(2) as usize) {
+            Ok(lines) => lines,
+            Err(e) => {
+                error!("Unable to get flame graph lines: {}", e);
+                vec![Line::from("Unable to get flame graph.")]
+            }
+        };
+
+        let paragraph = Paragraph::new(lines).block(block);
+        f.render_widget(paragraph, area);
+    }
 }
 
 impl Component for FlameGraphComponent {
@@ -49,41 +78,19 @@ impl Component for FlameGraphComponent {
         layout
     }
 
-    fn render(&self, f: &mut Frame, s: &AppState, layout: &ComponentLayout) {
-        let Some(&area) = layout.get(&self.id) else {
-            return;
-        };
-        let is_focused = s.layout_model.is_focused(self.id);
-
-        let mut block = Block::default()
-            .title("Trace Details")
-            .borders(Borders::ALL);
-        if is_focused {
-            block = block
-                .border_style(Style::default().fg(Color::Blue))
-                .title_style(Color::White);
-        }
-
-        let lines = match get_flame_graph_lines(s, area.width.saturating_sub(2) as usize) {
-            Ok(lines) => lines,
-            Err(e) => {
-                error!("Unable to get flame graph lines: {}", e);
-                vec![Line::from("Unable to get flame graph.")]
-            }
-        };
-
-        let paragraph = Paragraph::new(lines).block(block);
-        f.render_widget(paragraph, area);
-    }
+    fn render(&self, _f: &mut Frame, _s: &AppState, _l: &ComponentLayout) {}
 }
 
-/// Determines which view to render based on the app state.
-fn get_flame_graph_lines(s: &AppState, max_bar_width: usize) -> Result<Vec<Line<'static>>> {
-    if let Some(selected_span) = &s.otel_view.selected_span {
+/// Determines which view to render based on the provided view state.
+fn get_flame_graph_lines(
+    state: &OtelViewState,
+    max_bar_width: usize,
+) -> Result<Vec<Line<'static>>> {
+    if let Some(selected_span) = &state.selected_span {
         // A Span is selected
-        get_span_tree_lines(&s.otel_view, selected_span, max_bar_width)
-    } else if let Some(trace_id) = &s.otel_view.selected_trace_id {
-        get_trace_tree_lines(&s.otel_view, trace_id, max_bar_width)
+        get_span_tree_lines(state, selected_span, max_bar_width)
+    } else if let Some(trace_id) = &state.selected_trace_id {
+        get_trace_tree_lines(state, trace_id, max_bar_width)
     } else {
         Ok(vec![Line::from("No Trace selected.")])
     }
@@ -96,7 +103,7 @@ fn get_span_tree_lines(
     selected_span: &Arc<Span>,
     max_bar_width: usize,
 ) -> Result<Vec<Line<'static>>> {
-    let graph = &state.trace_graph_source.load();
+    let graph = &state.trace_graph.load();
     let selected_span_id = selected_span.span_id();
 
     let Some(span_tree) = graph.subtrees.get(&selected_span_id) else {
@@ -127,7 +134,7 @@ fn get_trace_tree_lines(
     trace_id: &TraceId,
     max_bar_width: usize,
 ) -> Result<Vec<Line<'static>>> {
-    let graph = &state.trace_graph_source.load();
+    let graph = &state.trace_graph.load();
 
     let Some(trace_meta) = graph.traces.get(trace_id) else {
         return Err(anyhow!("Unexpected: Trace {} not found", trace_id));

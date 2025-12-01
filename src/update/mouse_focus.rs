@@ -9,9 +9,8 @@ use crossterm::event::MouseEventKind;
 use tracing::debug;
 
 pub struct MouseFocusUpdate;
-
 impl Update for MouseFocusUpdate {
-    fn update(&self, action: &Action, s: &mut AppState, _root: &mut RootComponent) -> Vec<Action> {
+    fn update(&self, action: &Action, s: &mut AppState, root: &mut RootComponent) -> Vec<Action> {
         let Action::MouseEvent(mouse_event) = action else {
             return Vec::new();
         };
@@ -38,11 +37,11 @@ impl Update for MouseFocusUpdate {
             return Vec::new();
         }
 
-        let trace_graph = s.otel_view.trace_graph_source.load();
-
+        let trace_graph = root.otel_page.view_state.trace_graph.load();
         // The render logic displays different lists depending on whether a span is selected.
         // We iterate the same list to map the mouse row to the correct span.
-        let hovered_span_id = if let Some(selected_span) = &s.otel_view.selected_span {
+        let hovered_span_id = if let Some(selected_span) = &root.otel_page.view_state.selected_span
+        {
             // Zoomed View: Ancestors (Root -> Parent) + Descendants (Span -> Children)
             let selected_id = selected_span.span_id();
 
@@ -54,15 +53,14 @@ impl Update for MouseFocusUpdate {
                 .rev();
             let descendants = trace_graph.descendent_iter(selected_id);
             ancestors.chain(descendants).nth(relative_row)
-        } else if let Some(selected_trace) = &s.otel_view.selected_trace_id {
+        } else if let Some(selected_trace) = &root.otel_page.view_state.selected_trace_id {
             // Full View: The entire trace in default order
             trace_graph.trace_iter(selected_trace).nth(relative_row)
         } else {
             None
         };
-
         // Update the focused span based on what we found (or clear it if we found nothing)
-        s.otel_view.focused_span =
+        root.otel_page.view_state.focused_span =
             hovered_span_id.and_then(|span_id| trace_graph.spans.get(&span_id).cloned());
         Vec::new()
     }

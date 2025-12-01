@@ -2,9 +2,9 @@ use crate::{
     ScreenMode,
     app_state::AppState,
     components::{
-        Component, ComponentLayout, InputRoute, list::ListComponent, route_event_to_children,
-        search_bar::SearchBarComponent, search_list::SearchListComponent,
-        stateful_details::StatefulDetailsComponent, tabs::TabsComponent,
+        Component, ComponentLayout, InputRoute, details::DetailsComponent, list::ListComponent,
+        route_event_to_children, search_bar::SearchBarComponent, search_list::SearchListComponent,
+        tabs::TabsComponent,
     },
     controller::{LayoutSpec, walk_layout},
     model::{ledger_search::LedgerUtxoProvider, list_view::ListModelView},
@@ -37,13 +37,13 @@ pub struct LedgerPageComponent {
     // Tabs
     mode_tabs: TabsComponent<LedgerMode>,
     // Details
-    account_details: StatefulDetailsComponent<AccountItem>,
-    block_details: StatefulDetailsComponent<BlockIssuerItem>,
-    drep_details: StatefulDetailsComponent<DRepItem>,
-    pool_details: StatefulDetailsComponent<PoolItem>,
-    proposal_details: StatefulDetailsComponent<ProposalItem>,
-    utxo_details: StatefulDetailsComponent<UtxoItem>,
-    utxo_by_addr_details: StatefulDetailsComponent<UtxoItem>,
+    account_details: DetailsComponent<AccountItem>,
+    block_details: DetailsComponent<BlockIssuerItem>,
+    drep_details: DetailsComponent<DRepItem>,
+    pool_details: DetailsComponent<PoolItem>,
+    proposal_details: DetailsComponent<ProposalItem>,
+    utxo_details: DetailsComponent<UtxoItem>,
+    utxo_by_addr_details: DetailsComponent<UtxoItem>,
 
     // Lists
     // Options
@@ -76,31 +76,22 @@ impl LedgerPageComponent {
             mode_tabs: TabsComponent::new(ComponentId::LedgerModeTabs, true),
 
             // Details
-            account_details: StatefulDetailsComponent::new(
+            account_details: DetailsComponent::new(
                 ComponentId::LedgerAccountDetails,
                 "Account Details",
             ),
-            block_details: StatefulDetailsComponent::new(
+            block_details: DetailsComponent::new(
                 ComponentId::LedgerBlockIssuerDetails,
                 "Block Issuer Details",
             ),
-            drep_details: StatefulDetailsComponent::new(
-                ComponentId::LedgerDRepDetails,
-                "DRep Details",
-            ),
-            pool_details: StatefulDetailsComponent::new(
-                ComponentId::LedgerPoolDetails,
-                "Pool Details",
-            ),
-            proposal_details: StatefulDetailsComponent::new(
+            drep_details: DetailsComponent::new(ComponentId::LedgerDRepDetails, "DRep Details"),
+            pool_details: DetailsComponent::new(ComponentId::LedgerPoolDetails, "Pool Details"),
+            proposal_details: DetailsComponent::new(
                 ComponentId::LedgerProposalDetails,
                 "Proposal Details",
             ),
-            utxo_details: StatefulDetailsComponent::new(
-                ComponentId::LedgerUtxoDetails,
-                "UTXO Details",
-            ),
-            utxo_by_addr_details: StatefulDetailsComponent::new(
+            utxo_details: DetailsComponent::new(ComponentId::LedgerUtxoDetails, "UTXO Details"),
+            utxo_by_addr_details: DetailsComponent::new(
                 ComponentId::LedgerUtxosByAddrDetails,
                 "UTXO Details",
             ),

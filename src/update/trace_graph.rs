@@ -3,19 +3,23 @@ use std::cmp::Reverse;
 
 pub struct TraceGraphUpdate;
 impl Update for TraceGraphUpdate {
-    fn update(&self, a: &Action, s: &mut AppState, root: &mut RootComponent) -> Vec<Action> {
+    fn update(&self, a: &Action, _s: &mut AppState, root: &mut RootComponent) -> Vec<Action> {
         if *a != Action::SyncTraceGraph {
             return Vec::new();
         }
 
         let selected_trace = root.otel_page.trace_list.selected_item().copied();
 
-        let changed = s.otel_view.sync_state(selected_trace.as_ref());
+        let changed = root
+            .otel_page
+            .view_state
+            .sync_state(selected_trace.as_ref());
         if !changed {
             return Vec::new();
         }
 
-        let data = s.otel_view.trace_graph_source.load();
+        let data = root.otel_page.view_state.trace_graph.load();
+
         let mut trace_ids: Vec<_> = data.traces.keys().copied().collect();
         trace_ids.sort_unstable_by_key(|id| Reverse(data.traces.get(id).unwrap().start_time()));
 

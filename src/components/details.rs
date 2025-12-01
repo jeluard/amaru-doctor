@@ -2,14 +2,17 @@ use crate::{
     app_state::AppState,
     components::{Component, ComponentLayout, MouseScrollDirection, ScrollDirection},
     states::{Action, ComponentId},
+    tui::Event,
     ui::ToRichText,
     view::item_details::draw_details,
 };
-use crossterm::event::KeyEvent;
+use crossterm::event::{KeyCode, MouseButton, MouseEventKind};
 use ratatui::{Frame, layout::Rect};
-use std::{any::Any, marker::PhantomData};
-
-type DataAccessor<T> = Box<dyn Fn(&AppState) -> Option<&T> + Send + Sync>;
+use std::{
+    any::Any,
+    marker::PhantomData,
+    sync::atomic::{AtomicBool, Ordering},
+};
 
 pub struct DetailsComponent<T>
 where
@@ -17,7 +20,8 @@ where
 {
     id: ComponentId,
     title: &'static str,
-    data_accessor: DataAccessor<T>,
+    scroll_offset: u16,
+    is_focused: AtomicBool,
     _phantom: PhantomData<T>,
 }
 
@@ -25,12 +29,29 @@ impl<T> DetailsComponent<T>
 where
     T: ToRichText + Send + Sync + 'static,
 {
-    pub fn new(id: ComponentId, title: &'static str, data_accessor: DataAccessor<T>) -> Self {
+    pub fn new(id: ComponentId, title: &'static str) -> Self {
         Self {
             id,
             title,
-            data_accessor,
+            scroll_offset: 0,
+            is_focused: AtomicBool::new(false),
             _phantom: PhantomData,
+        }
+    }
+
+    pub fn render_with_data(&self, f: &mut Frame, area: Rect, is_focused: bool, item: Option<&T>) {
+        self.is_focused.store(is_focused, Ordering::Relaxed);
+        draw_details(f, area, self.title.to_string(), item, is_focused);
+    }
+
+    fn perform_scroll(&mut self, direction: ScrollDirection) {
+        match direction {
+            ScrollDirection::Up => {
+                self.scroll_offset = self.scroll_offset.saturating_sub(1);
+            }
+            ScrollDirection::Down => {
+                self.scroll_offset = self.scroll_offset.saturating_add(1);
+            }
         }
     }
 }
@@ -62,23 +83,66 @@ where
             return;
         };
         let is_focused = s.layout_model.is_focused(self.id);
-        let selected_item = (self.data_accessor)(s);
-        draw_details(f, area, self.title.to_string(), selected_item, is_focused);
+
+        // Also update cache in the generic render path
+        self.is_focused.store(is_focused, Ordering::Relaxed);
+
+        draw_details::<T>(f, area, self.title.to_string(), None, is_focused);
     }
 
-    fn handle_scroll(&mut self, _direction: ScrollDirection) -> Vec<Action> {
+    fn handle_event(&mut self, event: &Event, _area: Rect) -> Vec<Action> {
+        match event {
+            Event::Mouse(mouse) => match mouse.kind {
+                MouseEventKind::Moved => {
+                    if !self.is_focused.load(Ordering::Relaxed) {
+                        return vec![Action::SetFocus(self.id)];
+                    }
+                }
+                MouseEventKind::Down(MouseButton::Left) => {
+                    return vec![Action::SetFocus(self.id)];
+                }
+                MouseEventKind::ScrollUp => {
+                    self.perform_scroll(ScrollDirection::Up);
+                    return vec![Action::Render];
+                }
+                MouseEventKind::ScrollDown => {
+                    self.perform_scroll(ScrollDirection::Down);
+                    return vec![Action::Render];
+                }
+                _ => {}
+            },
+            Event::Key(key) => match key.code {
+                KeyCode::Up => {
+                    self.perform_scroll(ScrollDirection::Up);
+                    return vec![Action::Render];
+                }
+                KeyCode::Down => {
+                    self.perform_scroll(ScrollDirection::Down);
+                    return vec![Action::Render];
+                }
+                _ => {}
+            },
+            _ => {}
+        }
         Vec::new()
     }
-    fn handle_key_event(&mut self, _key: KeyEvent) -> Vec<Action> {
-        Vec::new()
+
+    fn handle_scroll(&mut self, direction: ScrollDirection) -> Vec<Action> {
+        match direction {
+            ScrollDirection::Up => {
+                self.scroll_offset = self.scroll_offset.saturating_sub(1);
+            }
+            ScrollDirection::Down => {
+                self.scroll_offset = self.scroll_offset.saturating_add(1);
+            }
+        }
+        vec![Action::Render]
     }
-    fn handle_click(&mut self, _area: Rect, _row: u16, _col: u16) -> Vec<Action> {
-        Vec::new()
-    }
-    fn handle_mouse_scroll(&mut self, _direction: MouseScrollDirection) -> Vec<Action> {
-        Vec::new()
-    }
-    fn handle_mouse_drag(&mut self, _direction: ScrollDirection) -> Vec<Action> {
-        Vec::new()
+
+    fn handle_mouse_scroll(&mut self, direction: MouseScrollDirection) -> Vec<Action> {
+        match direction {
+            MouseScrollDirection::Up => self.handle_scroll(ScrollDirection::Up),
+            MouseScrollDirection::Down => self.handle_scroll(ScrollDirection::Down),
+        }
     }
 }
