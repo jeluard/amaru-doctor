@@ -3,9 +3,8 @@ use crate::{
     components::{Component, ComponentLayout},
     states::{Action, ComponentId},
     tui::Event,
-    update::scroll::ScrollDirection,
 };
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, MouseButton, MouseEventKind};
 use ratatui::{
     Frame,
     layout::Rect,
@@ -14,6 +13,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
 };
 use std::any::Any;
+use tracing::debug;
 
 pub struct SearchBarComponent {
     id: ComponentId,
@@ -66,27 +66,34 @@ impl Component for SearchBarComponent {
         f.render_widget(paragraph, area);
     }
 
-    fn handle_scroll(&mut self, _direction: ScrollDirection) -> Vec<Action> {
-        Vec::new()
-    }
-
     fn handle_event(&mut self, event: &Event, _area: Rect) -> Vec<Action> {
-        if let Event::Key(key) = event {
-            match key.code {
+        if let Event::Mouse(_) = event {
+            debug!("SearchBar: Received Mouse Event!");
+        }
+        match event {
+            Event::Key(key) => match key.code {
                 KeyCode::Char(c) => {
                     self.input.push(c);
-                    return vec![Action::Render]; // Force redraw
+                    return vec![Action::Render];
                 }
                 KeyCode::Backspace => {
                     self.input.pop();
                     return vec![Action::Render];
                 }
                 KeyCode::Enter => {
-                    // Emit the Submit Action
                     return vec![Action::SubmitSearch(self.input.clone())];
                 }
                 _ => {}
+            },
+            Event::Mouse(mouse) => {
+                if mouse.kind == MouseEventKind::Moved
+                    || mouse.kind == MouseEventKind::Down(MouseButton::Left)
+                {
+                    debug!("SearchBar: Requesting Focus (SetFocus)");
+                    return vec![Action::SetFocus(self.id)];
+                }
             }
+            _ => {}
         }
         Vec::new()
     }
