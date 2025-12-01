@@ -2,9 +2,9 @@ use crate::{
     ScreenMode,
     app_state::AppState,
     components::{
-        Component, ComponentLayout, InputRoute, details::DetailsComponent, list::ListComponent,
-        route_event_to_children, search_bar::SearchBarComponent, search_list::SearchListComponent,
-        tabs::TabsComponent,
+        Component, ComponentLayout, InputRoute, details::DetailsComponent, handle_container_event,
+        list::ListComponent, route_event_to_children, search_bar::SearchBarComponent,
+        search_list::SearchListComponent, tabs::TabsComponent,
     },
     controller::{LayoutSpec, walk_layout},
     model::{ledger_search::LedgerUtxoProvider, list_view::ListModelView},
@@ -29,7 +29,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 use strum::IntoEnumIterator;
-use tracing::{debug, warn};
+use tracing::debug;
 
 pub struct LedgerPageComponent {
     id: ComponentId,
@@ -343,56 +343,25 @@ impl Component for LedgerPageComponent {
     }
 
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
+        let layout = self.last_layout.read().unwrap().clone();
+        let mut active_focus = *self.active_focus.read().unwrap();
+        let mut actions = handle_container_event(
+            &layout,
+            &mut active_focus,
+            event,
+            area,
+            |target_id, ev, child_area| self.dispatch_to_child(target_id, ev, child_area),
+        );
+
+        // Sync focus back to lock if it changed
+        let mut focus_guard = self.active_focus.write().unwrap();
+        if *focus_guard != active_focus {
+            *focus_guard = active_focus;
+        }
+
         let old_browse = self.browse_options.model.selected_item().cloned();
         let old_search = self.search_options.model.selected_item().cloned();
 
-        let mut target_id = match event {
-            Event::Key(_) => {
-                let focus = *self.active_focus.read().unwrap();
-                debug!(
-                    "LedgerPage: Handle Event (Key). Active Focus is: {:?}",
-                    focus
-                );
-                focus
-            }
-            Event::Mouse(mouse) => {
-                // For mouse, hit-test against the cached layout
-                let layout = self.last_layout.read().unwrap();
-                layout
-                    .iter()
-                    .find(|(_, rect)| {
-                        mouse.column >= rect.x
-                            && mouse.column < rect.x + rect.width
-                            && mouse.row >= rect.y
-                            && mouse.row < rect.y + rect.height
-                    })
-                    .map(|(id, _)| *id)
-                    .unwrap_or_else(|| *self.active_focus.read().unwrap()) // Fallback to focus if click missed
-            }
-            _ => *self.active_focus.read().unwrap(),
-        };
-
-        if target_id == self.id {
-            warn!("LedgerPage: Focus trap triggered. Redirecting from Self to Child.");
-            target_id = match self.mode_tabs.selected() {
-                LedgerMode::Search => ComponentId::SearchBar,
-                LedgerMode::Browse => ComponentId::LedgerBrowseOptions,
-            };
-        }
-
-        // Dispatch to the target
-        let child_area = {
-            let layout = self.last_layout.read().unwrap();
-            layout.get(&target_id).copied().unwrap_or(area)
-        };
-
-        if let Event::Key(_) = event {
-            debug!("LedgerPage: Dispatching Key to Child: {:?}", target_id);
-        }
-
-        let mut actions = self.dispatch_to_child(target_id, event, child_area);
-
-        // Check for layout changes
         if self.browse_options.model.selected_item() != old_browse.as_ref()
             || self.search_options.model.selected_item() != old_search.as_ref()
         {

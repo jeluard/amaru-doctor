@@ -1,8 +1,8 @@
 use crate::{
     app_state::AppState,
     components::{
-        Component, ComponentLayout, InputRoute, prom_metrics::PromMetricsComponent,
-        route_event_to_children,
+        Component, ComponentLayout, InputRoute, handle_container_event,
+        prom_metrics::PromMetricsComponent, route_event_to_children,
     },
     controller::{LayoutSpec, walk_layout},
     prometheus::model::NodeMetrics,
@@ -14,12 +14,14 @@ use ratatui::{
     Frame,
     layout::{Constraint, Direction, Rect},
 };
-use std::{any::Any, collections::HashMap};
+use std::{any::Any, collections::HashMap, sync::RwLock};
 use tokio::sync::mpsc::Receiver;
 
 pub struct PrometheusPageComponent {
     id: ComponentId,
     pub metrics: PromMetricsComponent,
+    last_layout: RwLock<ComponentLayout>,
+    active_focus: RwLock<ComponentId>,
 }
 
 impl PrometheusPageComponent {
@@ -27,6 +29,8 @@ impl PrometheusPageComponent {
         Self {
             id: ComponentId::PrometheusPage,
             metrics: PromMetricsComponent::new(ComponentId::PrometheusMetrics, prom_metrics),
+            last_layout: RwLock::new(HashMap::new()),
+            active_focus: RwLock::new(ComponentId::PrometheusMetrics),
         }
     }
 }
@@ -70,12 +74,34 @@ impl Component for PrometheusPageComponent {
     }
 
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
-        self.metrics.handle_event(event, area)
+        let layout = self.last_layout.read().unwrap().clone();
+        let mut active_focus = *self.active_focus.read().unwrap();
+
+        let actions = handle_container_event(
+            &layout,
+            &mut active_focus,
+            event,
+            area,
+            |target_id, ev, child_area| {
+                if target_id == ComponentId::PrometheusMetrics {
+                    self.metrics.handle_event(ev, child_area)
+                } else {
+                    Vec::new()
+                }
+            },
+        );
+
+        *self.active_focus.write().unwrap() = active_focus;
+        actions
     }
 
     fn render(&self, f: &mut Frame, s: &AppState, parent_layout: &ComponentLayout) {
         let my_area = parent_layout.get(&self.id).copied().unwrap_or(f.area());
         let my_layout = self.calculate_layout(my_area, s);
+        {
+            let mut layout_guard = self.last_layout.write().unwrap();
+            *layout_guard = my_layout.clone();
+        }
         if let Some(_rect) = my_layout.get(&ComponentId::PrometheusMetrics) {
             self.metrics.render(f, s, &my_layout);
         }

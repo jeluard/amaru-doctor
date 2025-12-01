@@ -14,12 +14,18 @@ use ratatui::{
     Frame,
     layout::{Constraint, Direction, Rect},
 };
-use std::{any::Any, collections::HashMap, sync::Arc};
+use std::{
+    any::Any,
+    collections::HashMap,
+    sync::{Arc, RwLock},
+};
 
 pub struct ChainPageComponent {
     id: ComponentId,
     pub search_bar: SearchBarComponent,
     pub chain_search: ChainSearchComponent,
+    last_layout: RwLock<ComponentLayout>,
+    active_focus: RwLock<ComponentId>,
 }
 
 impl ChainPageComponent {
@@ -28,6 +34,8 @@ impl ChainPageComponent {
             id: ComponentId::ChainPage,
             search_bar: SearchBarComponent::new(ComponentId::SearchBar),
             chain_search: ChainSearchComponent::new(ComponentId::ChainSearch, chain_db),
+            last_layout: RwLock::new(HashMap::new()),
+            active_focus: RwLock::new(ComponentId::SearchBar),
         }
     }
 
@@ -88,29 +96,27 @@ impl Component for ChainPageComponent {
     }
 
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
-        let spec = LayoutSpec {
-            direction: Direction::Vertical,
-            constraints: vec![
-                (
-                    Constraint::Length(3),
-                    Right(LayoutSpec {
-                        direction: Direction::Horizontal,
-                        constraints: vec![(Constraint::Fill(1), Left(ComponentId::SearchBar))],
-                    }),
-                ),
-                (Constraint::Fill(1), Left(ComponentId::ChainSearch)),
-            ],
-        };
-        let mut layout = HashMap::new();
-        walk_layout(&mut layout, &spec, area);
+        let layout = self.last_layout.read().unwrap().clone();
+        let mut active_focus = *self.active_focus.read().unwrap();
+        let actions = crate::components::handle_container_event(
+            &layout,
+            &mut active_focus,
+            event,
+            area,
+            |target_id, ev, child_area| {
+                // Dispatch logic
+                let mut acts = Vec::new();
+                if target_id == ComponentId::SearchBar {
+                    acts.extend(self.search_bar.handle_event(ev, child_area));
+                } else if target_id == ComponentId::ChainSearch {
+                    acts.extend(self.chain_search.handle_event(ev, child_area));
+                }
+                acts
+            },
+        );
 
-        let mut actions = Vec::new();
-        if let Some(rect) = layout.get(&ComponentId::SearchBar) {
-            actions.extend(self.search_bar.handle_event(event, *rect));
-        }
-        if let Some(rect) = layout.get(&ComponentId::ChainSearch) {
-            actions.extend(self.chain_search.handle_event(event, *rect));
-        }
+        // Sync focus back
+        *self.active_focus.write().unwrap() = active_focus;
 
         actions
     }
@@ -118,6 +124,11 @@ impl Component for ChainPageComponent {
     fn render(&self, f: &mut Frame, s: &AppState, parent_layout: &ComponentLayout) {
         let my_area = parent_layout.get(&self.id).copied().unwrap_or(f.area());
         let my_layout = self.calculate_layout(my_area, s);
+
+        {
+            let mut layout_guard = self.last_layout.write().unwrap();
+            *layout_guard = my_layout.clone();
+        }
 
         if let Some(_rect) = my_layout.get(&ComponentId::SearchBar) {
             self.search_bar.render(f, s, &my_layout);
