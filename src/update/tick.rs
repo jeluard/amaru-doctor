@@ -1,11 +1,11 @@
-use crate::{app_state::AppState, states::Action, update::Update};
+use crate::{app_state::AppState, components::root::RootComponent, states::Action, update::Update};
 
 /// The Update fn for each TUI tick.
 pub struct TickUpdate;
 impl Update for TickUpdate {
     // TODO: Other calculating of whether a sync needs to happen (like a window
     // size update or layout change) should likely live here.
-    fn update(&self, a: &Action, _: &mut AppState) -> Vec<Action> {
+    fn update(&self, a: &Action, _: &mut AppState, _root: &mut RootComponent) -> Vec<Action> {
         if *a != Action::Tick {
             return Vec::new();
         };

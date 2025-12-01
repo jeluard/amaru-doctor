@@ -1,5 +1,6 @@
 use crate::{
     app_state::AppState,
+    components::root::RootComponent,
     states::Action,
     update::{
         button::GetButtonEventsUpdate, focus::FocusUpdate, layout::LayoutUpdate,
@@ -28,8 +29,14 @@ pub mod tick;
 pub mod trace_graph;
 
 pub type UpdateList = Vec<&'static dyn Update>;
+
 pub trait Update: Sync {
-    fn update(&self, action: &Action, app_state: &mut AppState) -> Vec<Action>;
+    fn update(
+        &self,
+        action: &Action,
+        app_state: &mut AppState,
+        root: &mut RootComponent,
+    ) -> Vec<Action>;
 }
 
 pub static UPDATE_DEFS: &[&dyn Update] = &[

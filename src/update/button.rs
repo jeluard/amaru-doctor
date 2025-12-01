@@ -1,5 +1,6 @@
 use crate::{
     app_state::AppState,
+    components::root::RootComponent,
     model::button::{ButtonId, InputEvent},
     states::Action,
     update::Update,
@@ -8,7 +9,7 @@ use tracing::debug;
 
 pub struct GetButtonEventsUpdate;
 impl Update for GetButtonEventsUpdate {
-    fn update(&self, a: &Action, s: &mut AppState) -> Vec<Action> {
+    fn update(&self, a: &Action, s: &mut AppState, _root: &mut RootComponent) -> Vec<Action> {
         let mut actions = Vec::new();
         if *a == Action::GetButtonEvents {
             for input_event in s.button_events.try_iter() {

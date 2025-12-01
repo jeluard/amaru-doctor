@@ -1,6 +1,6 @@
 use crate::{
     app_state::AppState,
-    components::otel_page::OtelPageComponent,
+    components::root::RootComponent,
     otel::span_ext::SpanExt,
     states::{Action, ComponentId},
     update::Update,
@@ -11,7 +11,7 @@ use tracing::debug;
 pub struct MouseFocusUpdate;
 
 impl Update for MouseFocusUpdate {
-    fn update(&self, action: &Action, s: &mut AppState) -> Vec<Action> {
+    fn update(&self, action: &Action, s: &mut AppState, _root: &mut RootComponent) -> Vec<Action> {
         let Action::MouseEvent(mouse_event) = action else {
             return Vec::new();
         };
@@ -52,16 +52,9 @@ impl Update for MouseFocusUpdate {
                 .collect::<Vec<_>>()
                 .into_iter()
                 .rev();
-
             let descendants = trace_graph.descendent_iter(selected_id);
-
             ancestors.chain(descendants).nth(relative_row)
-        } else if let Some(selected_trace) = s
-            .component_registry
-            .get(&ComponentId::OtelPage)
-            .and_then(|c| c.as_any().downcast_ref::<OtelPageComponent>())
-            .and_then(|p| p.trace_list.selected_item())
-        {
+        } else if let Some(selected_trace) = &s.otel_view.selected_trace_id {
             // Full View: The entire trace in default order
             trace_graph.trace_iter(selected_trace).nth(relative_row)
         } else {

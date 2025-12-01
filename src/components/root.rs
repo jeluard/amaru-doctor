@@ -1,28 +1,47 @@
 use crate::{
     app_state::AppState,
-    components::{Component, ComponentLayout, InputRoute, tabs::TabsComponent},
+    components::{
+        Component, ComponentLayout, InputRoute, chain_page::ChainPageComponent,
+        ledger_page::LedgerPageComponent, otel_page::OtelPageComponent,
+        prometheus_page::PrometheusPageComponent, tabs::TabsComponent,
+    },
     controller::{LayoutSpec, walk_layout},
+    prometheus::model::NodeMetrics,
     states::{Action, ComponentId, InspectOption},
     tui::Event,
 };
+use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
 use crossterm::event::{KeyCode, KeyModifiers};
 use either::Either::Left;
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Rect},
 };
-use std::{any::Any, collections::HashMap};
+use std::{any::Any, collections::HashMap, sync::Arc};
+use tokio::sync::mpsc::Receiver;
 
 pub struct RootComponent {
     id: ComponentId,
     pub tabs: TabsComponent<InspectOption>,
+    pub ledger_page: LedgerPageComponent,
+    pub chain_page: ChainPageComponent,
+    pub otel_page: OtelPageComponent,
+    pub prometheus_page: PrometheusPageComponent,
 }
 
-impl Default for RootComponent {
-    fn default() -> Self {
+impl RootComponent {
+    pub fn new(
+        ledger_db: Arc<ReadOnlyRocksDB>,
+        chain_db: Arc<ReadOnlyChainDB>,
+        prom_metrics: Receiver<NodeMetrics>,
+    ) -> Self {
         Self {
             id: ComponentId::Root,
             tabs: TabsComponent::new(ComponentId::InspectTabs, false),
+            ledger_page: LedgerPageComponent::new(ledger_db),
+            chain_page: ChainPageComponent::new(chain_db),
+            otel_page: OtelPageComponent::default(),
+            prometheus_page: PrometheusPageComponent::new(prom_metrics),
         }
     }
 }
@@ -39,7 +58,7 @@ impl Component for RootComponent {
     }
 
     fn calculate_layout(&self, area: Rect, s: &AppState) -> ComponentLayout {
-        let active_page = match self.tabs.selected() {
+        let active_page_id = match self.tabs.selected() {
             InspectOption::Ledger => ComponentId::LedgerPage,
             InspectOption::Chain => ComponentId::ChainPage,
             InspectOption::Otel => ComponentId::OtelPage,
@@ -50,79 +69,58 @@ impl Component for RootComponent {
             direction: Direction::Vertical,
             constraints: vec![
                 (Constraint::Length(1), Left(ComponentId::InspectTabs)),
-                (Constraint::Fill(1), Left(active_page)),
+                (Constraint::Fill(1), Left(active_page_id)),
             ],
         };
 
         let mut layout = HashMap::new();
         walk_layout(&mut layout, &spec, area);
-        if let Some(page_rect) = layout.get(&active_page)
-            && let Some(page) = s.component_registry.get(&active_page)
-        {
-            let child_layout = page.calculate_layout(*page_rect, s);
+
+        if let Some(page_rect) = layout.get(&active_page_id) {
+            let child_layout = match self.tabs.selected() {
+                InspectOption::Ledger => self.ledger_page.calculate_layout(*page_rect, s),
+                InspectOption::Chain => self.chain_page.calculate_layout(*page_rect, s),
+                InspectOption::Otel => self.otel_page.calculate_layout(*page_rect, s),
+                InspectOption::Prometheus => self.prometheus_page.calculate_layout(*page_rect, s),
+            };
             layout.extend(child_layout);
         }
 
         layout
     }
 
+    fn tick(&mut self) -> Vec<Action> {
+        let mut actions = Vec::new();
+        actions.extend(self.tabs.tick());
+        actions.extend(self.ledger_page.tick());
+        actions.extend(self.chain_page.tick());
+        actions.extend(self.otel_page.tick());
+        actions.extend(self.prometheus_page.tick());
+        actions
+    }
+
     fn render(&self, f: &mut Frame, s: &AppState, _ignored_layout: &ComponentLayout) {
         let area = f.area();
         let my_layout = self.calculate_layout(area, s);
 
+        // Render Tabs
         if let Some(tabs_area) = my_layout.get(&ComponentId::InspectTabs) {
             let mut tabs_layout = HashMap::new();
             tabs_layout.insert(ComponentId::InspectTabs, *tabs_area);
             self.tabs.render(f, s, &tabs_layout);
         }
 
-        let active_page_id = match self.tabs.selected() {
-            InspectOption::Ledger => ComponentId::LedgerPage,
-            InspectOption::Chain => ComponentId::ChainPage,
-            InspectOption::Otel => ComponentId::OtelPage,
-            InspectOption::Prometheus => ComponentId::PrometheusPage,
-        };
-
-        if let Some(page) = s.component_registry.get(&active_page_id) {
-            page.render(f, s, &my_layout);
+        // Render Active Page
+        match self.tabs.selected() {
+            InspectOption::Ledger => self.ledger_page.render(f, s, &my_layout),
+            InspectOption::Chain => self.chain_page.render(f, s, &my_layout),
+            InspectOption::Otel => self.otel_page.render(f, s, &my_layout),
+            InspectOption::Prometheus => self.prometheus_page.render(f, s, &my_layout),
         }
     }
 
-    fn route_event(&self, event: &Event, s: &AppState) -> InputRoute {
-        if let Event::Key(key) = event {
-            if key.code == KeyCode::Tab {
-                return InputRoute::Handle;
-            }
-            if key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL) {
-                return InputRoute::Handle;
-            }
-        }
-
-        let area = s.frame_area;
-        let my_layout = self.calculate_layout(area, s);
-
-        if let Event::Mouse(mouse) = event
-            && let Some(tabs_rect) = my_layout.get(&ComponentId::InspectTabs)
-            && mouse.column >= tabs_rect.x
-            && mouse.column < tabs_rect.x + tabs_rect.width
-            && mouse.row >= tabs_rect.y
-            && mouse.row < tabs_rect.y + tabs_rect.height
-        {
-            return InputRoute::Handle;
-        }
-
-        let active_page = match self.tabs.selected() {
-            InspectOption::Ledger => ComponentId::LedgerPage,
-            InspectOption::Chain => ComponentId::ChainPage,
-            InspectOption::Otel => ComponentId::OtelPage,
-            InspectOption::Prometheus => ComponentId::PrometheusPage,
-        };
-
-        if let Some(rect) = my_layout.get(&active_page) {
-            return InputRoute::Delegate(active_page, *rect);
-        }
-
-        InputRoute::Ignore
+    fn route_event(&self, _event: &Event, _s: &AppState) -> InputRoute {
+        InputRoute::Handle
     }
 
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
@@ -134,6 +132,31 @@ impl Component for RootComponent {
                 return vec![Action::Quit];
             }
         }
-        self.tabs.handle_event(event, area)
+
+        let tabs_area = Rect {
+            x: area.x,
+            y: area.y,
+            width: area.width,
+            height: 1,
+        };
+
+        let tab_actions = self.tabs.handle_event(event, tabs_area);
+        if !tab_actions.is_empty() {
+            return tab_actions;
+        }
+
+        let page_area = Rect {
+            x: area.x,
+            y: area.y + 1,
+            width: area.width,
+            height: area.height.saturating_sub(3),
+        };
+
+        match self.tabs.selected() {
+            InspectOption::Ledger => self.ledger_page.handle_event(event, page_area),
+            InspectOption::Chain => self.chain_page.handle_event(event, page_area),
+            InspectOption::Otel => self.otel_page.handle_event(event, page_area),
+            InspectOption::Prometheus => self.prometheus_page.handle_event(event, page_area),
+        }
     }
 }

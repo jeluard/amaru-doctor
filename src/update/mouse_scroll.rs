@@ -1,5 +1,6 @@
 use crate::{
     app_state::AppState,
+    components::root::RootComponent,
     states::{Action, ComponentId},
     update::Update,
 };
@@ -7,7 +8,7 @@ use crossterm::event::MouseEventKind;
 
 pub struct MouseScrollUpdate;
 impl Update for MouseScrollUpdate {
-    fn update(&self, action: &Action, s: &mut AppState) -> Vec<Action> {
+    fn update(&self, action: &Action, s: &mut AppState, _root: &mut RootComponent) -> Vec<Action> {
         let Action::MouseEvent(mouse_event) = action else {
             return Vec::new();
         };

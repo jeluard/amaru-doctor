@@ -1,8 +1,8 @@
 use crate::{
     app_state::AppState,
-    components::{Component, otel_page::OtelPageComponent},
+    components::{Component, root::RootComponent},
     otel::{graph::TraceGraph, id::SpanId, span_ext::SpanExt},
-    states::{Action, ComponentId},
+    states::{Action, ComponentId, InspectOption},
     update::Update,
 };
 use strum::Display;
@@ -16,7 +16,7 @@ pub enum ScrollDirection {
 
 pub struct ScrollUpdate;
 impl Update for ScrollUpdate {
-    fn update(&self, action: &Action, s: &mut AppState) -> Vec<Action> {
+    fn update(&self, action: &Action, s: &mut AppState, root: &mut RootComponent) -> Vec<Action> {
         let Some(direction) = (match action {
             Action::ScrollUp => Some(ScrollDirection::Up),
             Action::ScrollDown => Some(ScrollDirection::Down),
@@ -32,24 +32,15 @@ impl Update for ScrollUpdate {
         );
 
         match focus_id {
-            // Special Case: OTEL Trace List (needs side effect)
             ComponentId::OtelTraceList => {
                 debug!("ScrollUpdate: Dispatching scroll to OtelTraceList with side effects");
-                // Scroll the list component
-                if let Some(page) = s.component_registry.get_mut(&ComponentId::OtelPage)
-                    && let Some(otel_page) = page.as_any_mut().downcast_mut::<OtelPageComponent>()
-                {
-                    otel_page.trace_list.handle_scroll(direction);
-                }
 
-                // Side effect: Update focused span based on new list selection
+                // TODO: Transitional: Scroll via Root. Move this logic into OtelPageComponent::handle_event.
+                root.otel_page.trace_list.handle_scroll(direction);
+
+                // TODO: Transitional: Sync side-effects manually. Move to OtelPageComponent or a dedicated event handler.
                 let graph = s.otel_view.trace_graph_source.load();
-
-                let selected_item = s
-                    .component_registry
-                    .get(&ComponentId::OtelPage)
-                    .and_then(|c| c.as_any().downcast_ref::<OtelPageComponent>())
-                    .and_then(|p| p.trace_list.selected_item());
+                let selected_item = root.otel_page.trace_list.selected_item();
 
                 let new_focused_span = selected_item
                     .and_then(|trace_id| graph.traces.get(trace_id))
@@ -60,28 +51,33 @@ impl Update for ScrollUpdate {
 
                 s.otel_view.focused_span = new_focused_span;
                 s.otel_view.selected_span = None;
+                s.otel_view.selected_trace_id = selected_item.cloned();
             }
 
-            // Special Case: OTEL Details (FlameGraph)
-            // The component itself doesn't scroll, but we scroll the focused span in view state
             ComponentId::OtelFlameGraph => {
                 debug!("ScrollUpdate: Dispatching scroll to scroll_trace_details");
+                // TODO: Transitional: Logic lives in helper fn. Move to FlameGraphComponent or OtelPageComponent.
                 scroll_trace_details(s, direction);
             }
 
-            // Default: Dispatch to any component in the registry
             _ => {
-                if let Some(component) = s.component_registry.get_mut(&focus_id) {
-                    let mut actions = component.handle_scroll(direction);
-                    if matches!(
-                        focus_id,
-                        ComponentId::LedgerBrowseOptions | ComponentId::LedgerSearchOptions
-                    ) {
-                        actions.push(Action::UpdateLayout(s.frame_area));
-                    }
+                // TODO: Transitional: Manual dispatch to active page.
+                // Future: Remove ScrollUpdate entirely; Components should handle Action::ScrollUp/Down in handle_event.
+                let active_page = match root.tabs.selected() {
+                    InspectOption::Ledger => &mut root.ledger_page as &mut dyn Component,
+                    InspectOption::Chain => &mut root.chain_page as &mut dyn Component,
+                    InspectOption::Otel => &mut root.otel_page as &mut dyn Component,
+                    InspectOption::Prometheus => &mut root.prometheus_page as &mut dyn Component,
+                };
 
-                    return actions;
+                let mut actions = active_page.handle_scroll(direction);
+                if matches!(
+                    focus_id,
+                    ComponentId::LedgerBrowseOptions | ComponentId::LedgerSearchOptions
+                ) {
+                    actions.push(Action::UpdateLayout(s.frame_area));
                 }
+                return actions;
             }
         }
 
@@ -137,10 +133,9 @@ fn get_ordered_spans_for_view(data: &TraceGraph, s: &AppState) -> Option<Vec<Spa
         Some(ancestors.into_iter().chain(self_and_descendants).collect())
     } else {
         // There's no selected span, render the selected trace's entire tree
-        s.component_registry
-            .get(&ComponentId::OtelPage)
-            .and_then(|c| c.as_any().downcast_ref::<OtelPageComponent>())
-            .and_then(|p| p.trace_list.selected_item())
+        s.otel_view
+            .selected_trace_id
+            .as_ref()
             .map(|trace_id| data.trace_iter(trace_id).collect())
     }
 }

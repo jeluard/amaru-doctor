@@ -30,6 +30,8 @@ pub struct OtelViewState {
     /// The span that the user has actively selected. This is used to inspect a
     /// span's specific subtree.
     pub selected_span: Option<Arc<Span>>,
+
+    pub selected_trace_id: Option<TraceId>,
 }
 
 impl OtelViewState {
@@ -39,6 +41,7 @@ impl OtelViewState {
             last_synced_data: None,
             focused_span: None,
             selected_span: None,
+            selected_trace_id: None,
         }
     }
 
@@ -76,6 +79,7 @@ impl OtelViewState {
             self.validate_span(&latest_data, selected_trace, |s| &mut s.selected_span);
         }
 
+        self.selected_trace_id = selected_trace.cloned();
         self.last_synced_data = Some(latest_data);
         true
     }
