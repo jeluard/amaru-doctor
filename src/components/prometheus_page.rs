@@ -95,6 +95,11 @@ impl Component for PrometheusPageComponent {
         actions
     }
 
+    fn tick(&mut self) -> Vec<Action> {
+        self.metrics.sync();
+        Vec::new()
+    }
+
     fn render(&self, f: &mut Frame, s: &AppState, parent_layout: &ComponentLayout) {
         let my_area = parent_layout.get(&self.id).copied().unwrap_or(f.area());
         let my_layout = self.calculate_layout(my_area, s);
