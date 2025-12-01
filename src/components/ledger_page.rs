@@ -2,9 +2,9 @@ use crate::{
     ScreenMode,
     app_state::AppState,
     components::{
-        Component, ComponentLayout, InputRoute, details::DetailsComponent, handle_container_event,
-        list::ListComponent, route_event_to_children, search_bar::SearchBarComponent,
-        search_list::SearchListComponent, tabs::TabsComponent,
+        Component, ComponentLayout, InputRoute, details::DetailsComponent, list::ListComponent,
+        route_event_to_children, search_bar::SearchBarComponent, search_list::SearchListComponent,
+        tabs::TabsComponent,
     },
     controller::{LayoutSpec, walk_layout},
     model::{ledger_search::LedgerUtxoProvider, list_view::ListModelView},
@@ -345,7 +345,8 @@ impl Component for LedgerPageComponent {
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
         let layout = self.last_layout.read().unwrap().clone();
         let mut active_focus = *self.active_focus.read().unwrap();
-        let mut actions = handle_container_event(
+
+        let mut actions = crate::components::handle_container_event(
             &layout,
             &mut active_focus,
             event,
@@ -353,11 +354,19 @@ impl Component for LedgerPageComponent {
             |target_id, ev, child_area| self.dispatch_to_child(target_id, ev, child_area),
         );
 
-        // Sync focus back to lock if it changed
-        let mut focus_guard = self.active_focus.write().unwrap();
-        if *focus_guard != active_focus {
-            *focus_guard = active_focus;
+        // Intercept SubmitSearch from children so it doesn't bubble to App
+        if let Some(pos) = actions
+            .iter()
+            .position(|a| matches!(a, Action::SubmitSearch(_)))
+            && let Action::SubmitSearch(query) = actions.remove(pos)
+        {
+            // Handle the logic locally
+            self.handle_search(&query);
+            // Trigger a re-render to show results
+            actions.push(Action::Render);
         }
+
+        *self.active_focus.write().unwrap() = active_focus;
 
         let old_browse = self.browse_options.model.selected_item().cloned();
         let old_search = self.search_options.model.selected_item().cloned();
