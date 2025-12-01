@@ -67,6 +67,10 @@ where
     pub fn selected_item(&self) -> Option<&R> {
         self.state.get_current_res().and_then(|m| m.selected_item())
     }
+
+    pub fn handle_search(&mut self, query: &str) {
+        self.perform_search(query.to_string());
+    }
 }
 
 impl<Q, R> Component for SearchListComponent<Q, R>
@@ -95,10 +99,6 @@ where
             model.poll_data();
         }
         Vec::new()
-    }
-
-    fn handle_search(&mut self, query: &str) {
-        self.perform_search(query.to_string());
     }
 
     fn render(&self, f: &mut Frame, s: &AppState, layout: &ComponentLayout) {

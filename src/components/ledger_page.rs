@@ -2,9 +2,8 @@ use crate::{
     ScreenMode,
     app_state::AppState,
     components::{
-        Component, ComponentLayout, InputRoute, details::DetailsComponent, list::ListComponent,
-        route_event_to_children, search_bar::SearchBarComponent, search_list::SearchListComponent,
-        tabs::TabsComponent,
+        Component, ComponentLayout, details::DetailsComponent, list::ListComponent,
+        search_bar::SearchBarComponent, search_list::SearchListComponent, tabs::TabsComponent,
     },
     controller::{LayoutSpec, walk_layout},
     model::{ledger_search::LedgerUtxoProvider, list_view::ListModelView},
@@ -29,7 +28,6 @@ use std::{
     sync::{Arc, RwLock},
 };
 use strum::IntoEnumIterator;
-use tracing::debug;
 
 pub struct LedgerPageComponent {
     id: ComponentId,
@@ -271,6 +269,10 @@ impl LedgerPageComponent {
             },
         }
     }
+
+    fn handle_search(&mut self, query: &str) {
+        self.utxos_by_addr_list.handle_search(query);
+    }
 }
 
 impl Component for LedgerPageComponent {
@@ -289,57 +291,6 @@ impl Component for LedgerPageComponent {
         let mut layout = HashMap::new();
         walk_layout(&mut layout, &spec, area);
         layout
-    }
-
-    fn route_event(&self, event: &Event, s: &AppState) -> InputRoute {
-        let my_area = s
-            .layout_model
-            .get_layout()
-            .get(&self.id)
-            .copied()
-            .unwrap_or(s.frame_area);
-        let my_layout = self.calculate_layout(my_area, s);
-        let route = route_event_to_children(event, s, my_layout);
-
-        if let Event::Key(_) = event {
-            let focus = s.layout_model.get_focus();
-            debug!(
-                "LedgerPage: Routing Key. Global Focus: {:?}. Calculated Route: {:?}",
-                focus, route
-            );
-        }
-
-        match route {
-            InputRoute::Delegate(id, _) if id == self.id => InputRoute::Handle,
-            InputRoute::Delegate(
-                ComponentId::LedgerModeTabs |
-                ComponentId::SearchBar |
-                ComponentId::LedgerAccountDetails |
-                ComponentId::LedgerBlockIssuerDetails |
-                ComponentId::LedgerDRepDetails |
-                ComponentId::LedgerPoolDetails |
-                ComponentId::LedgerProposalDetails |
-                ComponentId::LedgerUtxoDetails |
-                ComponentId::LedgerUtxosByAddrDetails |
-                // Options
-                ComponentId::LedgerBrowseOptions |
-                ComponentId::LedgerSearchOptions |
-                // Lists
-                ComponentId::LedgerAccountsList |
-                ComponentId::LedgerBlockIssuersList |
-                ComponentId::LedgerDRepsList |
-                ComponentId::LedgerPoolsList |
-                ComponentId::LedgerProposalsList |
-                ComponentId::LedgerUtxosList |
-                ComponentId::LedgerUtxosByAddrList, _) =>
-            {
-                if let Event::Key(_) = event {
-                    debug!("LedgerPage: Upgrading Route to HANDLE for {:?}", route);
-                }
-                InputRoute::Handle
-            }
-            _ => route,
-        }
     }
 
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
@@ -413,10 +364,6 @@ impl Component for LedgerPageComponent {
         }
 
         Vec::new()
-    }
-
-    fn handle_search(&mut self, query: &str) {
-        self.utxos_by_addr_list.handle_search(query);
     }
 
     fn render(&self, f: &mut Frame, s: &AppState, parent_layout: &ComponentLayout) {

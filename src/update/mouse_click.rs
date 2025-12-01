@@ -1,6 +1,6 @@
 use crate::{
     app_state::AppState,
-    components::{Component, root::RootComponent},
+    components::root::RootComponent,
     states::{Action, ComponentId::*},
     update::Update,
 };

@@ -1,8 +1,8 @@
 use crate::{
     app_state::AppState,
     components::{
-        Component, ComponentLayout, InputRoute, chain_search::ChainSearchComponent,
-        route_event_to_children, search_bar::SearchBarComponent,
+        Component, ComponentLayout, chain_search::ChainSearchComponent,
+        search_bar::SearchBarComponent,
     },
     controller::{LayoutSpec, walk_layout},
     states::{Action, ComponentId},
@@ -73,26 +73,6 @@ impl Component for ChainPageComponent {
         let mut layout = HashMap::new();
         walk_layout(&mut layout, &spec, area);
         layout
-    }
-
-    fn route_event(&self, event: &Event, s: &AppState) -> InputRoute {
-        let my_area = s
-            .layout_model
-            .get_layout()
-            .get(&self.id)
-            .copied()
-            .unwrap_or(s.frame_area);
-        let my_layout = self.calculate_layout(my_area, s);
-
-        let route = route_event_to_children(event, s, my_layout);
-
-        match route {
-            InputRoute::Delegate(id, _) if id == self.id => InputRoute::Handle,
-            InputRoute::Delegate(ComponentId::SearchBar | ComponentId::ChainSearch, _) => {
-                InputRoute::Handle
-            }
-            _ => route,
-        }
     }
 
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {

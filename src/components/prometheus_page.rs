@@ -1,8 +1,7 @@
 use crate::{
     app_state::AppState,
     components::{
-        Component, ComponentLayout, InputRoute, handle_container_event,
-        prom_metrics::PromMetricsComponent, route_event_to_children,
+        Component, ComponentLayout, handle_container_event, prom_metrics::PromMetricsComponent,
     },
     controller::{LayoutSpec, walk_layout},
     prometheus::model::NodeMetrics,
@@ -55,22 +54,6 @@ impl Component for PrometheusPageComponent {
         let mut layout = HashMap::new();
         walk_layout(&mut layout, &spec, area);
         layout
-    }
-
-    fn route_event(&self, event: &Event, s: &AppState) -> InputRoute {
-        let my_area = s
-            .layout_model
-            .get_layout()
-            .get(&self.id)
-            .copied()
-            .unwrap_or(s.frame_area);
-
-        let my_layout = self.calculate_layout(my_area, s);
-        let route = route_event_to_children(event, s, my_layout);
-        match route {
-            InputRoute::Delegate(ComponentId::PrometheusMetrics, _) => InputRoute::Handle,
-            _ => route,
-        }
     }
 
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {

@@ -1,7 +1,7 @@
 use crate::{
     app_state::AppState,
     components::{
-        Component, ComponentLayout, InputRoute, chain_page::ChainPageComponent,
+        Component, ComponentLayout, chain_page::ChainPageComponent,
         ledger_page::LedgerPageComponent, otel_page::OtelPageComponent,
         prometheus_page::PrometheusPageComponent, tabs::TabsComponent,
     },
@@ -119,10 +119,6 @@ impl Component for RootComponent {
             InspectOption::Otel => self.otel_page.render(f, s, &my_layout),
             InspectOption::Prometheus => self.prometheus_page.render(f, s, &my_layout),
         }
-    }
-
-    fn route_event(&self, _event: &Event, _s: &AppState) -> InputRoute {
-        InputRoute::Handle
     }
 
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {

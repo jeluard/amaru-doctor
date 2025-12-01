@@ -1,11 +1,10 @@
 use crate::{
     app_state::AppState,
-    components::{Component, ComponentLayout, MouseScrollDirection, ScrollDirection},
+    components::{Component, ComponentLayout},
     model::time_series::TimeSeries,
     prometheus::model::{NodeMetrics, Timestamp},
-    states::{Action, ComponentId},
+    states::ComponentId,
 };
-use crossterm::event::KeyEvent;
 use ratatui::{
     Frame,
     prelude::*,
@@ -250,25 +249,5 @@ impl Component for PromMetricsComponent {
             &self.disk_live_write,
             MetricKind::Bytes,
         );
-    }
-
-    fn handle_key_event(&mut self, _key: KeyEvent) -> Vec<Action> {
-        vec![]
-    }
-
-    fn handle_scroll(&mut self, _direction: ScrollDirection) -> Vec<Action> {
-        vec![]
-    }
-
-    fn handle_mouse_scroll(&mut self, _direction: MouseScrollDirection) -> Vec<Action> {
-        vec![]
-    }
-
-    fn handle_click(&mut self, _area: Rect, _row: u16, _col: u16) -> Vec<Action> {
-        vec![]
-    }
-
-    fn handle_mouse_drag(&mut self, _direction: ScrollDirection) -> Vec<Action> {
-        vec![]
     }
 }

@@ -2,10 +2,9 @@ use crate::{
     app_state::AppState,
     states::{Action, ComponentId},
     tui::Event,
-    update::scroll::ScrollDirection,
 };
 use crossterm::event::MouseButton;
-use crossterm::event::{KeyEvent, MouseEventKind};
+use crossterm::event::MouseEventKind;
 use ratatui::{Frame, layout::Rect};
 use std::{any::Any, collections::HashMap};
 use tracing::debug;
@@ -35,6 +34,12 @@ pub enum MouseScrollDirection {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ScrollDirection {
+    Up,
+    Down,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InputRoute {
     /// I am not the target. Pass the event to this child ID.
     Delegate(ComponentId, Rect),
@@ -54,51 +59,20 @@ pub trait Component {
     /// Returns a mutable Any refernce to the component.
     fn as_any_mut(&mut self) -> &mut dyn Any;
 
-    /// Called on every application tick.
-    fn tick(&mut self) -> Vec<Action> {
-        Vec::new()
-    }
-
-    /// Renders the component onto the frame.
-    fn render(&self, f: &mut Frame, s: &AppState, layout: &ComponentLayout);
-
     /// Calculates the layout for this component and *all its children*.
     fn calculate_layout(&self, area: Rect, s: &AppState) -> ComponentLayout;
 
-    fn route_event(&self, _event: &Event, _state: &AppState) -> InputRoute {
-        InputRoute::Handle
+    /// Called on every application tick.
+    fn tick(&mut self) -> Vec<Action> {
+        Vec::new()
     }
 
     fn handle_event(&mut self, _event: &Event, _area: Rect) -> Vec<Action> {
         Vec::new()
     }
 
-    /// Handles a logical scroll event.
-    fn handle_scroll(&mut self, _direction: ScrollDirection) -> Vec<Action> {
-        Vec::new()
-    }
-
-    /// Handles a raw key event.
-    fn handle_key_event(&mut self, _key: KeyEvent) -> Vec<Action> {
-        Vec::new()
-    }
-
-    /// Handles a mouse click.
-    fn handle_click(&mut self, _area: Rect, _row: u16, _col: u16) -> Vec<Action> {
-        Vec::new()
-    }
-
-    /// Handles a mouse scroll event.
-    fn handle_mouse_scroll(&mut self, _direction: MouseScrollDirection) -> Vec<Action> {
-        Vec::new()
-    }
-
-    /// Handles a mouse drag event.
-    fn handle_mouse_drag(&mut self, _direction: ScrollDirection) -> Vec<Action> {
-        Vec::new()
-    }
-
-    fn handle_search(&mut self, _query: &str) {}
+    /// Renders the component onto the frame.
+    fn render(&self, f: &mut Frame, s: &AppState, layout: &ComponentLayout);
 }
 
 pub fn route_event_to_children(
