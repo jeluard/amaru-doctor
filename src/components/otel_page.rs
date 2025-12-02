@@ -7,9 +7,8 @@ use crate::{
     model::otel_view::OtelViewState,
     otel::{TraceGraphSnapshot, graph::TraceGraph, id::SpanId, span_ext::SpanExt},
     states::{Action, ComponentId},
-    tui::Event,
 };
-use crossterm::event::{KeyCode, MouseEventKind};
+use crossterm::event::{Event, KeyCode, MouseEventKind};
 use either::Either::{Left, Right};
 use opentelemetry_proto::tonic::trace::v1::Span;
 use ratatui::{

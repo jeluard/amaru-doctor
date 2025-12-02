@@ -5,9 +5,9 @@ use crate::{
     },
     controller::{LayoutSpec, MoveFocus, find_next_focus, walk_layout},
     states::{Action, ComponentId},
-    tui::Event,
 };
 use amaru_stores::rocksdb::consensus::ReadOnlyChainDB;
+use crossterm::event::Event;
 use either::Either::{Left, Right};
 use ratatui::{
     Frame,

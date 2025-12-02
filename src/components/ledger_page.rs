@@ -10,11 +10,11 @@ use crate::{
         OwnedAccountIter, OwnedBlockIssuerIter, OwnedDRepIter, OwnedPoolIter, OwnedProposalIter,
         OwnedUtxoIter,
     },
-    tui::Event,
     ui::to_list_item::{AccountItem, BlockIssuerItem, DRepItem, PoolItem, ProposalItem, UtxoItem},
 };
 use amaru_kernel::Address;
 use amaru_stores::rocksdb::ReadOnlyRocksDB;
+use crossterm::event::Event;
 use either::Either::{Left, Right};
 use ratatui::{
     Frame,

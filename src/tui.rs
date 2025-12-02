@@ -1,17 +1,9 @@
-#![allow(dead_code)] // Remove this once you start using the code
-
-use std::{
-    io::stdout,
-    ops::{Deref, DerefMut},
-    time::Duration,
-};
-
 use anyhow::Result;
 use crossterm::{
     cursor,
     event::{
         DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
-        Event as CrosstermEvent, EventStream, KeyEvent, KeyEventKind, MouseEvent,
+        Event as CrosstermEvent, EventStream,
     },
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -21,6 +13,11 @@ use ratatui::{
     prelude::{Backend, CrosstermBackend},
 };
 use serde::{Deserialize, Serialize};
+use std::{
+    io::stdout,
+    ops::{Deref, DerefMut},
+    time::Duration,
+};
 use tokio::{
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
     time::interval,
@@ -30,18 +27,16 @@ use tracing::error;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Event {
+    // System Events
     Init,
     Quit,
     Error,
     Closed,
     Tick,
     Render,
-    FocusGained,
-    FocusLost,
-    Paste(String),
-    Key(KeyEvent),
-    Mouse(MouseEvent),
-    Resize(u16, u16),
+
+    // External Input
+    Input(CrosstermEvent),
 }
 
 pub struct Tui<B: Backend> {
@@ -71,17 +66,9 @@ async fn event_loop(event_tx: UnboundedSender<Event>, cancellation_token: Cancel
             _ = tick_interval.tick() => Event::Tick,
             _ = render_interval.tick() => Event::Render,
             crossterm_event = event_stream.next().fuse() => match crossterm_event {
-                Some(Ok(event)) => match event {
-                    CrosstermEvent::Key(key) if key.kind == KeyEventKind::Press => Event::Key(key),
-                    CrosstermEvent::Mouse(mouse) => Event::Mouse(mouse),
-                    CrosstermEvent::Resize(x, y) => Event::Resize(x, y),
-                    CrosstermEvent::FocusLost => Event::FocusLost,
-                    CrosstermEvent::FocusGained => Event::FocusGained,
-                    CrosstermEvent::Paste(s) => Event::Paste(s),
-                    _ => continue, // ignore other events
-                }
+                Some(Ok(event)) => Event::Input(event),
                 Some(Err(_)) => Event::Error,
-                None => break, // the event stream has stopped and will not produce any more events
+                None => break,
             },
         };
         if event_tx.send(event).is_err() {

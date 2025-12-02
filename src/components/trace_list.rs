@@ -2,10 +2,9 @@ use crate::{
     components::Component,
     otel::id::TraceId,
     states::{Action, ComponentId},
-    tui::Event,
     viewmodel::dynamic_list::DynamicListViewModel,
 };
-use crossterm::event::{KeyCode, MouseButton, MouseEventKind};
+use crossterm::event::{Event, KeyCode, MouseButton, MouseEventKind};
 use ratatui::{Frame, layout::Rect};
 use std::any::Any;
 

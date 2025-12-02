@@ -2,9 +2,9 @@ use crate::{
     components::Component,
     model::list_view::ListModelView,
     states::{Action, ComponentId},
-    tui::Event,
     ui::to_list_item::ToListItem,
 };
+use crossterm::event::Event;
 use ratatui::{
     Frame,
     crossterm::event::{KeyCode, MouseButton, MouseEventKind},
