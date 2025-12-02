@@ -194,10 +194,6 @@ impl App {
                     .clear()
                     .map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?,
                 Action::Resize(w, h) => self.handle_resize(tui, w, h)?,
-                Action::UpdateLayout(area) => {
-                    self.frame_area = area;
-                    self.render(tui)?;
-                }
                 Action::Render => {
                     self.render(tui)?;
                 }
