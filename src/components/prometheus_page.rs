@@ -2,8 +2,7 @@ use crate::{
     components::{
         Component, ComponentLayout, handle_container_event, prom_metrics::PromMetricsComponent,
     },
-    controller::{LayoutSpec, walk_layout},
-    model::layout::{MoveFocus, find_next_focus},
+    controller::{LayoutSpec, MoveFocus, find_next_focus, walk_layout},
     prometheus::model::NodeMetrics,
     states::{Action, ComponentId},
     tui::Event,
@@ -44,6 +43,29 @@ impl PrometheusPageComponent {
 
         Vec::new()
     }
+
+    pub fn calculate_layout(&self, area: Rect) -> ComponentLayout {
+        let spec = LayoutSpec {
+            direction: Direction::Vertical,
+            constraints: vec![(Constraint::Fill(1), Left(ComponentId::PrometheusMetrics))],
+        };
+
+        let mut layout = HashMap::new();
+        walk_layout(&mut layout, &spec, area);
+        layout
+    }
+
+    pub fn render(&self, f: &mut Frame, parent_layout: &ComponentLayout) {
+        let my_area = parent_layout.get(&self.id).copied().unwrap_or(f.area());
+        let my_layout = self.calculate_layout(my_area);
+        {
+            let mut layout_guard = self.last_layout.write().unwrap();
+            *layout_guard = my_layout.clone();
+        }
+        if let Some(_rect) = my_layout.get(&ComponentId::PrometheusMetrics) {
+            self.metrics.render(f, &my_layout);
+        }
+    }
 }
 
 impl Component for PrometheusPageComponent {
@@ -55,17 +77,6 @@ impl Component for PrometheusPageComponent {
     }
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
-    }
-
-    fn calculate_layout(&self, area: Rect) -> ComponentLayout {
-        let spec = LayoutSpec {
-            direction: Direction::Vertical,
-            constraints: vec![(Constraint::Fill(1), Left(ComponentId::PrometheusMetrics))],
-        };
-
-        let mut layout = HashMap::new();
-        walk_layout(&mut layout, &spec, area);
-        layout
     }
 
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
@@ -93,17 +104,5 @@ impl Component for PrometheusPageComponent {
     fn tick(&mut self) -> Vec<Action> {
         self.metrics.sync();
         Vec::new()
-    }
-
-    fn render(&self, f: &mut Frame, parent_layout: &ComponentLayout) {
-        let my_area = parent_layout.get(&self.id).copied().unwrap_or(f.area());
-        let my_layout = self.calculate_layout(my_area);
-        {
-            let mut layout_guard = self.last_layout.write().unwrap();
-            *layout_guard = my_layout.clone();
-        }
-        if let Some(_rect) = my_layout.get(&ComponentId::PrometheusMetrics) {
-            self.metrics.render(f, &my_layout);
-        }
     }
 }

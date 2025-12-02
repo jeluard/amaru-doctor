@@ -172,28 +172,8 @@ impl PromMetricsComponent {
             self.last_metrics = Some(new_metrics);
         }
     }
-}
 
-impl Component for PromMetricsComponent {
-    fn id(&self) -> ComponentId {
-        self.id
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
-    }
-
-    fn calculate_layout(&self, area: Rect) -> ComponentLayout {
-        let mut layout = ComponentLayout::new();
-        layout.insert(self.id, area);
-        layout
-    }
-
-    fn render(&self, f: &mut Frame, layout: &ComponentLayout) {
+    pub fn render(&self, f: &mut Frame, layout: &ComponentLayout) {
         let Some(&area) = layout.get(&self.id) else {
             return;
         };
@@ -248,5 +228,19 @@ impl Component for PromMetricsComponent {
             &self.disk_live_write,
             MetricKind::Bytes,
         );
+    }
+}
+
+impl Component for PromMetricsComponent {
+    fn id(&self) -> ComponentId {
+        self.id
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }

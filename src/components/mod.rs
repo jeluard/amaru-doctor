@@ -4,7 +4,7 @@ use crate::{
 };
 use crossterm::event::MouseButton;
 use crossterm::event::MouseEventKind;
-use ratatui::{Frame, layout::Rect};
+use ratatui::layout::Rect;
 use std::{any::Any, collections::HashMap};
 
 pub mod async_list;
@@ -57,9 +57,6 @@ pub trait Component {
     /// Returns a mutable Any refernce to the component.
     fn as_any_mut(&mut self) -> &mut dyn Any;
 
-    /// Calculates the layout for this component and *all its children*.
-    fn calculate_layout(&self, area: Rect) -> ComponentLayout;
-
     /// Called on every application tick.
     fn tick(&mut self) -> Vec<Action> {
         Vec::new()
@@ -72,9 +69,6 @@ pub trait Component {
     fn handle_action(&mut self, _action: Action) -> Vec<Action> {
         Vec::new()
     }
-
-    /// Renders the component onto the frame.
-    fn render(&self, f: &mut Frame, layout: &ComponentLayout);
 }
 
 /// A reusable event handler for Container Components.

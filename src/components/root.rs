@@ -4,8 +4,7 @@ use crate::{
         ledger_page::LedgerPageComponent, otel_page::OtelPageComponent,
         prometheus_page::PrometheusPageComponent, tabs::TabsComponent,
     },
-    controller::{LayoutSpec, walk_layout},
-    model::layout::MoveFocus,
+    controller::{LayoutSpec, MoveFocus, walk_layout},
     otel::TraceGraphSnapshot,
     prometheus::model::NodeMetrics,
     states::{Action, ComponentId, InspectOption},
@@ -46,18 +45,6 @@ impl RootComponent {
             prometheus_page: PrometheusPageComponent::new(prom_metrics),
         }
     }
-}
-
-impl Component for RootComponent {
-    fn id(&self) -> ComponentId {
-        self.id
-    }
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
-    }
 
     fn calculate_layout(&self, area: Rect) -> ComponentLayout {
         let active_page_id = match self.tabs.selected() {
@@ -89,6 +76,36 @@ impl Component for RootComponent {
         }
 
         layout
+    }
+
+    pub fn render(&self, f: &mut Frame, _ignored_layout: &ComponentLayout) {
+        let area = f.area();
+        let my_layout = self.calculate_layout(area);
+
+        // Render Tabs
+        if let Some(tabs_area) = my_layout.get(&ComponentId::InspectTabs) {
+            self.tabs.render_focused(f, *tabs_area, false);
+        }
+
+        // Render Active Page
+        match self.tabs.selected() {
+            InspectOption::Ledger => self.ledger_page.render(f, &my_layout),
+            InspectOption::Chain => self.chain_page.render(f, &my_layout),
+            InspectOption::Otel => self.otel_page.render(f, &my_layout),
+            InspectOption::Prometheus => self.prometheus_page.render(f, &my_layout),
+        }
+    }
+}
+
+impl Component for RootComponent {
+    fn id(&self) -> ComponentId {
+        self.id
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 
     fn tick(&mut self) -> Vec<Action> {
@@ -154,24 +171,6 @@ impl Component for RootComponent {
             InspectOption::Chain => self.chain_page.handle_navigation(direction),
             InspectOption::Otel => self.otel_page.handle_navigation(direction),
             InspectOption::Prometheus => self.prometheus_page.handle_navigation(direction),
-        }
-    }
-
-    fn render(&self, f: &mut Frame, _ignored_layout: &ComponentLayout) {
-        let area = f.area();
-        let my_layout = self.calculate_layout(area);
-
-        // Render Tabs
-        if let Some(tabs_area) = my_layout.get(&ComponentId::InspectTabs) {
-            self.tabs.render_focused(f, *tabs_area, false);
-        }
-
-        // Render Active Page
-        match self.tabs.selected() {
-            InspectOption::Ledger => self.ledger_page.render(f, &my_layout),
-            InspectOption::Chain => self.chain_page.render(f, &my_layout),
-            InspectOption::Otel => self.otel_page.render(f, &my_layout),
-            InspectOption::Prometheus => self.prometheus_page.render(f, &my_layout),
         }
     }
 }

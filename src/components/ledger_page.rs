@@ -3,12 +3,8 @@ use crate::{
         Component, ComponentLayout, details::DetailsComponent, list::ListComponent,
         search_bar::SearchBarComponent, search_list::SearchListComponent, tabs::TabsComponent,
     },
-    controller::{LayoutSpec, walk_layout},
-    model::{
-        layout::{MoveFocus, find_next_focus},
-        ledger_search::LedgerUtxoProvider,
-        list_view::ListModelView,
-    },
+    controller::{LayoutSpec, MoveFocus, find_next_focus, walk_layout},
+    model::{ledger_search::LedgerUtxoProvider, list_view::ListModelView},
     states::{Action, ComponentId, LedgerBrowse, LedgerMode, LedgerSearch},
     store::owned_iter::{
         OwnedAccountIter, OwnedBlockIssuerIter, OwnedDRepIter, OwnedPoolIter, OwnedProposalIter,
@@ -265,6 +261,13 @@ impl LedgerPageComponent {
         }
     }
 
+    pub fn calculate_layout(&self, area: Rect) -> ComponentLayout {
+        let spec = self.build_layout_spec();
+        let mut layout = HashMap::new();
+        walk_layout(&mut layout, &spec, area);
+        layout
+    }
+
     fn handle_search(&mut self, query: &str) {
         self.utxos_by_addr_list.handle_search(query);
     }
@@ -280,89 +283,8 @@ impl LedgerPageComponent {
 
         Vec::new()
     }
-}
 
-impl Component for LedgerPageComponent {
-    fn id(&self) -> ComponentId {
-        self.id
-    }
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
-    }
-
-    fn calculate_layout(&self, area: Rect) -> ComponentLayout {
-        let spec = self.build_layout_spec();
-        let mut layout = HashMap::new();
-        walk_layout(&mut layout, &spec, area);
-        layout
-    }
-
-    fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
-        let layout = self.last_layout.read().unwrap().clone();
-        let mut active_focus = *self.active_focus.read().unwrap();
-
-        let mut actions = crate::components::handle_container_event(
-            &layout,
-            &mut active_focus,
-            event,
-            area,
-            |target_id, ev, child_area| self.dispatch_to_child(target_id, ev, child_area),
-        );
-
-        // Intercept SubmitSearch from children so it doesn't bubble to App
-        if let Some(pos) = actions
-            .iter()
-            .position(|a| matches!(a, Action::SubmitSearch(_)))
-            && let Action::SubmitSearch(query) = actions.remove(pos)
-        {
-            // Handle the logic locally
-            self.handle_search(&query);
-        }
-
-        *self.active_focus.write().unwrap() = active_focus;
-
-        actions
-    }
-
-    fn tick(&mut self) -> Vec<Action> {
-        self.utxos_by_addr_list.tick();
-
-        let layout = self.last_layout.read().unwrap();
-
-        if let Some(area) = layout.get(&ComponentId::LedgerBrowseOptions) {
-            self.browse_options.model.set_height(area.height as usize);
-        }
-        if let Some(area) = layout.get(&ComponentId::LedgerSearchOptions) {
-            self.search_options.model.set_height(area.height as usize);
-        }
-        if let Some(area) = layout.get(&ComponentId::LedgerAccountsList) {
-            self.accounts_list.model.set_height(area.height as usize);
-        }
-        if let Some(area) = layout.get(&ComponentId::LedgerBlockIssuersList) {
-            self.block_issuers_list
-                .model
-                .set_height(area.height as usize);
-        }
-        if let Some(area) = layout.get(&ComponentId::LedgerDRepsList) {
-            self.dreps_list.model.set_height(area.height as usize);
-        }
-        if let Some(area) = layout.get(&ComponentId::LedgerPoolsList) {
-            self.pools_list.model.set_height(area.height as usize);
-        }
-        if let Some(area) = layout.get(&ComponentId::LedgerProposalsList) {
-            self.proposals_list.model.set_height(area.height as usize);
-        }
-        if let Some(area) = layout.get(&ComponentId::LedgerUtxosList) {
-            self.utxos_list.model.set_height(area.height as usize);
-        }
-
-        Vec::new()
-    }
-
-    fn render(&self, f: &mut Frame, parent_layout: &ComponentLayout) {
+    pub fn render(&self, f: &mut Frame, parent_layout: &ComponentLayout) {
         let my_area = parent_layout.get(&self.id).copied().unwrap_or(f.area());
         let my_layout = self.calculate_layout(my_area);
 
@@ -456,5 +378,79 @@ impl Component for LedgerPageComponent {
                 _ => {}
             }
         }
+    }
+}
+
+impl Component for LedgerPageComponent {
+    fn id(&self) -> ComponentId {
+        self.id
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+
+    fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
+        let layout = self.last_layout.read().unwrap().clone();
+        let mut active_focus = *self.active_focus.read().unwrap();
+
+        let mut actions = crate::components::handle_container_event(
+            &layout,
+            &mut active_focus,
+            event,
+            area,
+            |target_id, ev, child_area| self.dispatch_to_child(target_id, ev, child_area),
+        );
+
+        // Intercept SubmitSearch from children so it doesn't bubble to App
+        if let Some(pos) = actions
+            .iter()
+            .position(|a| matches!(a, Action::SubmitSearch(_)))
+            && let Action::SubmitSearch(query) = actions.remove(pos)
+        {
+            // Handle the logic locally
+            self.handle_search(&query);
+        }
+
+        *self.active_focus.write().unwrap() = active_focus;
+
+        actions
+    }
+
+    fn tick(&mut self) -> Vec<Action> {
+        self.utxos_by_addr_list.tick();
+
+        let layout = self.last_layout.read().unwrap();
+
+        if let Some(area) = layout.get(&ComponentId::LedgerBrowseOptions) {
+            self.browse_options.model.set_height(area.height as usize);
+        }
+        if let Some(area) = layout.get(&ComponentId::LedgerSearchOptions) {
+            self.search_options.model.set_height(area.height as usize);
+        }
+        if let Some(area) = layout.get(&ComponentId::LedgerAccountsList) {
+            self.accounts_list.model.set_height(area.height as usize);
+        }
+        if let Some(area) = layout.get(&ComponentId::LedgerBlockIssuersList) {
+            self.block_issuers_list
+                .model
+                .set_height(area.height as usize);
+        }
+        if let Some(area) = layout.get(&ComponentId::LedgerDRepsList) {
+            self.dreps_list.model.set_height(area.height as usize);
+        }
+        if let Some(area) = layout.get(&ComponentId::LedgerPoolsList) {
+            self.pools_list.model.set_height(area.height as usize);
+        }
+        if let Some(area) = layout.get(&ComponentId::LedgerProposalsList) {
+            self.proposals_list.model.set_height(area.height as usize);
+        }
+        if let Some(area) = layout.get(&ComponentId::LedgerUtxosList) {
+            self.utxos_list.model.set_height(area.height as usize);
+        }
+
+        Vec::new()
     }
 }

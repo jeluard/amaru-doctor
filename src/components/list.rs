@@ -1,5 +1,5 @@
 use crate::{
-    components::{Component, ComponentLayout},
+    components::Component,
     model::list_view::ListModelView,
     states::{Action, ComponentId},
     tui::Event,
@@ -108,14 +108,6 @@ where
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
-
-    fn calculate_layout(&self, area: Rect) -> ComponentLayout {
-        let mut layout = ComponentLayout::new();
-        layout.insert(self.id, area);
-        layout
-    }
-
-    fn render(&self, _f: &mut Frame, _layout: &ComponentLayout) {}
 
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
         match event {
