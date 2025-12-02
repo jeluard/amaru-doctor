@@ -88,6 +88,10 @@ where
             last_drag_y: None,
         }
     }
+
+    pub fn render_focused(&self, f: &mut Frame, area: Rect, is_focused: bool) {
+        self.model.draw(f, area, is_focused);
+    }
 }
 
 impl<M> Component for ListComponent<M>
@@ -112,13 +116,7 @@ where
         layout
     }
 
-    fn render(&self, f: &mut Frame, s: &AppState, layout: &ComponentLayout) {
-        let Some(&area) = layout.get(&self.id) else {
-            return;
-        };
-        let is_focused = s.layout_model.is_focused(self.id);
-        self.model.draw(f, area, is_focused);
-    }
+    fn render(&self, _f: &mut Frame, _s: &AppState, _layout: &ComponentLayout) {}
 
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
         match event {

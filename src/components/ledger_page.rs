@@ -6,7 +6,11 @@ use crate::{
         search_bar::SearchBarComponent, search_list::SearchListComponent, tabs::TabsComponent,
     },
     controller::{LayoutSpec, walk_layout},
-    model::{ledger_search::LedgerUtxoProvider, list_view::ListModelView},
+    model::{
+        layout::{MoveFocus, find_next_focus},
+        ledger_search::LedgerUtxoProvider,
+        list_view::ListModelView,
+    },
     states::{Action, ComponentId, LedgerBrowse, LedgerMode, LedgerSearch},
     store::owned_iter::{
         OwnedAccountIter, OwnedBlockIssuerIter, OwnedDRepIter, OwnedPoolIter, OwnedProposalIter,
@@ -273,6 +277,18 @@ impl LedgerPageComponent {
     fn handle_search(&mut self, query: &str) {
         self.utxos_by_addr_list.handle_search(query);
     }
+
+    pub fn handle_navigation(&mut self, direction: MoveFocus) -> Vec<Action> {
+        let layout = self.last_layout.read().unwrap();
+        let active_focus = *self.active_focus.read().unwrap();
+
+        if let Some(next) = find_next_focus(&layout, active_focus, direction) {
+            *self.active_focus.write().unwrap() = next;
+            return vec![Action::SetFocus(next)];
+        }
+
+        Vec::new()
+    }
 }
 
 impl Component for LedgerPageComponent {
@@ -313,20 +329,9 @@ impl Component for LedgerPageComponent {
         {
             // Handle the logic locally
             self.handle_search(&query);
-            // Trigger a re-render to show results
-            actions.push(Action::Render);
         }
 
         *self.active_focus.write().unwrap() = active_focus;
-
-        let old_browse = self.browse_options.model.selected_item().cloned();
-        let old_search = self.search_options.model.selected_item().cloned();
-
-        if self.browse_options.model.selected_item() != old_browse.as_ref()
-            || self.search_options.model.selected_item() != old_search.as_ref()
-        {
-            actions.push(Action::UpdateLayout(Rect::default()));
-        }
 
         actions
     }
@@ -374,53 +379,51 @@ impl Component for LedgerPageComponent {
             let mut layout_guard = self.last_layout.write().unwrap();
             *layout_guard = my_layout.clone();
         }
-        {
-            let mut focus_guard = self.active_focus.write().unwrap();
-            *focus_guard = s.layout_model.get_focus();
-        }
 
+        let current_focus = *self.active_focus.read().unwrap();
         for (id, area) in my_layout.iter() {
             let area = *area;
-            let is_focused = s.layout_model.is_focused(*id);
+            let is_focused = current_focus == *id;
 
             match id {
                 // --- Mode tabs ---
                 ComponentId::LedgerModeTabs => {
-                    self.mode_tabs.render(f, s, &my_layout);
+                    self.mode_tabs.render_focused(f, area, is_focused);
                 }
                 // --- Search bar ---
                 ComponentId::SearchBar => {
-                    self.search_bar.render(f, s, &my_layout);
+                    self.search_bar.render_focused(f, area, is_focused);
                 }
+
                 // --- Options ---
                 ComponentId::LedgerBrowseOptions => {
-                    self.browse_options.render(f, s, &my_layout);
+                    self.browse_options.render_focused(f, area, is_focused);
                 }
                 ComponentId::LedgerSearchOptions => {
-                    self.search_options.render(f, s, &my_layout);
+                    self.search_options.render_focused(f, area, is_focused);
                 }
 
                 // --- Lists ---
                 ComponentId::LedgerAccountsList => {
-                    self.accounts_list.render(f, s, &my_layout);
+                    self.accounts_list.render_focused(f, area, is_focused);
                 }
                 ComponentId::LedgerBlockIssuersList => {
-                    self.block_issuers_list.render(f, s, &my_layout);
+                    self.block_issuers_list.render_focused(f, area, is_focused);
                 }
                 ComponentId::LedgerDRepsList => {
-                    self.dreps_list.render(f, s, &my_layout);
+                    self.dreps_list.render_focused(f, area, is_focused);
                 }
                 ComponentId::LedgerPoolsList => {
-                    self.pools_list.render(f, s, &my_layout);
+                    self.pools_list.render_focused(f, area, is_focused);
                 }
                 ComponentId::LedgerProposalsList => {
-                    self.proposals_list.render(f, s, &my_layout);
+                    self.proposals_list.render_focused(f, area, is_focused);
                 }
                 ComponentId::LedgerUtxosList => {
-                    self.utxos_list.render(f, s, &my_layout);
+                    self.utxos_list.render_focused(f, area, is_focused);
                 }
                 ComponentId::LedgerUtxosByAddrList => {
-                    self.utxos_by_addr_list.render(f, s, &my_layout);
+                    self.utxos_by_addr_list.render_focused(f, area, is_focused);
                 }
 
                 // --- Details ---

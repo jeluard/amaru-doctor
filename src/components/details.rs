@@ -78,17 +78,7 @@ where
         layout
     }
 
-    fn render(&self, f: &mut Frame, s: &AppState, layout: &ComponentLayout) {
-        let Some(&area) = layout.get(&self.id) else {
-            return;
-        };
-        let is_focused = s.layout_model.is_focused(self.id);
-
-        // Also update cache in the generic render path
-        self.is_focused.store(is_focused, Ordering::Relaxed);
-
-        draw_details::<T>(f, area, self.title.to_string(), None, is_focused);
-    }
+    fn render(&self, _f: &mut Frame, _s: &AppState, _layout: &ComponentLayout) {}
 
     fn handle_event(&mut self, event: &Event, _area: Rect) -> Vec<Action> {
         match event {
@@ -103,22 +93,18 @@ where
                 }
                 MouseEventKind::ScrollUp => {
                     self.perform_scroll(ScrollDirection::Up);
-                    return vec![Action::Render];
                 }
                 MouseEventKind::ScrollDown => {
                     self.perform_scroll(ScrollDirection::Down);
-                    return vec![Action::Render];
                 }
                 _ => {}
             },
             Event::Key(key) => match key.code {
                 KeyCode::Up => {
                     self.perform_scroll(ScrollDirection::Up);
-                    return vec![Action::Render];
                 }
                 KeyCode::Down => {
                     self.perform_scroll(ScrollDirection::Down);
-                    return vec![Action::Render];
                 }
                 _ => {}
             },

@@ -23,7 +23,6 @@ mod states;
 mod store;
 pub mod tui;
 mod ui;
-mod update;
 mod view;
 pub mod viewmodel;
 

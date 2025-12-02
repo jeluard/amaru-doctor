@@ -6,6 +6,14 @@ use crate::{
 use ratatui::layout::{Position, Rect};
 use tracing::warn;
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum MoveFocus {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
 pub trait RectExt {
     fn center(&self) -> Position;
 }
@@ -19,12 +27,42 @@ impl RectExt for Rect {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum MoveFocus {
-    Up,
-    Down,
-    Left,
-    Right,
+/// Stateless helper to find the best candidate for focus movement.
+/// Returns `None` if no suitable candidate is found.
+pub fn find_next_focus(
+    layout: &ComponentLayout,
+    current_focus: ComponentId,
+    direction: MoveFocus,
+) -> Option<ComponentId> {
+    let current_rect = layout.get(&current_focus).copied()?;
+    let current_center = current_rect.center();
+
+    let candidates = layout.iter().filter(|(id, _)| **id != current_focus);
+
+    // Filter candidates based on direction relative to current rect
+    let valid_candidates = candidates.filter(|(_, rect)| match direction {
+        MoveFocus::Up => rect.bottom() <= current_rect.top(),
+        MoveFocus::Down => rect.top() >= current_rect.bottom(),
+        MoveFocus::Left => rect.right() <= current_rect.left(),
+        MoveFocus::Right => rect.left() >= current_rect.right(),
+    });
+
+    // Find the closest candidate
+    valid_candidates
+        .min_by_key(|(_, rect)| {
+            let target_center = rect.center();
+            match direction {
+                MoveFocus::Up | MoveFocus::Down => (
+                    target_center.y.abs_diff(current_center.y), // Primary axis: Y distance
+                    target_center.x.abs_diff(current_center.x), // Secondary axis: X alignment
+                ),
+                MoveFocus::Left | MoveFocus::Right => (
+                    target_center.x.abs_diff(current_center.x), // Primary axis: X distance
+                    target_center.y.abs_diff(current_center.y), // Secondary axis: Y alignment
+                ),
+            }
+        })
+        .map(|(id, _)| *id)
 }
 
 #[derive(Debug)]

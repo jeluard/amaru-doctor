@@ -37,6 +37,10 @@ impl TraceListComponent {
         self.list.select_index_by_row(relative_row);
         Vec::new()
     }
+
+    pub fn render_focused(&self, f: &mut Frame, area: Rect, is_focused: bool) {
+        self.list.draw(f, area, is_focused);
+    }
 }
 
 impl Component for TraceListComponent {
@@ -56,35 +60,32 @@ impl Component for TraceListComponent {
         layout
     }
 
-    fn render(&self, f: &mut Frame, s: &AppState, layout: &ComponentLayout) {
-        let Some(&area) = layout.get(&self.id) else {
-            return;
-        };
-        let is_focused = s.layout_model.is_focused(self.id);
-
-        self.list.draw(f, area, is_focused);
-    }
+    fn render(&self, _f: &mut Frame, _s: &AppState, _l: &ComponentLayout) {}
 
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
         self.list.set_height(area.height as usize);
 
         match event {
             Event::Key(key) => match key.code {
-                KeyCode::Up => self.list.cursor_back(),
-                KeyCode::Down => self.list.cursor_next(),
+                KeyCode::Up => {
+                    self.list.cursor_back();
+                }
+                KeyCode::Down => {
+                    self.list.cursor_next();
+                }
                 _ => {}
             },
 
             Event::Mouse(mouse) => match mouse.kind {
-                MouseEventKind::ScrollUp => self.list.cursor_back(),
-                MouseEventKind::ScrollDown => self.list.cursor_next(),
+                MouseEventKind::ScrollUp => {
+                    self.list.cursor_back();
+                }
+                MouseEventKind::ScrollDown => {
+                    self.list.cursor_next();
+                }
                 MouseEventKind::Down(MouseButton::Left) => {
                     return self.handle_click(area, mouse.row, mouse.column);
                 }
-
-                // Drag logic
-                MouseEventKind::Drag(MouseButton::Left) => {}
-
                 _ => {}
             },
             _ => {}

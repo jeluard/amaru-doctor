@@ -1,5 +1,5 @@
 use crate::ui::to_list_item::ToListItem;
-use crossterm::event::{KeyCode, MouseEvent};
+use crossterm::event::KeyCode;
 use ratatui::{layout::Rect, widgets::ListItem};
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter};
@@ -71,17 +71,12 @@ pub enum Action {
     FocusRight,
     ScrollUp,
     ScrollDown,
-    MouseDragDown,
-    MouseDragUp,
     Up,
     Down,
     Forward,
     Back,
     Key(KeyCode),
     UpdateLayout(Rect),
-    MouseEvent(MouseEvent),
-    MouseClick(u16, u16),
-    GetButtonEvents,
     SubmitSearch(String),
     SetFocus(ComponentId),
     FocusNext,
@@ -92,11 +87,7 @@ impl Action {
     pub fn is_noisy(&self) -> bool {
         matches!(
             self,
-            Self::Tick
-                | Self::Render
-                | Self::GetButtonEvents
-                | Self::MouseEvent(_)
-                | Self::SetWindowSize(_, _)
+            Self::Tick | Self::Render | Self::SetWindowSize(_, _) | Self::UpdateLayout(_)
         )
     }
 }

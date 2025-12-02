@@ -5,7 +5,10 @@ use crate::{
         handle_container_event, trace_list::TraceListComponent,
     },
     controller::{LayoutSpec, walk_layout},
-    model::otel_view::OtelViewState,
+    model::{
+        layout::{MoveFocus, find_next_focus},
+        otel_view::OtelViewState,
+    },
     otel::{TraceGraphSnapshot, graph::TraceGraph, id::SpanId, span_ext::SpanExt},
     states::{Action, ComponentId},
     tui::Event,
@@ -84,6 +87,18 @@ impl OtelPageComponent {
                 .and_then(|id| data.spans.get(id).cloned());
         }
     }
+
+    pub fn handle_navigation(&mut self, direction: MoveFocus) -> Vec<Action> {
+        let layout = self.last_layout.read().unwrap();
+        let active_focus = *self.active_focus.read().unwrap();
+
+        if let Some(next) = find_next_focus(&layout, active_focus, direction) {
+            *self.active_focus.write().unwrap() = next;
+            return vec![Action::SetFocus(next)];
+        }
+
+        Vec::new()
+    }
 }
 
 impl Component for OtelPageComponent {
@@ -136,17 +151,30 @@ impl Component for OtelPageComponent {
         let layout = self.last_layout.read().unwrap().clone();
         let mut active_focus = *self.active_focus.read().unwrap();
 
-        let mut actions = handle_container_event(
+        let actions = handle_container_event(
             &layout,
             &mut active_focus,
             event,
             area,
             |target_id, ev, child_area| {
                 match target_id {
-                    ComponentId::OtelTraceList => self.trace_list.handle_event(ev, child_area),
+                    ComponentId::OtelTraceList => {
+                        // Capture old selection
+                        let old_selection = self.trace_list.selected_item().copied();
+
+                        // Handle Event (Click/Key)
+                        let acts = self.trace_list.handle_event(ev, child_area);
+
+                        // Check for Change & Sync Immediately
+                        let new_selection = self.trace_list.selected_item();
+                        if new_selection != old_selection.as_ref() {
+                            self.view_state.select_trace(new_selection.copied());
+                        }
+                        acts
+                    }
 
                     ComponentId::OtelFlameGraph => {
-                        let mut acts = self.flame_graph.handle_event(ev, child_area);
+                        let acts = self.flame_graph.handle_event(ev, child_area);
 
                         // Hover Logic
                         if let Event::Mouse(mouse) = ev {
@@ -160,17 +188,22 @@ impl Component for OtelPageComponent {
                                     .and_then(|span_id| trace_graph.spans.get(&span_id).cloned());
                                 if self.view_state.focused_span != new_focus {
                                     self.view_state.focused_span = new_focus;
-                                    acts.push(Action::Render);
                                 }
                             }
 
                             // Mouse Scroll Logic
                             if mouse.kind == MouseEventKind::ScrollDown {
                                 self.scroll_trace_details(1);
-                                acts.push(Action::Render);
                             } else if mouse.kind == MouseEventKind::ScrollUp {
                                 self.scroll_trace_details(-1);
-                                acts.push(Action::Render);
+                            }
+
+                            // "Zoom In" by locking the currently focused span
+                            if mouse.kind
+                                == MouseEventKind::Down(crossterm::event::MouseButton::Left)
+                                && let Some(focused) = &self.view_state.focused_span
+                            {
+                                self.view_state.selected_span = Some(focused.clone());
                             }
                         }
 
@@ -179,11 +212,9 @@ impl Component for OtelPageComponent {
                             match key.code {
                                 KeyCode::Down => {
                                     self.scroll_trace_details(1);
-                                    acts.push(Action::Render);
                                 }
                                 KeyCode::Up => {
                                     self.scroll_trace_details(-1);
-                                    acts.push(Action::Render);
                                 }
                                 _ => {}
                             }
@@ -199,16 +230,10 @@ impl Component for OtelPageComponent {
         );
 
         *self.active_focus.write().unwrap() = active_focus;
-
-        if let Event::Mouse(mouse) = event {
-            actions.push(Action::MouseEvent(*mouse));
-        }
-
         actions
     }
 
     fn tick(&mut self) -> Vec<Action> {
-        // Get the currently selected trace from the UI list
         let selected_trace = self.trace_list.selected_item().copied();
 
         // Sync the ViewState (Data) with the UI selection
@@ -218,7 +243,6 @@ impl Component for OtelPageComponent {
             return Vec::new();
         }
 
-        // If data changed, update the UI List
         let data = self.view_state.trace_graph.load();
         let mut trace_ids: Vec<_> = data.traces.keys().copied().collect();
         trace_ids.sort_unstable_by_key(|id| Reverse(data.traces.get(id).unwrap().start_time()));
@@ -236,21 +260,21 @@ impl Component for OtelPageComponent {
             let mut layout_guard = self.last_layout.write().unwrap();
             *layout_guard = my_layout.clone();
         }
-        {
-            let mut focus_guard = self.active_focus.write().unwrap();
-            *focus_guard = s.layout_model.get_focus();
+
+        let current_focus = *self.active_focus.read().unwrap();
+        if let Some(rect) = my_layout.get(&ComponentId::OtelTraceList) {
+            let is_focused = current_focus == ComponentId::OtelTraceList;
+            self.trace_list.render_focused(f, *rect, is_focused);
         }
 
-        if let Some(_rect) = my_layout.get(&ComponentId::OtelTraceList) {
-            self.trace_list.render(f, s, &my_layout);
-        }
         if let Some(rect) = my_layout.get(&ComponentId::OtelFlameGraph) {
-            let is_focused = s.layout_model.is_focused(ComponentId::OtelFlameGraph);
+            let is_focused = current_focus == ComponentId::OtelFlameGraph;
             self.flame_graph
                 .render_with_state(f, *rect, &self.view_state, is_focused);
         }
+
         if let Some(rect) = my_layout.get(&ComponentId::OtelSpanDetails) {
-            let is_focused = s.layout_model.is_focused(ComponentId::OtelSpanDetails);
+            let is_focused = current_focus == ComponentId::OtelSpanDetails;
             self.span_details.render_with_data(
                 f,
                 *rect,

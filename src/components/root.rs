@@ -6,6 +6,7 @@ use crate::{
         prometheus_page::PrometheusPageComponent, tabs::TabsComponent,
     },
     controller::{LayoutSpec, walk_layout},
+    model::layout::MoveFocus,
     otel::TraceGraphSnapshot,
     prometheus::model::NodeMetrics,
     states::{Action, ComponentId, InspectOption},
@@ -101,26 +102,6 @@ impl Component for RootComponent {
         actions
     }
 
-    fn render(&self, f: &mut Frame, s: &AppState, _ignored_layout: &ComponentLayout) {
-        let area = f.area();
-        let my_layout = self.calculate_layout(area, s);
-
-        // Render Tabs
-        if let Some(tabs_area) = my_layout.get(&ComponentId::InspectTabs) {
-            let mut tabs_layout = HashMap::new();
-            tabs_layout.insert(ComponentId::InspectTabs, *tabs_area);
-            self.tabs.render(f, s, &tabs_layout);
-        }
-
-        // Render Active Page
-        match self.tabs.selected() {
-            InspectOption::Ledger => self.ledger_page.render(f, s, &my_layout),
-            InspectOption::Chain => self.chain_page.render(f, s, &my_layout),
-            InspectOption::Otel => self.otel_page.render(f, s, &my_layout),
-            InspectOption::Prometheus => self.prometheus_page.render(f, s, &my_layout),
-        }
-    }
-
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
         if let Event::Key(key) = event {
             if key.code == KeyCode::Tab {
@@ -155,6 +136,43 @@ impl Component for RootComponent {
             InspectOption::Chain => self.chain_page.handle_event(event, page_area),
             InspectOption::Otel => self.otel_page.handle_event(event, page_area),
             InspectOption::Prometheus => self.prometheus_page.handle_event(event, page_area),
+        }
+    }
+
+    fn handle_action(&mut self, action: Action) -> Vec<Action> {
+        // Map Action::Focus* to MoveFocus enum
+        let direction = match action {
+            Action::FocusUp => MoveFocus::Up,
+            Action::FocusDown => MoveFocus::Down,
+            Action::FocusLeft => MoveFocus::Left,
+            Action::FocusRight => MoveFocus::Right,
+            _ => return Vec::new(),
+        };
+
+        // Delegate navigation to the active page
+        match self.tabs.selected() {
+            InspectOption::Ledger => self.ledger_page.handle_navigation(direction),
+            InspectOption::Chain => self.chain_page.handle_navigation(direction),
+            InspectOption::Otel => self.otel_page.handle_navigation(direction),
+            InspectOption::Prometheus => self.prometheus_page.handle_navigation(direction),
+        }
+    }
+
+    fn render(&self, f: &mut Frame, s: &AppState, _ignored_layout: &ComponentLayout) {
+        let area = f.area();
+        let my_layout = self.calculate_layout(area, s);
+
+        // Render Tabs
+        if let Some(tabs_area) = my_layout.get(&ComponentId::InspectTabs) {
+            self.tabs.render_focused(f, *tabs_area, false);
+        }
+
+        // Render Active Page
+        match self.tabs.selected() {
+            InspectOption::Ledger => self.ledger_page.render(f, s, &my_layout),
+            InspectOption::Chain => self.chain_page.render(f, s, &my_layout),
+            InspectOption::Otel => self.otel_page.render(f, s, &my_layout),
+            InspectOption::Prometheus => self.prometheus_page.render(f, s, &my_layout),
         }
     }
 }

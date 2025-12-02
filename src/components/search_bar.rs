@@ -27,6 +27,18 @@ impl SearchBarComponent {
             input: String::new(),
         }
     }
+
+    pub fn render_focused(&self, f: &mut Frame, area: Rect, is_focused: bool) {
+        let mut block = Block::default().title("Search").borders(Borders::ALL);
+        if is_focused {
+            block = block
+                .border_style(Style::default().fg(Color::Blue))
+                .title_style(Style::default().fg(Color::White));
+        }
+
+        let paragraph = Paragraph::new(Line::from(Span::raw(&self.input))).block(block);
+        f.render_widget(paragraph, area);
+    }
 }
 
 impl Component for SearchBarComponent {
@@ -48,23 +60,7 @@ impl Component for SearchBarComponent {
         layout
     }
 
-    /// Renders the search bar, pulling its state from the old model
-    fn render(&self, f: &mut Frame, s: &AppState, layout: &ComponentLayout) {
-        let Some(&area) = layout.get(&self.id) else {
-            return;
-        };
-
-        let is_focused = s.layout_model.is_focused(self.id);
-        let mut block = Block::default().title("Search").borders(Borders::ALL);
-        if is_focused {
-            block = block
-                .border_style(Style::default().fg(Color::Blue))
-                .title_style(Style::default().fg(Color::White));
-        }
-
-        let paragraph = Paragraph::new(Line::from(Span::raw(&self.input))).block(block);
-        f.render_widget(paragraph, area);
-    }
+    fn render(&self, _f: &mut Frame, _s: &AppState, _layout: &ComponentLayout) {}
 
     fn handle_event(&mut self, event: &Event, _area: Rect) -> Vec<Action> {
         if let Event::Mouse(_) = event {
@@ -74,11 +70,9 @@ impl Component for SearchBarComponent {
             Event::Key(key) => match key.code {
                 KeyCode::Char(c) => {
                     self.input.push(c);
-                    return vec![Action::Render];
                 }
                 KeyCode::Backspace => {
                     self.input.pop();
-                    return vec![Action::Render];
                 }
                 KeyCode::Enter => {
                     return vec![Action::SubmitSearch(self.input.clone())];

@@ -6,9 +6,8 @@ use crate::{
     model::button::InputEvent,
     otel::TraceGraphSnapshot,
     prometheus::model::NodeMetrics,
-    states::{Action, InspectOption},
+    states::Action,
     tui::{Event, Tui},
-    update::{UPDATE_DEFS, UpdateList},
 };
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
 use anyhow::Result;
@@ -25,8 +24,6 @@ use tracing::debug;
 pub struct App {
     config: Config,
     app_state: AppState, // Model
-    updates: UpdateList, // Update
-    last_store_option: InspectOption,
     should_quit: bool,
     should_suspend: bool,
     mode: Mode,
@@ -58,8 +55,6 @@ impl App {
 
         Ok(Self {
             app_state,
-            updates: UPDATE_DEFS.to_vec(),
-            last_store_option: InspectOption::default(),
             should_quit: false,
             should_suspend: false,
             config: Config::new()?,
@@ -178,12 +173,21 @@ impl App {
                 debug!("{action:?}");
             }
 
+            let root_actions = self.root.handle_action(action.clone());
+            for a in root_actions {
+                self.action_tx.send(a)?;
+            }
+
             match action {
                 Action::Tick => {
                     self.last_tick_key_events.clear();
                     let actions = self.root.tick();
                     for a in actions {
                         self.action_tx.send(a)?;
+                    }
+                    for input_event in self.app_state.button_events.try_iter() {
+                        let action = input_event.to_action();
+                        self.action_tx.send(action)?;
                     }
                 }
                 Action::Quit => self.should_quit = true,
@@ -193,51 +197,31 @@ impl App {
                     .clear()
                     .map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?,
                 Action::Resize(w, h) => self.handle_resize(tui, w, h)?,
-                Action::Render => self.render(tui)?,
+                Action::UpdateLayout(area) => {
+                    self.app_state.frame_area = area;
+                    self.render(tui)?;
+                }
+                Action::Render => {
+                    self.render(tui)?;
+                }
                 _ => {}
             }
-
-            self.run_updates(&action)?;
         }
 
-        Ok(())
-    }
-
-    fn run_updates(&mut self, action: &Action) -> Result<()> {
-        let mut next_actions = Vec::new();
-        for updater in &self.updates {
-            next_actions.extend(updater.update(action, &mut self.app_state, &mut self.root));
-        }
-        for next_action in next_actions {
-            self.action_tx.send(next_action)?
-        }
         Ok(())
     }
 
     fn handle_resize<B: Backend>(&mut self, tui: &mut Tui<B>, w: u16, h: u16) -> Result<()> {
-        tui.resize(Rect::new(0, 0, w, h))
+        let new_area = Rect::new(0, 0, w, h);
+        tui.resize(new_area)
             .map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?;
+        self.app_state.frame_area = new_area;
         self.render(tui)
     }
 
     fn render<B: Backend>(&mut self, tui: &mut Tui<B>) -> Result<()> {
-        tui.draw(|f| {
-            let frame_area = f.area();
-            let current_selection = self.root.tabs.selected();
-
-            if frame_area != self.app_state.frame_area
-                || current_selection != self.last_store_option
-            {
-                // TODO: Remove this, we shouldn't be updating the layout here
-                debug!("Frame area or store option changed");
-                let action = Action::UpdateLayout(frame_area);
-                let _ = self.run_updates(&action);
-                self.last_store_option = current_selection;
-            }
-
-            self.root.render(f, &self.app_state, &HashMap::new());
-        })
-        .map(|_| ())
-        .map_err(|e| anyhow::Error::msg(format!("{:?}", e)))
+        tui.draw(|f| self.root.render(f, &self.app_state, &HashMap::new()))
+            .map(|_| ())
+            .map_err(|e| anyhow::Error::msg(format!("{:?}", e)))
     }
 }

@@ -68,6 +68,24 @@ impl ChainSearchComponent {
             self.state.cache_result(hash, (header, block, nonces));
         }
     }
+
+    pub fn render_focused(&self, f: &mut Frame, area: Rect, is_focused: bool) {
+        let chunks = self.get_layout_chunks(area);
+
+        let result = self.state.get_current_res();
+        let header = result.map(|r| &r.0);
+        let block = result.map(|r| &r.1);
+        let nonces = result.map(|r| &r.2);
+
+        // Highlight specific columns if globally focused (and specific column selected)
+        let f0 = is_focused && self.focused_column == Some(0);
+        let f1 = is_focused && self.focused_column == Some(1);
+        let f2 = is_focused && self.focused_column == Some(2);
+
+        draw_details(f, chunks[0], "Header Details".to_string(), header, f0);
+        draw_details(f, chunks[1], "Block Details".to_string(), block, f1);
+        draw_details(f, chunks[2], "Nonces Details".to_string(), nonces, f2);
+    }
 }
 
 impl Component for ChainSearchComponent {
@@ -87,27 +105,7 @@ impl Component for ChainSearchComponent {
         l
     }
 
-    fn render(&self, f: &mut Frame, s: &AppState, layout: &ComponentLayout) {
-        let Some(&area) = layout.get(&self.id) else {
-            return;
-        };
-        let is_globally_focused = s.layout_model.is_focused(self.id);
-
-        let chunks = self.get_layout_chunks(area);
-
-        let result = self.state.get_current_res();
-        let header = result.map(|r| &r.0);
-        let block = result.map(|r| &r.1);
-        let nonces = result.map(|r| &r.2);
-
-        let f0 = is_globally_focused && self.focused_column == Some(0);
-        let f1 = is_globally_focused && self.focused_column == Some(1);
-        let f2 = is_globally_focused && self.focused_column == Some(2);
-
-        draw_details(f, chunks[0], "Header Details".to_string(), header, f0);
-        draw_details(f, chunks[1], "Block Details".to_string(), block, f1);
-        draw_details(f, chunks[2], "Nonces Details".to_string(), nonces, f2);
-    }
+    fn render(&self, _f: &mut Frame, _s: &AppState, _layout: &ComponentLayout) {}
 
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
         if let Event::Mouse(mouse) = event
@@ -124,7 +122,6 @@ impl Component for ChainSearchComponent {
                     && mouse.row < rect.y + rect.height
                 {
                     self.focused_column = Some(i);
-                    return vec![Action::Render]; // Trigger redraw to update borders
                 }
             }
         }
