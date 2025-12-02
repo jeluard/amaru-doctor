@@ -1,11 +1,10 @@
 use crate::{
     components::{Component, ScrollDirection},
     states::{Action, ComponentId},
-    tui::Event,
     ui::ToRichText,
     view::item_details::draw_details,
 };
-use crossterm::event::{KeyCode, MouseButton, MouseEventKind};
+use crossterm::event::{Event, KeyCode, MouseButton, MouseEventKind};
 use ratatui::{Frame, layout::Rect};
 use std::{
     any::Any,

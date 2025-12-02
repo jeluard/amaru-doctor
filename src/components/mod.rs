@@ -1,9 +1,5 @@
-use crate::{
-    states::{Action, ComponentId},
-    tui::Event,
-};
-use crossterm::event::MouseButton;
-use crossterm::event::MouseEventKind;
+use crate::states::{Action, ComponentId};
+use crossterm::event::{Event, MouseButton, MouseEventKind};
 use ratatui::layout::Rect;
 use std::{any::Any, collections::HashMap};
 

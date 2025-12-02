@@ -8,10 +8,9 @@ use crate::{
     otel::TraceGraphSnapshot,
     prometheus::model::NodeMetrics,
     states::{Action, ComponentId, InspectOption},
-    tui::Event,
 };
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
-use crossterm::event::{KeyCode, KeyModifiers};
+use crossterm::event::{Event, KeyCode, KeyModifiers};
 use either::Either::Left;
 use ratatui::{
     Frame,

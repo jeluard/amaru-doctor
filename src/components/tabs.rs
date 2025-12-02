@@ -2,9 +2,8 @@ use crate::{
     components::Component,
     model::cursor::Cursor,
     states::{Action, ComponentId},
-    tui::Event,
 };
-use crossterm::event::{KeyCode, MouseButton, MouseEventKind};
+use crossterm::event::{Event, KeyCode, MouseButton, MouseEventKind};
 use ratatui::{
     Frame,
     layout::Rect,

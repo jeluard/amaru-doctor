@@ -2,14 +2,12 @@ use crate::{
     components::Component,
     model::search::SearchCache,
     states::{Action, ComponentId},
-    tui::Event,
     view::item_details::draw_details,
 };
 use amaru_consensus::{BlockHeader, Nonces, ReadOnlyChainStore};
 use amaru_kernel::{Hash, RawBlock};
 use amaru_stores::rocksdb::consensus::ReadOnlyChainDB;
-use crossterm::event::MouseButton;
-use crossterm::event::MouseEventKind;
+use crossterm::event::{Event, MouseButton, MouseEventKind};
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},

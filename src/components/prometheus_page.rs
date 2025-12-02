@@ -5,8 +5,8 @@ use crate::{
     controller::{LayoutSpec, MoveFocus, find_next_focus, walk_layout},
     prometheus::model::NodeMetrics,
     states::{Action, ComponentId},
-    tui::Event,
 };
+use crossterm::event::Event;
 use either::Either::Left;
 use ratatui::{
     Frame,

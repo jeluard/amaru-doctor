@@ -1,6 +1,6 @@
 use crate::ui::to_list_item::ToListItem;
 use crossterm::event::KeyCode;
-use ratatui::{layout::Rect, widgets::ListItem};
+use ratatui::widgets::ListItem;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter};
 
@@ -9,7 +9,6 @@ pub enum ComponentId {
     // --- Containers ---
     #[default]
     Root,
-    LegacyRoot,
     LedgerPage,
     OtelPage,
     PrometheusPage,
@@ -58,7 +57,6 @@ pub enum Action {
     Tick,
     Render,
     Resize(u16, u16),
-    SetWindowSize(ComponentId, usize),
     Suspend,
     Resume,
     Quit,
@@ -76,7 +74,6 @@ pub enum Action {
     Forward,
     Back,
     Key(KeyCode),
-    UpdateLayout(Rect),
     SubmitSearch(String),
     SetFocus(ComponentId),
     FocusNext,
@@ -85,10 +82,7 @@ pub enum Action {
 
 impl Action {
     pub fn is_noisy(&self) -> bool {
-        matches!(
-            self,
-            Self::Tick | Self::Render | Self::SetWindowSize(_, _) | Self::UpdateLayout(_)
-        )
+        matches!(self, Self::Tick | Self::Render)
     }
 }
 

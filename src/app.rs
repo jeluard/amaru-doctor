@@ -9,7 +9,7 @@ use crate::{
 };
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
 use anyhow::Result;
-use crossterm::event::KeyEvent;
+use crossterm::event::{Event as CrosstermEvent, KeyEvent};
 use ratatui::prelude::{Backend, Rect};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -112,27 +112,25 @@ impl App {
         let action_tx = self.action_tx.clone();
 
         match event {
-            Event::Quit => action_tx.send(Action::Quit)?,
-            Event::Tick => action_tx.send(Action::Tick)?,
-            Event::Render => action_tx.send(Action::Render)?,
-            Event::Resize(x, y) => action_tx.send(Action::Resize(x, y))?,
-
-            Event::Key(key) => {
-                let handled = self.dispatch_event(Event::Key(key)).await?;
-                if !handled {
+            Event::Input(CrosstermEvent::Resize(w, h)) => {
+                self.action_tx.send(Action::Resize(w, h))?
+            }
+            Event::Input(crossterm_event) => {
+                let handled = self.dispatch_event(crossterm_event.clone()).await?;
+                // Fallback for global keys if component didn't handle it
+                if !handled && let CrosstermEvent::Key(key) = crossterm_event {
                     self.handle_config_key(key)?;
                 }
             }
-
-            Event::Mouse(mouse) => {
-                self.dispatch_event(Event::Mouse(mouse)).await?;
-            }
+            Event::Tick => action_tx.send(Action::Tick)?,
+            Event::Render => action_tx.send(Action::Render)?,
+            Event::Quit => action_tx.send(Action::Quit)?,
             _ => {}
         }
         Ok(())
     }
 
-    async fn dispatch_event(&mut self, event: Event) -> Result<bool> {
+    async fn dispatch_event(&mut self, event: CrosstermEvent) -> Result<bool> {
         let actions = self.root.handle_event(&event, self.frame_area);
         let handled = !actions.is_empty();
 
@@ -194,10 +192,6 @@ impl App {
                     .clear()
                     .map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?,
                 Action::Resize(w, h) => self.handle_resize(tui, w, h)?,
-                Action::UpdateLayout(area) => {
-                    self.frame_area = area;
-                    self.render(tui)?;
-                }
                 Action::Render => {
                     self.render(tui)?;
                 }

@@ -2,11 +2,10 @@ use crate::{
     components::{Component, async_list::AsyncListModel, list::ListModel},
     model::search::SearchCache,
     states::{Action, ComponentId},
-    tui::Event,
     ui::to_list_item::ToListItem,
     view::empty_list::draw_empty_list,
 };
-use crossterm::event::{KeyCode, MouseButton, MouseEventKind};
+use crossterm::event::{Event, KeyCode, MouseButton, MouseEventKind};
 use ratatui::prelude::*;
 use std::{any::Any, hash::Hash, str::FromStr};
 
