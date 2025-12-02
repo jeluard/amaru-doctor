@@ -1,5 +1,5 @@
 use crate::{
-    components::{Component, ComponentLayout},
+    components::Component,
     otel::id::TraceId,
     states::{Action, ComponentId},
     tui::Event,
@@ -52,14 +52,6 @@ impl Component for TraceListComponent {
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
-
-    fn calculate_layout(&self, area: Rect) -> ComponentLayout {
-        let mut layout = ComponentLayout::new();
-        layout.insert(self.id, area);
-        layout
-    }
-
-    fn render(&self, _f: &mut Frame, _l: &ComponentLayout) {}
 
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
         self.list.set_height(area.height as usize);

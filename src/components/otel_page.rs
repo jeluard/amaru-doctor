@@ -3,11 +3,8 @@ use crate::{
         Component, ComponentLayout, details::DetailsComponent, flame_graph::FlameGraphComponent,
         handle_container_event, trace_list::TraceListComponent,
     },
-    controller::{LayoutSpec, walk_layout},
-    model::{
-        layout::{MoveFocus, find_next_focus},
-        otel_view::OtelViewState,
-    },
+    controller::{LayoutSpec, MoveFocus, find_next_focus, walk_layout},
+    model::otel_view::OtelViewState,
     otel::{TraceGraphSnapshot, graph::TraceGraph, id::SpanId, span_ext::SpanExt},
     states::{Action, ComponentId},
     tui::Event,
@@ -98,20 +95,8 @@ impl OtelPageComponent {
 
         Vec::new()
     }
-}
 
-impl Component for OtelPageComponent {
-    fn id(&self) -> ComponentId {
-        self.id
-    }
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
-    }
-
-    fn calculate_layout(&self, area: Rect) -> ComponentLayout {
+    pub fn calculate_layout(&self, area: Rect) -> ComponentLayout {
         let spec = LayoutSpec {
             direction: Direction::Vertical,
             constraints: vec![(
@@ -144,6 +129,50 @@ impl Component for OtelPageComponent {
         let mut layout = HashMap::new();
         walk_layout(&mut layout, &spec, area);
         layout
+    }
+
+    pub fn render(&self, f: &mut Frame, parent_layout: &ComponentLayout) {
+        let my_area = parent_layout.get(&self.id).copied().unwrap_or(f.area());
+        let my_layout = self.calculate_layout(my_area);
+
+        {
+            let mut layout_guard = self.last_layout.write().unwrap();
+            *layout_guard = my_layout.clone();
+        }
+
+        let current_focus = *self.active_focus.read().unwrap();
+        if let Some(rect) = my_layout.get(&ComponentId::OtelTraceList) {
+            let is_focused = current_focus == ComponentId::OtelTraceList;
+            self.trace_list.render_focused(f, *rect, is_focused);
+        }
+
+        if let Some(rect) = my_layout.get(&ComponentId::OtelFlameGraph) {
+            let is_focused = current_focus == ComponentId::OtelFlameGraph;
+            self.flame_graph
+                .render_with_state(f, *rect, &self.view_state, is_focused);
+        }
+
+        if let Some(rect) = my_layout.get(&ComponentId::OtelSpanDetails) {
+            let is_focused = current_focus == ComponentId::OtelSpanDetails;
+            self.span_details.render_with_data(
+                f,
+                *rect,
+                is_focused,
+                self.view_state.focused_span.as_deref(),
+            );
+        }
+    }
+}
+
+impl Component for OtelPageComponent {
+    fn id(&self) -> ComponentId {
+        self.id
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
@@ -249,37 +278,5 @@ impl Component for OtelPageComponent {
         self.trace_list.sync_state(trace_ids);
 
         Vec::new()
-    }
-
-    fn render(&self, f: &mut Frame, parent_layout: &ComponentLayout) {
-        let my_area = parent_layout.get(&self.id).copied().unwrap_or(f.area());
-        let my_layout = self.calculate_layout(my_area);
-
-        {
-            let mut layout_guard = self.last_layout.write().unwrap();
-            *layout_guard = my_layout.clone();
-        }
-
-        let current_focus = *self.active_focus.read().unwrap();
-        if let Some(rect) = my_layout.get(&ComponentId::OtelTraceList) {
-            let is_focused = current_focus == ComponentId::OtelTraceList;
-            self.trace_list.render_focused(f, *rect, is_focused);
-        }
-
-        if let Some(rect) = my_layout.get(&ComponentId::OtelFlameGraph) {
-            let is_focused = current_focus == ComponentId::OtelFlameGraph;
-            self.flame_graph
-                .render_with_state(f, *rect, &self.view_state, is_focused);
-        }
-
-        if let Some(rect) = my_layout.get(&ComponentId::OtelSpanDetails) {
-            let is_focused = current_focus == ComponentId::OtelSpanDetails;
-            self.span_details.render_with_data(
-                f,
-                *rect,
-                is_focused,
-                self.view_state.focused_span.as_deref(),
-            );
-        }
     }
 }

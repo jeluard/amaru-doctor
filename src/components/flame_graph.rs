@@ -1,5 +1,5 @@
 use crate::{
-    components::{Component, ComponentLayout},
+    components::Component,
     model::otel_view::OtelViewState,
     otel::{
         TreeBounds,
@@ -70,14 +70,6 @@ impl Component for FlameGraphComponent {
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
-
-    fn calculate_layout(&self, area: Rect) -> ComponentLayout {
-        let mut layout = ComponentLayout::new();
-        layout.insert(self.id, area);
-        layout
-    }
-
-    fn render(&self, _f: &mut Frame, _l: &ComponentLayout) {}
 }
 
 /// Determines which view to render based on the provided view state.
