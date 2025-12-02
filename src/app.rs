@@ -1,6 +1,4 @@
 use crate::{
-    ScreenMode,
-    app_state::AppState,
     components::{Component, root::RootComponent},
     config::Config,
     model::button::InputEvent,
@@ -23,7 +21,8 @@ use tracing::debug;
 
 pub struct App {
     config: Config,
-    app_state: AppState, // Model
+    button_events: mpsc::Receiver<InputEvent>,
+    frame_area: Rect,
     should_quit: bool,
     should_suspend: bool,
     mode: Mode,
@@ -47,14 +46,12 @@ impl App {
         prom_metrics: Receiver<NodeMetrics>,
         button_events: mpsc::Receiver<InputEvent>,
         frame_area: Rect,
-        screen_mode: ScreenMode,
     ) -> Result<Self> {
         let (action_tx, action_rx) = unbounded_channel();
 
-        let app_state = AppState::new(button_events, frame_area, screen_mode)?;
-
         Ok(Self {
-            app_state,
+            button_events,
+            frame_area,
             should_quit: false,
             should_suspend: false,
             config: Config::new()?,
@@ -136,7 +133,7 @@ impl App {
     }
 
     async fn dispatch_event(&mut self, event: Event) -> Result<bool> {
-        let actions = self.root.handle_event(&event, self.app_state.frame_area);
+        let actions = self.root.handle_event(&event, self.frame_area);
         let handled = !actions.is_empty();
 
         for action in actions {
@@ -185,7 +182,7 @@ impl App {
                     for a in actions {
                         self.action_tx.send(a)?;
                     }
-                    for input_event in self.app_state.button_events.try_iter() {
+                    for input_event in self.button_events.try_iter() {
                         let action = input_event.to_action();
                         self.action_tx.send(action)?;
                     }
@@ -198,7 +195,7 @@ impl App {
                     .map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?,
                 Action::Resize(w, h) => self.handle_resize(tui, w, h)?,
                 Action::UpdateLayout(area) => {
-                    self.app_state.frame_area = area;
+                    self.frame_area = area;
                     self.render(tui)?;
                 }
                 Action::Render => {
@@ -215,12 +212,12 @@ impl App {
         let new_area = Rect::new(0, 0, w, h);
         tui.resize(new_area)
             .map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?;
-        self.app_state.frame_area = new_area;
+        self.frame_area = new_area;
         self.render(tui)
     }
 
     fn render<B: Backend>(&mut self, tui: &mut Tui<B>) -> Result<()> {
-        tui.draw(|f| self.root.render(f, &self.app_state, &HashMap::new()))
+        tui.draw(|f| self.root.render(f, &HashMap::new()))
             .map(|_| ())
             .map_err(|e| anyhow::Error::msg(format!("{:?}", e)))
     }

@@ -1,5 +1,4 @@
 use crate::{
-    app_state::AppState,
     components::{
         Component, ComponentLayout, chain_search::ChainSearchComponent,
         search_bar::SearchBarComponent,
@@ -68,7 +67,7 @@ impl Component for ChainPageComponent {
         self
     }
 
-    fn calculate_layout(&self, area: Rect, _s: &AppState) -> ComponentLayout {
+    fn calculate_layout(&self, area: Rect) -> ComponentLayout {
         let spec = LayoutSpec {
             direction: Direction::Vertical,
             constraints: vec![
@@ -120,9 +119,9 @@ impl Component for ChainPageComponent {
         actions
     }
 
-    fn render(&self, f: &mut Frame, s: &AppState, parent_layout: &ComponentLayout) {
+    fn render(&self, f: &mut Frame, parent_layout: &ComponentLayout) {
         let my_area = parent_layout.get(&self.id).copied().unwrap_or(f.area());
-        let my_layout = self.calculate_layout(my_area, s);
+        let my_layout = self.calculate_layout(my_area);
 
         {
             let mut layout_guard = self.last_layout.write().unwrap();

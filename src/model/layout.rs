@@ -1,5 +1,4 @@
 use crate::{
-    ScreenMode,
     components::ComponentLayout,
     states::{ComponentId, InspectOption, LedgerMode},
 };
@@ -72,12 +71,7 @@ pub struct LayoutModel {
 }
 
 impl LayoutModel {
-    pub fn new(
-        _screen_mode: ScreenMode,
-        _inspect_tabs: InspectOption,
-        _ledger_mode: LedgerMode,
-        _frame_area: Rect,
-    ) -> Self {
+    pub fn new(_inspect_tabs: InspectOption, _ledger_mode: LedgerMode, _frame_area: Rect) -> Self {
         Self {
             layout: ComponentLayout::default(),
             focus: ComponentId::default(),

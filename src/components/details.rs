@@ -1,5 +1,4 @@
 use crate::{
-    app_state::AppState,
     components::{Component, ComponentLayout, ScrollDirection},
     states::{Action, ComponentId},
     tui::Event,
@@ -72,13 +71,13 @@ where
         self
     }
 
-    fn calculate_layout(&self, area: Rect, _s: &AppState) -> ComponentLayout {
+    fn calculate_layout(&self, area: Rect) -> ComponentLayout {
         let mut layout = ComponentLayout::new();
         layout.insert(self.id, area);
         layout
     }
 
-    fn render(&self, _f: &mut Frame, _s: &AppState, _layout: &ComponentLayout) {}
+    fn render(&self, _f: &mut Frame, _layout: &ComponentLayout) {}
 
     fn handle_event(&mut self, event: &Event, _area: Rect) -> Vec<Action> {
         match event {

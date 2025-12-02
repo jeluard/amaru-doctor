@@ -1,6 +1,4 @@
 use crate::{
-    ScreenMode,
-    app_state::AppState,
     components::{
         Component, ComponentLayout, details::DetailsComponent, list::ListComponent,
         search_bar::SearchBarComponent, search_list::SearchListComponent, tabs::TabsComponent,
@@ -203,9 +201,8 @@ impl LedgerPageComponent {
         }
     }
 
-    fn build_layout_spec(&self, s: &AppState) -> LayoutSpec {
+    fn build_layout_spec(&self) -> LayoutSpec {
         let ledger_mode = self.mode_tabs.selected();
-        let screen_mode = s.screen_mode;
 
         let header_constraints = match ledger_mode {
             LedgerMode::Browse => vec![(Constraint::Fill(1), Left(ComponentId::LedgerModeTabs))],
@@ -259,18 +256,12 @@ impl LedgerPageComponent {
             ],
         };
 
-        match screen_mode {
-            ScreenMode::Large => LayoutSpec {
-                direction: Direction::Vertical,
-                constraints: vec![
-                    (Constraint::Length(3), Right(header_spec)),
-                    (Constraint::Fill(1), Right(body_spec)),
-                ],
-            },
-            ScreenMode::Small => LayoutSpec {
-                direction: Direction::Vertical,
-                constraints: vec![(Constraint::Fill(1), Right(body_spec))],
-            },
+        LayoutSpec {
+            direction: Direction::Vertical,
+            constraints: vec![
+                (Constraint::Length(3), Right(header_spec)),
+                (Constraint::Fill(1), Right(body_spec)),
+            ],
         }
     }
 
@@ -302,8 +293,8 @@ impl Component for LedgerPageComponent {
         self
     }
 
-    fn calculate_layout(&self, area: Rect, s: &AppState) -> ComponentLayout {
-        let spec = self.build_layout_spec(s);
+    fn calculate_layout(&self, area: Rect) -> ComponentLayout {
+        let spec = self.build_layout_spec();
         let mut layout = HashMap::new();
         walk_layout(&mut layout, &spec, area);
         layout
@@ -371,9 +362,9 @@ impl Component for LedgerPageComponent {
         Vec::new()
     }
 
-    fn render(&self, f: &mut Frame, s: &AppState, parent_layout: &ComponentLayout) {
+    fn render(&self, f: &mut Frame, parent_layout: &ComponentLayout) {
         let my_area = parent_layout.get(&self.id).copied().unwrap_or(f.area());
-        let my_layout = self.calculate_layout(my_area, s);
+        let my_layout = self.calculate_layout(my_area);
 
         {
             let mut layout_guard = self.last_layout.write().unwrap();
