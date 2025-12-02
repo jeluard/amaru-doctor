@@ -1,5 +1,4 @@
 use crate::{
-    app_state::AppState,
     states::{Action, ComponentId},
     tui::Event,
 };
@@ -59,7 +58,7 @@ pub trait Component {
     fn as_any_mut(&mut self) -> &mut dyn Any;
 
     /// Calculates the layout for this component and *all its children*.
-    fn calculate_layout(&self, area: Rect, s: &AppState) -> ComponentLayout;
+    fn calculate_layout(&self, area: Rect) -> ComponentLayout;
 
     /// Called on every application tick.
     fn tick(&mut self) -> Vec<Action> {
@@ -75,7 +74,7 @@ pub trait Component {
     }
 
     /// Renders the component onto the frame.
-    fn render(&self, f: &mut Frame, s: &AppState, layout: &ComponentLayout);
+    fn render(&self, f: &mut Frame, layout: &ComponentLayout);
 }
 
 /// A reusable event handler for Container Components.

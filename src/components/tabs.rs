@@ -1,5 +1,4 @@
 use crate::{
-    app_state::AppState,
     components::{Component, ComponentLayout},
     model::cursor::Cursor,
     states::{Action, ComponentId},
@@ -122,7 +121,7 @@ where
         self
     }
 
-    fn calculate_layout(&self, area: Rect, _s: &AppState) -> ComponentLayout {
+    fn calculate_layout(&self, area: Rect) -> ComponentLayout {
         let mut layout = ComponentLayout::new();
         layout.insert(self.id, area);
         layout
@@ -149,5 +148,5 @@ where
         Vec::new()
     }
 
-    fn render(&self, _f: &mut Frame, _s: &AppState, _l: &ComponentLayout) {}
+    fn render(&self, _f: &mut Frame, _l: &ComponentLayout) {}
 }

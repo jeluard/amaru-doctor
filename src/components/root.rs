@@ -1,5 +1,4 @@
 use crate::{
-    app_state::AppState,
     components::{
         Component, ComponentLayout, chain_page::ChainPageComponent,
         ledger_page::LedgerPageComponent, otel_page::OtelPageComponent,
@@ -60,7 +59,7 @@ impl Component for RootComponent {
         self
     }
 
-    fn calculate_layout(&self, area: Rect, s: &AppState) -> ComponentLayout {
+    fn calculate_layout(&self, area: Rect) -> ComponentLayout {
         let active_page_id = match self.tabs.selected() {
             InspectOption::Ledger => ComponentId::LedgerPage,
             InspectOption::Chain => ComponentId::ChainPage,
@@ -81,10 +80,10 @@ impl Component for RootComponent {
 
         if let Some(page_rect) = layout.get(&active_page_id) {
             let child_layout = match self.tabs.selected() {
-                InspectOption::Ledger => self.ledger_page.calculate_layout(*page_rect, s),
-                InspectOption::Chain => self.chain_page.calculate_layout(*page_rect, s),
-                InspectOption::Otel => self.otel_page.calculate_layout(*page_rect, s),
-                InspectOption::Prometheus => self.prometheus_page.calculate_layout(*page_rect, s),
+                InspectOption::Ledger => self.ledger_page.calculate_layout(*page_rect),
+                InspectOption::Chain => self.chain_page.calculate_layout(*page_rect),
+                InspectOption::Otel => self.otel_page.calculate_layout(*page_rect),
+                InspectOption::Prometheus => self.prometheus_page.calculate_layout(*page_rect),
             };
             layout.extend(child_layout);
         }
@@ -158,9 +157,9 @@ impl Component for RootComponent {
         }
     }
 
-    fn render(&self, f: &mut Frame, s: &AppState, _ignored_layout: &ComponentLayout) {
+    fn render(&self, f: &mut Frame, _ignored_layout: &ComponentLayout) {
         let area = f.area();
-        let my_layout = self.calculate_layout(area, s);
+        let my_layout = self.calculate_layout(area);
 
         // Render Tabs
         if let Some(tabs_area) = my_layout.get(&ComponentId::InspectTabs) {
@@ -169,10 +168,10 @@ impl Component for RootComponent {
 
         // Render Active Page
         match self.tabs.selected() {
-            InspectOption::Ledger => self.ledger_page.render(f, s, &my_layout),
-            InspectOption::Chain => self.chain_page.render(f, s, &my_layout),
-            InspectOption::Otel => self.otel_page.render(f, s, &my_layout),
-            InspectOption::Prometheus => self.prometheus_page.render(f, s, &my_layout),
+            InspectOption::Ledger => self.ledger_page.render(f, &my_layout),
+            InspectOption::Chain => self.chain_page.render(f, &my_layout),
+            InspectOption::Otel => self.otel_page.render(f, &my_layout),
+            InspectOption::Prometheus => self.prometheus_page.render(f, &my_layout),
         }
     }
 }

@@ -9,7 +9,6 @@ use amaru_stores::rocksdb::{
 use anyhow::Result;
 
 pub mod app;
-mod app_state;
 pub mod cli;
 pub mod components;
 mod config;
@@ -25,12 +24,6 @@ pub mod tui;
 mod ui;
 mod view;
 pub mod viewmodel;
-
-#[derive(Clone, Copy, Debug)]
-pub enum ScreenMode {
-    Large,
-    Small,
-}
 
 fn default_db_name(name: &str, network: &NetworkName) -> String {
     format!("{}.{}.db", name, network)

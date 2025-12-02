@@ -1,5 +1,4 @@
 use crate::{
-    app_state::AppState,
     components::{Component, ComponentLayout},
     model::search::SearchCache,
     states::{Action, ComponentId},
@@ -99,13 +98,13 @@ impl Component for ChainSearchComponent {
         self
     }
 
-    fn calculate_layout(&self, area: Rect, _s: &AppState) -> ComponentLayout {
+    fn calculate_layout(&self, area: Rect) -> ComponentLayout {
         let mut l = ComponentLayout::new();
         l.insert(self.id, area);
         l
     }
 
-    fn render(&self, _f: &mut Frame, _s: &AppState, _layout: &ComponentLayout) {}
+    fn render(&self, _f: &mut Frame, _layout: &ComponentLayout) {}
 
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
         if let Event::Mouse(mouse) = event

@@ -1,5 +1,4 @@
 use crate::{
-    app_state::AppState,
     components::{
         Component, ComponentLayout, handle_container_event, prom_metrics::PromMetricsComponent,
     },
@@ -58,7 +57,7 @@ impl Component for PrometheusPageComponent {
         self
     }
 
-    fn calculate_layout(&self, area: Rect, _s: &AppState) -> ComponentLayout {
+    fn calculate_layout(&self, area: Rect) -> ComponentLayout {
         let spec = LayoutSpec {
             direction: Direction::Vertical,
             constraints: vec![(Constraint::Fill(1), Left(ComponentId::PrometheusMetrics))],
@@ -96,15 +95,15 @@ impl Component for PrometheusPageComponent {
         Vec::new()
     }
 
-    fn render(&self, f: &mut Frame, s: &AppState, parent_layout: &ComponentLayout) {
+    fn render(&self, f: &mut Frame, parent_layout: &ComponentLayout) {
         let my_area = parent_layout.get(&self.id).copied().unwrap_or(f.area());
-        let my_layout = self.calculate_layout(my_area, s);
+        let my_layout = self.calculate_layout(my_area);
         {
             let mut layout_guard = self.last_layout.write().unwrap();
             *layout_guard = my_layout.clone();
         }
         if let Some(_rect) = my_layout.get(&ComponentId::PrometheusMetrics) {
-            self.metrics.render(f, s, &my_layout);
+            self.metrics.render(f, &my_layout);
         }
     }
 }

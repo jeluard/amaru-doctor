@@ -1,5 +1,4 @@
 use crate::{
-    app_state::AppState,
     components::{Component, ComponentLayout, async_list::AsyncListModel, list::ListModel},
     model::search::SearchCache,
     states::{Action, ComponentId},
@@ -96,7 +95,7 @@ where
         self
     }
 
-    fn calculate_layout(&self, area: Rect, _s: &AppState) -> ComponentLayout {
+    fn calculate_layout(&self, area: Rect) -> ComponentLayout {
         let mut l = ComponentLayout::new();
         l.insert(self.id, area);
         l
@@ -109,7 +108,7 @@ where
         Vec::new()
     }
 
-    fn render(&self, _f: &mut Frame, _s: &AppState, _l: &ComponentLayout) {}
+    fn render(&self, _f: &mut Frame, _l: &ComponentLayout) {}
 
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
         let Some(model) = self.state.get_current_res_mut() else {

@@ -1,5 +1,4 @@
 use crate::{
-    app_state::AppState,
     components::{Component, ComponentLayout},
     model::otel_view::OtelViewState,
     otel::{
@@ -72,13 +71,13 @@ impl Component for FlameGraphComponent {
         self
     }
 
-    fn calculate_layout(&self, area: Rect, _s: &AppState) -> ComponentLayout {
+    fn calculate_layout(&self, area: Rect) -> ComponentLayout {
         let mut layout = ComponentLayout::new();
         layout.insert(self.id, area);
         layout
     }
 
-    fn render(&self, _f: &mut Frame, _s: &AppState, _l: &ComponentLayout) {}
+    fn render(&self, _f: &mut Frame, _l: &ComponentLayout) {}
 }
 
 /// Determines which view to render based on the provided view state.
