@@ -78,10 +78,31 @@ where
     }
 
     pub fn handle_click(&mut self, area: Rect, row: u16, col: u16) -> Vec<Action> {
-        if row >= area.y && row < area.y + area.height && self.select_by_column(area, col) {
-            return vec![Action::UpdateLayout(Rect::default())];
+        if row >= area.y && row < area.y + area.height {
+            self.select_by_column(area, col);
         }
         Vec::new()
+    }
+
+    pub fn render_focused(&self, f: &mut Frame, area: Rect, is_focused: bool) {
+        let mut block = Block::default();
+        if self.border {
+            block = block.borders(Borders::ALL);
+        }
+
+        if is_focused {
+            block = block
+                .border_style(Style::default().fg(Color::Blue))
+                .title_style(Style::default().fg(Color::White));
+        }
+
+        let tab_lines: Vec<Line> = self.cursor.iter().map(ToLine::to_line).collect();
+        let tabs_widget = Tabs::new(tab_lines)
+            .select(self.cursor.index())
+            .block(block)
+            .highlight_style(Style::default().add_modifier(Modifier::BOLD));
+
+        f.render_widget(tabs_widget, area);
     }
 }
 
@@ -109,50 +130,24 @@ where
 
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
         match event {
-            Event::Key(key) => {
-                match key.code {
-                    KeyCode::Left => {
-                        self.cursor.next_back();
-                        vec![Action::UpdateLayout(Rect::default())] // Trigger re-layout
-                    }
-                    KeyCode::Right => {
-                        self.cursor.non_empty_next();
-                        vec![Action::UpdateLayout(Rect::default())]
-                    }
-                    _ => Vec::new(),
+            Event::Key(key) => match key.code {
+                KeyCode::Left => {
+                    self.cursor.next_back();
                 }
-            }
+                KeyCode::Right => {
+                    self.cursor.non_empty_next();
+                }
+                _ => {}
+            },
             Event::Mouse(mouse) => {
                 if let MouseEventKind::Down(MouseButton::Left) = mouse.kind {
                     return self.handle_click(area, mouse.row, mouse.column);
                 }
-                Vec::new()
             }
-            _ => Vec::new(),
+            _ => {}
         }
+        Vec::new()
     }
 
-    fn render(&self, f: &mut Frame, s: &AppState, layout: &ComponentLayout) {
-        let Some(&area) = layout.get(&self.id) else {
-            return;
-        };
-        let is_focused = s.layout_model.is_focused(self.id);
-        let mut block = Block::default();
-        if self.border {
-            block = block.borders(Borders::ALL);
-        }
-        if is_focused {
-            block = block
-                .border_style(Style::default().fg(Color::Blue))
-                .title_style(Style::default().fg(Color::White));
-        }
-
-        let tab_lines: Vec<Line> = self.cursor.iter().map(ToLine::to_line).collect();
-        let tabs_widget = Tabs::new(tab_lines)
-            .select(self.cursor.index())
-            .block(block)
-            .highlight_style(Style::default().add_modifier(Modifier::BOLD));
-
-        f.render_widget(tabs_widget, area);
-    }
+    fn render(&self, _f: &mut Frame, _s: &AppState, _l: &ComponentLayout) {}
 }

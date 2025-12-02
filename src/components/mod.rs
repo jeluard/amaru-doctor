@@ -7,7 +7,6 @@ use crossterm::event::MouseButton;
 use crossterm::event::MouseEventKind;
 use ratatui::{Frame, layout::Rect};
 use std::{any::Any, collections::HashMap};
-use tracing::debug;
 
 pub mod async_list;
 pub mod chain_page;
@@ -71,40 +70,12 @@ pub trait Component {
         Vec::new()
     }
 
+    fn handle_action(&mut self, _action: Action) -> Vec<Action> {
+        Vec::new()
+    }
+
     /// Renders the component onto the frame.
     fn render(&self, f: &mut Frame, s: &AppState, layout: &ComponentLayout);
-}
-
-pub fn route_event_to_children(
-    event: &Event,
-    s: &AppState,
-    my_layout: ComponentLayout,
-) -> InputRoute {
-    match event {
-        Event::Key(_) => {
-            let focus_id = s.layout_model.get_focus();
-            if let Some(rect) = my_layout.get(&focus_id) {
-                return InputRoute::Delegate(focus_id, *rect);
-            }
-            InputRoute::Delegate(focus_id, Rect::default())
-        }
-
-        Event::Mouse(mouse) => {
-            for (child_id, rect) in &my_layout {
-                let hit = mouse.column >= rect.x
-                    && mouse.column < rect.x + rect.width
-                    && mouse.row >= rect.y
-                    && mouse.row < rect.y + rect.height;
-
-                if hit {
-                    return InputRoute::Delegate(*child_id, *rect);
-                }
-            }
-            debug!("No child contained mouse ({}, {})", mouse.column, mouse.row);
-            InputRoute::Ignore
-        }
-        _ => InputRoute::Ignore,
-    }
 }
 
 /// A reusable event handler for Container Components.

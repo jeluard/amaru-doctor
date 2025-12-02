@@ -71,6 +71,14 @@ where
     pub fn handle_search(&mut self, query: &str) {
         self.perform_search(query.to_string());
     }
+
+    pub fn render_focused(&self, f: &mut Frame, area: Rect, is_focused: bool) {
+        if let Some(model) = self.state.get_current_res() {
+            model.draw(f, area, is_focused);
+        } else {
+            draw_empty_list(f, area, self.title, "No results", is_focused);
+        }
+    }
 }
 
 impl<Q, R> Component for SearchListComponent<Q, R>
@@ -101,18 +109,7 @@ where
         Vec::new()
     }
 
-    fn render(&self, f: &mut Frame, s: &AppState, layout: &ComponentLayout) {
-        let Some(&area) = layout.get(&self.id) else {
-            return;
-        };
-        let is_focused = s.layout_model.is_focused(self.id);
-
-        if let Some(model) = self.state.get_current_res() {
-            model.draw(f, area, is_focused);
-        } else {
-            draw_empty_list(f, area, self.title, "No results", is_focused);
-        }
-    }
+    fn render(&self, _f: &mut Frame, _s: &AppState, _l: &ComponentLayout) {}
 
     fn handle_event(&mut self, event: &Event, area: Rect) -> Vec<Action> {
         let Some(model) = self.state.get_current_res_mut() else {

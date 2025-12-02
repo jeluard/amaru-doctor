@@ -5,6 +5,7 @@ use crate::{
         search_bar::SearchBarComponent,
     },
     controller::{LayoutSpec, walk_layout},
+    model::layout::{MoveFocus, find_next_focus},
     states::{Action, ComponentId},
     tui::Event,
 };
@@ -41,6 +42,18 @@ impl ChainPageComponent {
 
     pub fn handle_search(&mut self, query: &str) {
         self.chain_search.handle_search(query);
+    }
+
+    pub fn handle_navigation(&mut self, direction: MoveFocus) -> Vec<Action> {
+        let layout = self.last_layout.read().unwrap();
+        let active_focus = *self.active_focus.read().unwrap();
+
+        if let Some(next) = find_next_focus(&layout, active_focus, direction) {
+            *self.active_focus.write().unwrap() = next;
+            return vec![Action::SetFocus(next)];
+        }
+
+        Vec::new()
     }
 }
 
@@ -101,7 +114,6 @@ impl Component for ChainPageComponent {
             && let Action::SubmitSearch(query) = actions.remove(pos)
         {
             self.handle_search(&query);
-            actions.push(Action::Render);
         }
 
         *self.active_focus.write().unwrap() = active_focus;
@@ -117,11 +129,19 @@ impl Component for ChainPageComponent {
             *layout_guard = my_layout.clone();
         }
 
-        if let Some(_rect) = my_layout.get(&ComponentId::SearchBar) {
-            self.search_bar.render(f, s, &my_layout);
+        // Get the current local focus
+        let current_focus = *self.active_focus.read().unwrap();
+
+        if let Some(rect) = my_layout.get(&ComponentId::SearchBar) {
+            // Check if SearchBar is the active one
+            let is_focused = current_focus == ComponentId::SearchBar;
+            self.search_bar.render_focused(f, *rect, is_focused);
         }
-        if let Some(_rect) = my_layout.get(&ComponentId::ChainSearch) {
-            self.chain_search.render(f, s, &my_layout);
+
+        if let Some(rect) = my_layout.get(&ComponentId::ChainSearch) {
+            // Check if ChainSearch is the active one
+            let is_focused = current_focus == ComponentId::ChainSearch;
+            self.chain_search.render_focused(f, *rect, is_focused);
         }
     }
 }

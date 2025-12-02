@@ -4,6 +4,7 @@ use crate::{
         Component, ComponentLayout, handle_container_event, prom_metrics::PromMetricsComponent,
     },
     controller::{LayoutSpec, walk_layout},
+    model::layout::{MoveFocus, find_next_focus},
     prometheus::model::NodeMetrics,
     states::{Action, ComponentId},
     tui::Event,
@@ -31,6 +32,18 @@ impl PrometheusPageComponent {
             last_layout: RwLock::new(HashMap::new()),
             active_focus: RwLock::new(ComponentId::PrometheusMetrics),
         }
+    }
+
+    pub fn handle_navigation(&mut self, direction: MoveFocus) -> Vec<Action> {
+        let layout = self.last_layout.read().unwrap();
+        let active_focus = *self.active_focus.read().unwrap();
+
+        if let Some(next) = find_next_focus(&layout, active_focus, direction) {
+            *self.active_focus.write().unwrap() = next;
+            return vec![Action::SetFocus(next)];
+        }
+
+        Vec::new()
     }
 }
 
