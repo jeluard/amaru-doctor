@@ -1,5 +1,4 @@
 use crate::states::Action;
-use tracing::debug;
 
 /// Display HAT Mini button names
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -25,33 +24,21 @@ pub struct InputEvent {
     pub press_type: ButtonPress,
 }
 
-impl InputEvent {
-    pub fn to_action(&self) -> Action {
-        match self {
+impl From<InputEvent> for Action {
+    fn from(event: InputEvent) -> Self {
+        match event {
             InputEvent {
                 id: ButtonId::A, ..
-            } => {
-                debug!("Translating Button A press to Up Action");
-                Action::Up
-            }
+            } => Action::Up,
             InputEvent {
                 id: ButtonId::B, ..
-            } => {
-                debug!("Translating Button B press to Down Action");
-                Action::Down
-            }
+            } => Action::Down,
             InputEvent {
                 id: ButtonId::X, ..
-            } => {
-                debug!("Translating Button X press to Forward Action");
-                Action::Forward
-            }
+            } => Action::Forward,
             InputEvent {
                 id: ButtonId::Y, ..
-            } => {
-                debug!("Translating Button Y press to Back Action");
-                Action::Back
-            }
+            } => Action::Back,
         }
     }
 }

@@ -284,9 +284,8 @@ impl LedgerPageComponent {
         Vec::new()
     }
 
-    pub fn render(&self, f: &mut Frame, parent_layout: &ComponentLayout) {
-        let my_area = parent_layout.get(&self.id).copied().unwrap_or(f.area());
-        let my_layout = self.calculate_layout(my_area);
+    pub fn render(&self, frame: &mut Frame, area: Rect) {
+        let my_layout = self.calculate_layout(area);
 
         {
             let mut layout_guard = self.last_layout.write().unwrap();
@@ -301,79 +300,81 @@ impl LedgerPageComponent {
             match id {
                 // --- Mode tabs ---
                 ComponentId::LedgerModeTabs => {
-                    self.mode_tabs.render_focused(f, area, is_focused);
+                    self.mode_tabs.render_focused(frame, area, is_focused);
                 }
                 // --- Search bar ---
                 ComponentId::SearchBar => {
-                    self.search_bar.render_focused(f, area, is_focused);
+                    self.search_bar.render_focused(frame, area, is_focused);
                 }
 
                 // --- Options ---
                 ComponentId::LedgerBrowseOptions => {
-                    self.browse_options.render_focused(f, area, is_focused);
+                    self.browse_options.render_focused(frame, area, is_focused);
                 }
                 ComponentId::LedgerSearchOptions => {
-                    self.search_options.render_focused(f, area, is_focused);
+                    self.search_options.render_focused(frame, area, is_focused);
                 }
 
                 // --- Lists ---
                 ComponentId::LedgerAccountsList => {
-                    self.accounts_list.render_focused(f, area, is_focused);
+                    self.accounts_list.render_focused(frame, area, is_focused);
                 }
                 ComponentId::LedgerBlockIssuersList => {
-                    self.block_issuers_list.render_focused(f, area, is_focused);
+                    self.block_issuers_list
+                        .render_focused(frame, area, is_focused);
                 }
                 ComponentId::LedgerDRepsList => {
-                    self.dreps_list.render_focused(f, area, is_focused);
+                    self.dreps_list.render_focused(frame, area, is_focused);
                 }
                 ComponentId::LedgerPoolsList => {
-                    self.pools_list.render_focused(f, area, is_focused);
+                    self.pools_list.render_focused(frame, area, is_focused);
                 }
                 ComponentId::LedgerProposalsList => {
-                    self.proposals_list.render_focused(f, area, is_focused);
+                    self.proposals_list.render_focused(frame, area, is_focused);
                 }
                 ComponentId::LedgerUtxosList => {
-                    self.utxos_list.render_focused(f, area, is_focused);
+                    self.utxos_list.render_focused(frame, area, is_focused);
                 }
                 ComponentId::LedgerUtxosByAddrList => {
-                    self.utxos_by_addr_list.render_focused(f, area, is_focused);
+                    self.utxos_by_addr_list
+                        .render_focused(frame, area, is_focused);
                 }
 
                 // --- Details ---
                 ComponentId::LedgerAccountDetails => {
                     let item = self.accounts_list.model.selected_item();
                     self.account_details
-                        .render_with_data(f, area, is_focused, item);
+                        .render_with_data(frame, area, is_focused, item);
                 }
                 ComponentId::LedgerBlockIssuerDetails => {
                     let item = self.block_issuers_list.model.selected_item();
                     self.block_details
-                        .render_with_data(f, area, is_focused, item);
+                        .render_with_data(frame, area, is_focused, item);
                 }
                 ComponentId::LedgerDRepDetails => {
                     let item = self.dreps_list.model.selected_item();
                     self.drep_details
-                        .render_with_data(f, area, is_focused, item);
+                        .render_with_data(frame, area, is_focused, item);
                 }
                 ComponentId::LedgerPoolDetails => {
                     let item = self.pools_list.model.selected_item();
                     self.pool_details
-                        .render_with_data(f, area, is_focused, item);
+                        .render_with_data(frame, area, is_focused, item);
                 }
                 ComponentId::LedgerProposalDetails => {
                     let item = self.proposals_list.model.selected_item();
                     self.proposal_details
-                        .render_with_data(f, area, is_focused, item);
+                        .render_with_data(frame, area, is_focused, item);
                 }
                 ComponentId::LedgerUtxoDetails => {
                     let item = self.utxos_list.model.selected_item();
                     self.utxo_details
-                        .render_with_data(f, area, is_focused, item);
+                        .render_with_data(frame, area, is_focused, item);
                 }
                 ComponentId::LedgerUtxosByAddrDetails => {
                     let item = self.utxos_by_addr_list.selected_item();
                     self.utxo_by_addr_details
-                        .render_with_data(f, area, is_focused, item);
+                        .render_with_data(frame, area, is_focused, item);
                 }
                 _ => {}
             }

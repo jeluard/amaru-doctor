@@ -74,9 +74,8 @@ impl ChainPageComponent {
         Vec::new()
     }
 
-    pub fn render(&self, f: &mut Frame, parent_layout: &ComponentLayout) {
-        let my_area = parent_layout.get(&self.id).copied().unwrap_or(f.area());
-        let my_layout = self.calculate_layout(my_area);
+    pub fn render(&self, frame: &mut Frame, area: Rect) {
+        let my_layout = self.calculate_layout(area);
 
         {
             let mut layout_guard = self.last_layout.write().unwrap();
@@ -89,13 +88,13 @@ impl ChainPageComponent {
         if let Some(rect) = my_layout.get(&ComponentId::SearchBar) {
             // Check if SearchBar is the active one
             let is_focused = current_focus == ComponentId::SearchBar;
-            self.search_bar.render_focused(f, *rect, is_focused);
+            self.search_bar.render_focused(frame, *rect, is_focused);
         }
 
         if let Some(rect) = my_layout.get(&ComponentId::ChainSearch) {
             // Check if ChainSearch is the active one
             let is_focused = current_focus == ComponentId::ChainSearch;
-            self.chain_search.render_focused(f, *rect, is_focused);
+            self.chain_search.render_focused(frame, *rect, is_focused);
         }
     }
 }

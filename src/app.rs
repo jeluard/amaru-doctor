@@ -3,7 +3,6 @@ use crate::{
     config::Config,
     model::button::InputEvent,
     otel::TraceGraphSnapshot,
-    prometheus::model::NodeMetrics,
     states::Action,
     tui::{Event, Tui},
 };
@@ -12,11 +11,8 @@ use anyhow::Result;
 use crossterm::event::{Event as CrosstermEvent, KeyEvent};
 use ratatui::prelude::{Backend, Rect};
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashMap,
-    sync::{Arc, mpsc},
-};
-use tokio::sync::mpsc::{Receiver, UnboundedReceiver, UnboundedSender, unbounded_channel};
+use std::sync::{Arc, mpsc};
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel};
 use tracing::debug;
 
 pub struct App {
@@ -43,7 +39,6 @@ impl App {
         ledger_db: ReadOnlyRocksDB,
         chain_db: ReadOnlyChainDB,
         trace_graph: TraceGraphSnapshot,
-        prom_metrics: Receiver<NodeMetrics>,
         button_events: mpsc::Receiver<InputEvent>,
         frame_area: Rect,
     ) -> Result<Self> {
@@ -59,12 +54,7 @@ impl App {
             last_tick_key_events: Vec::new(),
             action_tx,
             action_rx,
-            root: RootComponent::new(
-                Arc::new(ledger_db),
-                Arc::new(chain_db),
-                trace_graph,
-                prom_metrics,
-            ),
+            root: RootComponent::new(Arc::new(ledger_db), Arc::new(chain_db), trace_graph),
         })
     }
 
@@ -181,7 +171,7 @@ impl App {
                         self.action_tx.send(a)?;
                     }
                     for input_event in self.button_events.try_iter() {
-                        let action = input_event.to_action();
+                        let action: Action = input_event.into();
                         self.action_tx.send(action)?;
                     }
                 }
@@ -211,7 +201,7 @@ impl App {
     }
 
     fn render<B: Backend>(&mut self, tui: &mut Tui<B>) -> Result<()> {
-        tui.draw(|f| self.root.render(f, &HashMap::new()))
+        tui.draw(|f| self.root.render(f, f.area()))
             .map(|_| ())
             .map_err(|e| anyhow::Error::msg(format!("{:?}", e)))
     }

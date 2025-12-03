@@ -11,7 +11,7 @@ pub enum ComponentId {
     Root,
     LedgerPage,
     OtelPage,
-    PrometheusPage,
+    MetricsPage,
     ChainPage,
 
     // --- Global / Reusable ---
@@ -48,8 +48,8 @@ pub enum ComponentId {
     OtelFlameGraph,
     OtelSpanDetails,
 
-    // --- Prometheus Page ---
-    PrometheusMetrics,
+    // --- Metrics Page ---
+    Metrics,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Display, Serialize, Deserialize)]
@@ -133,5 +133,5 @@ pub enum InspectOption {
     Ledger,
     Chain,
     Otel,
-    Prometheus,
+    Metrics,
 }

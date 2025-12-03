@@ -1,12 +1,11 @@
 use crate::{
     components::{
         Component, ComponentLayout, chain_page::ChainPageComponent,
-        ledger_page::LedgerPageComponent, otel_page::OtelPageComponent,
-        prometheus_page::PrometheusPageComponent, tabs::TabsComponent,
+        ledger_page::LedgerPageComponent, otel_page::OtelPageComponent, tabs::TabsComponent,
     },
     controller::{LayoutSpec, MoveFocus, walk_layout},
+    metrics::page::MetricsPageComponent,
     otel::TraceGraphSnapshot,
-    prometheus::model::NodeMetrics,
     states::{Action, ComponentId, InspectOption},
 };
 use amaru_stores::rocksdb::{ReadOnlyRocksDB, consensus::ReadOnlyChainDB};
@@ -17,7 +16,6 @@ use ratatui::{
     layout::{Constraint, Direction, Rect},
 };
 use std::{any::Any, collections::HashMap, sync::Arc};
-use tokio::sync::mpsc::Receiver;
 
 pub struct RootComponent {
     id: ComponentId,
@@ -25,7 +23,7 @@ pub struct RootComponent {
     pub ledger_page: LedgerPageComponent,
     pub chain_page: ChainPageComponent,
     pub otel_page: OtelPageComponent,
-    pub prometheus_page: PrometheusPageComponent,
+    pub metrics_page: MetricsPageComponent,
 }
 
 impl RootComponent {
@@ -33,7 +31,6 @@ impl RootComponent {
         ledger_db: Arc<ReadOnlyRocksDB>,
         chain_db: Arc<ReadOnlyChainDB>,
         trace_graph: TraceGraphSnapshot,
-        prom_metrics: Receiver<NodeMetrics>,
     ) -> Self {
         Self {
             id: ComponentId::Root,
@@ -41,7 +38,7 @@ impl RootComponent {
             ledger_page: LedgerPageComponent::new(ledger_db),
             chain_page: ChainPageComponent::new(chain_db),
             otel_page: OtelPageComponent::new(trace_graph),
-            prometheus_page: PrometheusPageComponent::new(prom_metrics),
+            metrics_page: MetricsPageComponent::new_with_service(),
         }
     }
 
@@ -50,7 +47,7 @@ impl RootComponent {
             InspectOption::Ledger => ComponentId::LedgerPage,
             InspectOption::Chain => ComponentId::ChainPage,
             InspectOption::Otel => ComponentId::OtelPage,
-            InspectOption::Prometheus => ComponentId::PrometheusPage,
+            InspectOption::Metrics => ComponentId::MetricsPage,
         };
 
         let spec = LayoutSpec {
@@ -69,7 +66,7 @@ impl RootComponent {
                 InspectOption::Ledger => self.ledger_page.calculate_layout(*page_rect),
                 InspectOption::Chain => self.chain_page.calculate_layout(*page_rect),
                 InspectOption::Otel => self.otel_page.calculate_layout(*page_rect),
-                InspectOption::Prometheus => self.prometheus_page.calculate_layout(*page_rect),
+                InspectOption::Metrics => self.metrics_page.calculate_layout(*page_rect),
             };
             layout.extend(child_layout);
         }
@@ -77,21 +74,34 @@ impl RootComponent {
         layout
     }
 
-    pub fn render(&self, f: &mut Frame, _ignored_layout: &ComponentLayout) {
-        let area = f.area();
+    pub fn render(&self, frame: &mut Frame, area: Rect) {
         let my_layout = self.calculate_layout(area);
 
-        // Render Tabs
         if let Some(tabs_area) = my_layout.get(&ComponentId::InspectTabs) {
-            self.tabs.render_focused(f, *tabs_area, false);
+            self.tabs.render_focused(frame, *tabs_area, false);
         }
 
-        // Render Active Page
         match self.tabs.selected() {
-            InspectOption::Ledger => self.ledger_page.render(f, &my_layout),
-            InspectOption::Chain => self.chain_page.render(f, &my_layout),
-            InspectOption::Otel => self.otel_page.render(f, &my_layout),
-            InspectOption::Prometheus => self.prometheus_page.render(f, &my_layout),
+            InspectOption::Ledger => {
+                if let Some(rect) = my_layout.get(&ComponentId::LedgerPage) {
+                    self.ledger_page.render(frame, *rect);
+                }
+            }
+            InspectOption::Chain => {
+                if let Some(rect) = my_layout.get(&ComponentId::ChainPage) {
+                    self.chain_page.render(frame, *rect);
+                }
+            }
+            InspectOption::Otel => {
+                if let Some(rect) = my_layout.get(&ComponentId::OtelPage) {
+                    self.otel_page.render(frame, *rect);
+                }
+            }
+            InspectOption::Metrics => {
+                if let Some(rect) = my_layout.get(&ComponentId::MetricsPage) {
+                    self.metrics_page.render(frame, *rect);
+                }
+            }
         }
     }
 }
@@ -113,7 +123,7 @@ impl Component for RootComponent {
         actions.extend(self.ledger_page.tick());
         actions.extend(self.chain_page.tick());
         actions.extend(self.otel_page.tick());
-        actions.extend(self.prometheus_page.tick());
+        actions.extend(self.metrics_page.tick());
         actions
     }
 
@@ -150,7 +160,7 @@ impl Component for RootComponent {
             InspectOption::Ledger => self.ledger_page.handle_event(event, page_area),
             InspectOption::Chain => self.chain_page.handle_event(event, page_area),
             InspectOption::Otel => self.otel_page.handle_event(event, page_area),
-            InspectOption::Prometheus => self.prometheus_page.handle_event(event, page_area),
+            InspectOption::Metrics => self.metrics_page.handle_event(event, page_area),
         }
     }
 
@@ -169,7 +179,7 @@ impl Component for RootComponent {
             InspectOption::Ledger => self.ledger_page.handle_navigation(direction),
             InspectOption::Chain => self.chain_page.handle_navigation(direction),
             InspectOption::Otel => self.otel_page.handle_navigation(direction),
-            InspectOption::Prometheus => self.prometheus_page.handle_navigation(direction),
+            InspectOption::Metrics => self.metrics_page.handle_navigation(direction),
         }
     }
 }
