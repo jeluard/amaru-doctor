@@ -11,8 +11,6 @@ pub mod flame_graph;
 pub mod ledger_page;
 pub mod list;
 pub mod otel_page;
-pub mod prom_metrics;
-pub mod prometheus_page;
 pub mod root;
 pub mod search_bar;
 pub mod search_list;

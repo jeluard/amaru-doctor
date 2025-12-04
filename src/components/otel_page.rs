@@ -130,9 +130,8 @@ impl OtelPageComponent {
         layout
     }
 
-    pub fn render(&self, f: &mut Frame, parent_layout: &ComponentLayout) {
-        let my_area = parent_layout.get(&self.id).copied().unwrap_or(f.area());
-        let my_layout = self.calculate_layout(my_area);
+    pub fn render(&self, frame: &mut Frame, area: Rect) {
+        let my_layout = self.calculate_layout(area);
 
         {
             let mut layout_guard = self.last_layout.write().unwrap();
@@ -142,19 +141,19 @@ impl OtelPageComponent {
         let current_focus = *self.active_focus.read().unwrap();
         if let Some(rect) = my_layout.get(&ComponentId::OtelTraceList) {
             let is_focused = current_focus == ComponentId::OtelTraceList;
-            self.trace_list.render_focused(f, *rect, is_focused);
+            self.trace_list.render_focused(frame, *rect, is_focused);
         }
 
         if let Some(rect) = my_layout.get(&ComponentId::OtelFlameGraph) {
             let is_focused = current_focus == ComponentId::OtelFlameGraph;
             self.flame_graph
-                .render_with_state(f, *rect, &self.view_state, is_focused);
+                .render_with_state(frame, *rect, &self.view_state, is_focused);
         }
 
         if let Some(rect) = my_layout.get(&ComponentId::OtelSpanDetails) {
             let is_focused = current_focus == ComponentId::OtelSpanDetails;
             self.span_details.render_with_data(
-                f,
+                frame,
                 *rect,
                 is_focused,
                 self.view_state.focused_span.as_deref(),
